@@ -5,16 +5,19 @@ services:
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - .env
-    # A MÁGICA DO MAPEAMENTO DE PORTAS:
-    # Esquerda (5433): Porta do seu Windows (para não dar conflito com a 5432 se tiver algo lá)
-    # Direita (5432): Porta interna do Container (onde o Postgres realmente está)
     ports:
       - "5433:5432"
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   web:
     build: .
-    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000"
+    # Aumentei o timeout do Gunicorn para evitar aquele erro de worker timeout
+    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000 --timeout 120"
     volumes:
       - media_volume:/app/media
     ports:
@@ -22,7 +25,9 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
+      # --- NOVIDADE: Espera condicional ---
+      db:
+        condition: service_healthy
     restart: always
 
 volumes:
