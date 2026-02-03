@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minha Produção - DOC</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'lista_templates' %}">DOC</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav me-auto">
+                    <a class="nav-link" href="{% url 'lista_templates' %}">Gerador</a>
+                    <a class="nav-link" href="{% url 'biblioteca' %}">Biblioteca</a>
+                    <a class="nav-link active fw-bold" href="{% url 'dashboard' %}">Histórico</a>
+                </div>
+                <div class="d-flex align-items-center mt-2 mt-lg-0">
+                    <span class="navbar-text text-white me-3 border-end pe-3 d-none d-lg-block">
+                        Olá, {{ user.first_name|default:user.username }}
+                    </span>
+                    <a href="{% url 'admin:index' %}" target="_blank" class="btn btn-sm btn-secondary">
+                        ⚙️ Admin
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0">Histórico de Produção</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Modelo Utilizado</th>
+                            <th>Dados Principais</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in historico %}
+                        <tr>
+                            <td>{{ doc.data_geracao|date:"d/m/Y H:i" }}</td>
+                            <td><span class="badge bg-primary">{{ doc.template.titulo }}</span></td>
+                            <td>
+                                <small class="text-muted">
+                                    {% for chave, valor in doc.dados_inputados.items %}
+                                        {% if valor and chave != 'csrfmiddlewaretoken' %}
+                                            <strong>{{ chave }}:</strong> {{ valor }} | 
+                                        {% endif %}
+                                    {% endfor %}
+                                </small>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center p-4"><em>Nenhum documento gerado ainda.</em></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

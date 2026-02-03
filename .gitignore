@@ -1,0 +1,32 @@
+# --- Python & Venv ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+.venv/
+
+# --- Django ---
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# --- Mídia e Estáticos (Não suba dados de clientes!) ---
+media/
+staticfiles/
+
+# --- Docker ---
+# Ignorar volumes de dados do banco se estiverem na pasta do projeto
+postgres_data/
+
+# --- Segurança (CRUCIAL) ---
+.env
+.env.local
+
+# --- IDEs e Sistema Operacional ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

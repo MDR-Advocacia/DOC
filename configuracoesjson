@@ -1,0 +1,17 @@
+[
+    {
+        "tag": "numero_processo",
+        "tipo": "text",
+        "label": "Número do Processo (CNJ)"
+    },
+    {
+        "tag": "nome_autor",
+        "tipo": "text",
+        "label": "Nome da Parte Autora"
+    },
+    {
+        "tag": "data_saque_cotas",
+        "tipo": "date",
+        "label": "Data do Saque das Cotas"
+    }
+]
