@@ -8,6 +8,15 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# --- Configurações de Login ---
+# Para onde ir depois de logar? (Para a raiz /)
+LOGIN_REDIRECT_URL = '/'
+
+# Para onde ir depois de deslogar? (Para a tela de login de novo)
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Qual a URL de login?
+LOGIN_URL = '/accounts/login/'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -18,9 +27,14 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG') == 'True'
 
-ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:8000", "http://0.0.0.0:8000"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.0.31", "doc.mdr.local"]
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000", 
+    "http://127.0.0.1:8000", 
+    "http://192.168.0.31:8000",
+    "http://doc.mdr.local"
+]
 # Application definition
 
 INSTALLED_APPS = [
