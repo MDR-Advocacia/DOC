@@ -16,16 +16,17 @@ services:
 
   web:
     build: .
-    # Aumentei o timeout do Gunicorn para evitar aquele erro de worker timeout
-    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000 --timeout 120"
+    # MUDANÇA 1: Usamos 'runserver' (modo desenvolvimento) ao invés de 'gunicorn'
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
+      # MUDANÇA 2: CRUCIAL! Isso espelha sua pasta local (.) para dentro do container (/app)
+      - .:/app
       - media_volume:/app/media
     ports:
       - "8000:8000"
     env_file:
       - .env
     depends_on:
-      # --- NOVIDADE: Espera condicional ---
       db:
         condition: service_healthy
     restart: always
