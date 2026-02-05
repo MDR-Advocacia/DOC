@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - DunaDoc{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h3 class="fw-bold text-dark mb-1">Olá, {{ user.first_name|default:user.username }}! 👋</h3>
+        <p class="text-muted small mb-0">Bem-vindo ao painel de controle do escritório.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'lista_templates' %}" class="btn btn-primary shadow-sm fw-bold px-4">
+            <i class="fa-solid fa-plus me-2"></i>Novo Documento
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4 g-3"> <div class="col-md-6">
+        <div class="card border-0 shadow-sm bg-primary text-white h-100">
+            <div class="card-body d-flex align-items-center justify-content-between py-3"> <div>
+                    <h6 class="text-uppercase mb-1 opacity-75" style="font-size: 0.75rem;">Documentos Gerados</h6>
+                    <h2 class="fs-2 fw-bold mb-0">{{ total_docs }}</h2>
+                </div>
+                <div class="fs-3 opacity-50"><i class="fa-solid fa-rocket"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm bg-dark text-white h-100">
+            <div class="card-body d-flex align-items-center justify-content-between py-3">
+                <div>
+                    <h6 class="text-uppercase mb-1 opacity-75" style="font-size: 0.75rem;">Modelos Disponíveis</h6>
+                    <h2 class="fs-2 fw-bold mb-0">{{ total_templates }}</h2>
+                </div>
+                <div class="fs-3 opacity-50"><i class="fa-solid fa-book-open"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-2 border-bottom-0">
+                <h6 class="fw-bold mb-0 text-secondary small text-uppercase">📊 Produção por Setor</h6>
+            </div>
+            <div class="card-body pt-0">
+                <div style="height: 200px; display: flex; justify-content: center;">
+                    <canvas id="chartSetor"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-2 border-bottom-0">
+                <h6 class="fw-bold mb-0 text-secondary small text-uppercase">📈 Evolução Mensal</h6>
+            </div>
+            <div class="card-body pt-0">
+                <div style="height: 200px;">
+                    <canvas id="chartMes"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Configurações de fonte global para os gráficos ficarem harmônicos
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size = 11;
+
+    // Gráfico de Rosca
+    const ctxSetor = document.getElementById('chartSetor').getContext('2d');
+    new Chart(ctxSetor, {
+        type: 'doughnut',
+        data: {
+            labels: {{ labels_setor|safe }},
+            datasets: [{
+                data: {{ data_setor|safe }},
+                backgroundColor: ['#2e5bf0', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { position: 'right', labels: { boxWidth: 10 } } 
+            },
+            layout: { padding: 10 }
+        }
+    });
+
+    // Gráfico de Barras
+    const ctxMes = document.getElementById('chartMes').getContext('2d');
+    new Chart(ctxMes, {
+        type: 'bar',
+        data: {
+            labels: {{ labels_mes|safe }},
+            datasets: [{
+                label: 'Docs',
+                data: {{ data_mes|safe }},
+                backgroundColor: '#0a0e27',
+                borderRadius: 4,
+                barThickness: 20 // Barras mais finas e elegantes
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { 
+                y: { beginAtZero: true, grid: { borderDash: [2, 2] } },
+                x: { grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+</script>
+{% endblock %}

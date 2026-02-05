@@ -1,22 +1,35 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-# Importamos Template, DocumentoGerado e agora o SETOR também
-from .models import Template, DocumentoGerado, Setor
+# Importamos todos os modelos necessários
+from .models import Template, DocumentoGerado, Setor, Categoria, Area
 from docxtpl import DocxTemplate, InlineImage 
 from docx.shared import Mm 
 import io
 from datetime import datetime
+from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse_lazy
+from django.views import generic
+from django.contrib import messages 
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 
 @login_required
 def lista_templates(request):
-    """Tela inicial: Lista todas as peças disponíveis e os Setores para filtro"""
-    templates = Template.objects.filter(ativo=True)
-    setores = Setor.objects.all() # <--- Necessário para o filtro funcionar
+    """Tela inicial: Lista todas as peças disponíveis com filtros avançados"""
+    # Ordenamos por Setor > Área > Título para ficar organizado visualmente
+    templates = Template.objects.filter(ativo=True).order_by('setor__nome', 'area__nome', 'titulo')
+    
+    # Buscamos todas as opções para os filtros
+    setores = Setor.objects.all().order_by('nome')
+    areas = Area.objects.all().order_by('nome')
+    categorias = Categoria.objects.all().order_by('nome')
     
     return render(request, 'docgen/lista.html', {
         'templates': templates,
-        'setores': setores
+        'setores': setores,
+        'areas': areas,
+        'categorias': categorias
     })
 
 @login_required
@@ -35,7 +48,6 @@ def gerar_documento(request, template_id):
         for campo in campos:
             tag = campo['tag']
             
-            # --- LÓGICA PARA IMAGENS ---
             if campo['tipo'] == 'image':
                 imagem_enviada = request.FILES.get(tag)
                 if imagem_enviada:
@@ -45,12 +57,10 @@ def gerar_documento(request, template_id):
                 else:
                     contexto[tag] = ""
             
-            # --- LÓGICA PARA CHECKBOX ---
             elif campo['tipo'] == 'checkbox':
                 valor = request.POST.get(tag)
                 contexto[tag] = True if valor else False
 
-            # --- LÓGICA PARA DATAS ---
             elif campo['tipo'] == 'date':
                 valor = request.POST.get(tag)
                 if valor:
@@ -62,7 +72,6 @@ def gerar_documento(request, template_id):
                 else:
                     contexto[tag] = ""
 
-            # --- LÓGICA PARA TEXTO PADRÃO ---
             else:
                 contexto[tag] = request.POST.get(tag)
 
@@ -74,7 +83,7 @@ def gerar_documento(request, template_id):
         doc.save(buffer)
         buffer.seek(0)
         
-        # 5. Salva o histórico (sem objetos de imagem)
+        # 5. Salva o histórico
         dados_log = {k: str(v) for k, v in contexto.items() if not isinstance(v, InlineImage)}
         
         DocumentoGerado.objects.create(
@@ -93,20 +102,89 @@ def gerar_documento(request, template_id):
 
 @login_required
 def dashboard(request):
-    """Lista o histórico de documentos gerados pelo usuário"""
-    historico = DocumentoGerado.objects.filter(usuario=request.user).order_by('-data_geracao')
+    """
+    Lista o histórico.
+    - Se for Admin/Staff: Vê o histórico de TODOS.
+    - Se for Usuário Comum: Vê apenas os SEUS documentos.
+    """
+    
+    # Verifica se é Superusuário ou da Equipe (Staff)
+    if request.user.is_superuser or request.user.is_staff:
+        # Traz tudo (Admin vê geral)
+        historico = DocumentoGerado.objects.all().order_by('-data_geracao')
+    else:
+        # Filtra apenas pelo usuário logado (Segurança)
+        historico = DocumentoGerado.objects.filter(usuario=request.user).order_by('-data_geracao')
+    
     return render(request, 'docgen/dashboard.html', {'historico': historico})
 
 @login_required
 def biblioteca_modelos(request):
-    """
-    Repositório para download direto dos arquivos .docx originais.
-    """
-    # Buscamos todos os ativos, ordenados por Setor e depois por Título
-    templates = Template.objects.filter(ativo=True).order_by('setor__nome', 'titulo')
-    setores = Setor.objects.all()
+    """Repositório para download direto dos arquivos .docx originais."""
+    templates = Template.objects.filter(ativo=True).order_by('setor__nome', 'area__nome', 'titulo')
+    
+    # Buscamos as opções para os filtros
+    setores = Setor.objects.all().order_by('nome')
+    categorias = Categoria.objects.all().order_by('nome')
+    areas = Area.objects.all().order_by('nome') # <--- NOVIDADE
     
     return render(request, 'docgen/biblioteca.html', {
         'templates': templates,
-        'setores': setores
+        'setores': setores,
+        'categorias': categorias,
+        'areas': areas, # <--- Enviando para o template
+    })
+
+# --- CLASSE DE CADASTRO COM TRAVA DE SEGURANÇA ---
+class SignUpView(generic.CreateView):
+    form_class = UserCreationForm
+    success_url = reverse_lazy('login')
+    template_name = 'registration/signup.html'
+
+    def form_valid(self, form):
+        # 1. Pega o usuário, mas não salva no banco ainda
+        user = form.save(commit=False)
+        
+        # 2. TRAVA: Define como INATIVO para impedir login imediato
+        user.is_active = False 
+        
+        # 3. Salva no banco
+        user.save()
+        
+        # 4. Envia mensagem de sucesso para a tela de Login
+        messages.info(self.request, "✅ Cadastro realizado com sucesso! Sua conta está aguardando liberação do administrador.")
+        
+        return redirect('login')
+    
+@login_required
+def home_dashboard(request):
+    """Tela inicial com gráficos e indicadores (Landing Page)"""
+    
+    # 1. Totais Gerais (Cards do topo)
+    total_docs = DocumentoGerado.objects.count()
+    total_templates = Template.objects.filter(ativo=True).count()
+    
+    # 2. Dados para Gráfico: Documentos por Setor (Pizza/Donut)
+    # Ex: [{'template__setor__nome': 'Trabalhista', 'qtd': 10}, ...]
+    docs_por_setor = DocumentoGerado.objects.values('template__setor__nome')\
+        .annotate(qtd=Count('id')).order_by('-qtd')
+    
+    labels_setor = [item['template__setor__nome'] for item in docs_por_setor]
+    data_setor = [item['qtd'] for item in docs_por_setor]
+
+    # 3. Dados para Gráfico: Produção Mensal (Linha/Barra)
+    # Agrupa por mês de criação
+    docs_por_mes = DocumentoGerado.objects.annotate(mes=TruncMonth('data_geracao'))\
+        .values('mes').annotate(qtd=Count('id')).order_by('mes')
+    
+    labels_mes = [item['mes'].strftime('%B/%Y') for item in docs_por_mes]
+    data_mes = [item['qtd'] for item in docs_por_mes]
+
+    return render(request, 'docgen/home.html', {
+        'total_docs': total_docs,
+        'total_templates': total_templates,
+        'labels_setor': labels_setor,
+        'data_setor': data_setor,
+        'labels_mes': labels_mes,
+        'data_mes': data_mes,
     })
