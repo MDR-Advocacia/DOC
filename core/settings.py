@@ -168,3 +168,4 @@ REST_FRAMEWORK = {
         'doc_gen': '20/minute', # Específico para gerar documentos (pesado)
     }
 }
+

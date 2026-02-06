@@ -8,27 +8,18 @@ services:
     ports:
       - "5433:5432"
     restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   web:
     build: .
-    # MUDANÇA 1: Usamos 'runserver' (modo desenvolvimento) ao invés de 'gunicorn'
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000"
     volumes:
-      # MUDANÇA 2: CRUCIAL! Isso espelha sua pasta local (.) para dentro do container (/app)
-      - .:/app
       - media_volume:/app/media
     ports:
       - "8000:8000"
     env_file:
       - .env
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     restart: always
 
 volumes:
