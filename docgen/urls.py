@@ -32,6 +32,8 @@ urlpatterns = [
     path('api/v1/biblioteca/', api_views.BibliotecaAPIView.as_view(), name='api_biblioteca'),
     path('api/v1/gerar/', api_views.GerarDocumentoAPIView.as_view(), name='api_gerar'),
 
+    path('guia-modelos/', views.guia_modelos, name='guia_modelos'),
+
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
