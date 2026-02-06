@@ -5,8 +5,8 @@
 {% block content %}
 <div class="row mb-4 align-items-center">
     <div class="col-md-8">
-        <h3 class="fw-bold text-dark mb-1">Olá, {{ user.first_name|default:user.username }}! 👋</h3>
-        <p class="text-muted small mb-0">Bem-vindo ao painel de controle do escritório.</p>
+        <h3 class="fw-bold text-dark mb-1">Olá, {{ user.first_name|default:user.username }}!</h3>
+        <p class="text-muted small mb-0">Bem-vindo ao painel de controle de documentação escritório.</p>
     </div>
     <div class="col-md-4 text-end">
         <a href="{% url 'lista_templates' %}" class="btn btn-primary shadow-sm fw-bold px-4">

@@ -49,3 +49,4 @@ class DocumentoGerado(models.Model):
 
     def __str__(self):
         return f"{self.template.titulo} - {self.usuario.username}"
+    

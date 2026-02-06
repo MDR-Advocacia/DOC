@@ -1,35 +1,55 @@
 {% extends 'base.html' %}
 
-{% block title %}Catálogo - DOC{% endblock %}
+{% block title %}Catálogo - DunaDoc{% endblock %}
 
 {% block extra_css %}
 <style>
-    .card-template { height: 100%; transition: all 0.3s ease; cursor: pointer; }
-    .card-template:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
-    .badge-setor { font-size: 0.85em; }
+    .card-template { height: 100%; transition: all 0.3s ease; cursor: default; }
+    .card-template:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important; }
+    
+    .badge-setor { font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; }
+    
+    .btn-config {
+        color: #6c757d;
+        border-color: #dee2e6;
+    }
+    .btn-config:hover {
+        background-color: #e9ecef;
+        color: #495057;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2 class="fw-bold text-dark">Gerador de Documentos</h2>
-        <p class="text-muted">Selecione o modelo, preencha o formulário e baixe sua peça pronta.</p>
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="fw-bold text-dark mb-1">Catálogo de Modelos</h2>
+        <p class="text-muted mb-0">Selecione uma peça para iniciar a automação.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        {% if user.is_staff %}
+            <a href="{% url 'criar_template' %}" class="btn btn-success shadow-sm fw-bold px-4">
+                <i class="fa-solid fa-plus me-2"></i> Novo Modelo
+            </a>
+        {% endif %}
     </div>
 </div>
 
-<div class="card shadow-sm border-0 mb-4 bg-light">
-    <div class="card-body">
-        <div class="row g-2">
-            <div class="col-md-3">
-                <label class="form-label fw-bold small text-secondary">Buscar Nome</label>
-                <input type="text" id="inputBusca" class="form-control" placeholder="Ex: Contestação..." onkeyup="filtrarCards()">
+<div class="card shadow-sm border-0 mb-5 bg-white">
+    <div class="card-body p-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary text-uppercase">Buscar</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" id="inputBusca" class="form-control border-start-0 ps-0 bg-light" placeholder="Nome da peça..." onkeyup="filtrarCards()">
+                </div>
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label fw-bold small text-secondary">Setor</label>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-secondary text-uppercase">Setor</label>
                 <select id="filtroSetor" class="form-select" onchange="filtrarCards()">
-                    <option value="todos">🏢 Todos</option>
+                    <option value="todos">Todos</option>
                     {% for item in setores %}
                         <option value="{{ item.id }}">{{ item.nome }}</option>
                     {% endfor %}
@@ -37,9 +57,9 @@
             </div>
 
             <div class="col-md-3">
-                <label class="form-label fw-bold small text-secondary">Área</label>
+                <label class="form-label fw-bold small text-secondary text-uppercase">Área</label>
                 <select id="filtroArea" class="form-select" onchange="filtrarCards()">
-                    <option value="todos">⚖️ Todas</option>
+                    <option value="todos">Todas</option>
                     {% for item in areas %}
                         <option value="{{ item.id }}">{{ item.nome }}</option>
                     {% endfor %}
@@ -47,9 +67,9 @@
             </div>
 
             <div class="col-md-3">
-                <label class="form-label fw-bold small text-secondary">Tipo de Peça</label>
+                <label class="form-label fw-bold small text-secondary text-uppercase">Categoria</label>
                 <select id="filtroCategoria" class="form-select" onchange="filtrarCards()">
-                    <option value="todos">📂 Todos</option>
+                    <option value="todos">Todas</option>
                     {% for item in categorias %}
                         <option value="{{ item.id }}">{{ item.nome }}</option>
                     {% endfor %}
@@ -58,8 +78,6 @@
         </div>
     </div>
 </div>
-
-<hr class="mb-4">
 
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="gridTemplates">
     {% for doc in templates %}
@@ -71,39 +89,53 @@
          
         <div class="card card-template border-0 shadow-sm">
             <div class="card-body">
-                <div class="mb-3">
-                    <span class="badge bg-primary badge-setor mb-1">{{ doc.setor.nome }}</span>
-                    
-                    {% if doc.area %}
-                        <span class="badge bg-light text-dark border">{{ doc.area.nome }}</span>
-                    {% endif %}
-
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge bg-primary badge-setor">{{ doc.setor.nome }}</span>
                     {% if doc.categoria %}
-                        <span class="badge bg-info text-dark border">{{ doc.categoria.nome }}</span>
+                        <small class="text-muted fw-bold" style="font-size: 0.75rem;">{{ doc.categoria.nome }}</small>
                     {% endif %}
                 </div>
 
-                <h5 class="card-title fw-bold text-dark">{{ doc.titulo }}</h5>
-                <p class="card-text text-muted small">
-                    {{ doc.descricao|default:"Sem descrição disponível."|truncatechars:90 }}
+                <h5 class="card-title fw-bold text-dark mt-2 mb-1">{{ doc.titulo }}</h5>
+                
+                {% if doc.area %}
+                    <p class="mb-2"><span class="badge bg-light text-secondary border">{{ doc.area.nome }}</span></p>
+                {% endif %}
+
+                <p class="card-text text-muted small mt-3">
+                    {{ doc.descricao|default:"Sem descrição disponível."|truncatechars:85 }}
                 </p>
             </div>
+            
             <div class="card-footer bg-white border-0 pt-0 pb-3">
-                <a href="{% url 'gerar_documento' doc.id %}" class="btn btn-outline-primary w-100 fw-bold">
-                    Preencher Peça →
-                </a>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'gerar_documento' doc.id %}" class="btn btn-primary flex-grow-1 fw-bold">
+                        <i class="fa-solid fa-pen-to-square me-1"></i> Preencher
+                    </a>
+
+                    {% if user.is_staff %}
+                    <a href="{% url 'configurar_template' doc.id %}" class="btn btn-config" title="Configurar Campos">
+                        <i class="fa-solid fa-gear"></i>
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
     {% empty %}
     <div class="col-12 text-center py-5">
-        <h3 class="text-muted">Nenhum modelo cadastrado.</h3>
+        <h4 class="text-muted opacity-50">Nenhum modelo cadastrado.</h4>
+        {% if user.is_staff %}
+            <a href="{% url 'criar_template' %}" class="btn btn-sm btn-outline-primary mt-3">Cadastrar o primeiro</a>
+        {% endif %}
     </div>
     {% endfor %}
 </div>
 
 <div id="msgNenhumResultado" class="text-center p-5 text-muted" style="display: none;">
-    <h4>🔍 Nenhum modelo encontrado com esses filtros.</h4>
+    <i class="fa-solid fa-magnifying-glass fa-2x mb-3 opacity-50"></i>
+    <h5>Nenhum resultado encontrado.</h5>
+    <p class="small">Tente ajustar os filtros ou buscar por outro termo.</p>
 </div>
 
 {% endblock %}
@@ -111,17 +143,17 @@
 {% block extra_js %}
 <script>
     function filtrarCards() {
-        // 1. Pegar valores dos inputs
+        // 1. Coleta valores dos filtros
         let texto = document.getElementById("inputBusca").value.toLowerCase();
         let setorID = document.getElementById("filtroSetor").value;
         let areaID = document.getElementById("filtroArea").value;
         let catID = document.getElementById("filtroCategoria").value;
         
-        // 2. Pegar todos os cards
+        // 2. Coleta os elementos
         let cards = document.getElementsByClassName("item-modelo");
         let visiveis = 0;
 
-        // 3. Loop para verificar cada card
+        // 3. Itera sobre os cards
         for (let card of cards) {
             let titulo = card.getAttribute("data-titulo");
             let cardSetor = card.getAttribute("data-setor");
@@ -130,28 +162,22 @@
 
             let mostrar = true;
 
-            // Filtro de Texto
+            // Lógica de Filtragem (E)
             if (texto && !titulo.includes(texto)) mostrar = false;
-            
-            // Filtro de Setor
             if (setorID !== 'todos' && cardSetor !== setorID) mostrar = false;
-
-            // Filtro de Área
             if (areaID !== 'todos' && cardArea !== areaID) mostrar = false;
-
-            // Filtro de Categoria
             if (catID !== 'todos' && cardCat !== catID) mostrar = false;
 
-            // Aplica visualização
+            // Aplica visibilidade
             if (mostrar) {
-                card.style.display = "block"; 
+                card.style.display = "block"; // Ou "initial" dependendo do layout
                 visiveis++;
             } else {
                 card.style.display = "none"; 
             }
         }
 
-        // 4. Feedback visual se sumir tudo
+        // 4. Feedback visual caso tudo suma
         let msg = document.getElementById("msgNenhumResultado");
         if (visiveis === 0) {
             msg.style.display = "block";

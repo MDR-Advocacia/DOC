@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Biblioteca - DOC MDR{% endblock %}
+{% block title %}Biblioteca - DunaDoc{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
@@ -10,16 +10,19 @@
     </div>
 </div>
 
-<div class="card shadow-sm border-0 mb-4 bg-light">
-    <div class="card-body">
-        <div class="row g-2">
+<div class="card shadow-sm border-0 mb-4 bg-white">
+    <div class="card-body p-4">
+        <div class="row g-3">
             <div class="col-md-3">
-                <label class="form-label fw-bold small text-secondary">Buscar por nome</label>
-                <input type="text" id="inputBusca" class="form-control" placeholder="Digite para buscar..." onkeyup="filtrarTabela()">
+                <label class="form-label fw-bold small text-secondary text-uppercase">Buscar por nome</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" id="inputBusca" class="form-control border-start-0 ps-0 bg-light" placeholder="Digite para buscar..." onkeyup="filtrarTabela()">
+                </div>
             </div>
 
             <div class="col-md-3">
-                <label class="form-label fw-bold small text-secondary">Filtrar por Setor</label>
+                <label class="form-label fw-bold small text-secondary text-uppercase">Filtrar por Setor</label>
                 <select id="filtroSetor" class="form-select" onchange="filtrarTabela()">
                     <option value="todos">Todos</option>
                     {% for setor in setores %}
@@ -29,7 +32,7 @@
             </div>
 
             <div class="col-md-3">
-                <label class="form-label fw-bold small text-secondary">Filtrar por Área</label>
+                <label class="form-label fw-bold small text-secondary text-uppercase">Filtrar por Área</label>
                 <select id="filtroArea" class="form-select" onchange="filtrarTabela()">
                     <option value="todos">Todas</option>
                     {% for area in areas %}
@@ -39,7 +42,7 @@
             </div>
 
             <div class="col-md-3">
-                <label class="form-label fw-bold small text-secondary">Tipo de Peça</label>
+                <label class="form-label fw-bold small text-secondary text-uppercase">Tipo de Peça</label>
                 <select id="filtroCategoria" class="form-select" onchange="filtrarTabela()">
                     <option value="todos">Todos</option>
                     {% for cat in categorias %}
@@ -53,54 +56,70 @@
 
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
-        <table class="table table-hover table-striped mb-0" id="tabelaModelos">
-            <thead class="table-dark">
-                <tr>
-                    <th scope="col" class="ps-4">Título da Peça</th>
-                    <th scope="col">Classificação</th>
-                    <th scope="col">Data</th>
-                    <th scope="col" class="text-end pe-4">Ação</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for doc in templates %}
-                <tr class="linha-modelo" 
-                    data-titulo="{{ doc.titulo|lower }}" 
-                    data-setor="{{ doc.setor.id }}" 
-                    data-area="{{ doc.area.id|default:'0' }}"
-                    data-categoria="{{ doc.categoria.id|default:'0' }}">
-                    
-                    <td class="ps-4 align-middle">
-                        <span class="fw-bold text-dark">{{ doc.titulo }}</span><br>
-                        <small class="text-muted">{{ doc.descricao|truncatechars:60 }}</small>
-                    </td>
-                    
-                    <td class="align-middle">
-                        <span class="badge bg-secondary mb-1">{{ doc.setor.nome }}</span>
-                        {% if doc.area %} 
-                            <span class="badge bg-dark border border-secondary">{{ doc.area.nome }}</span> 
-                        {% endif %}
-                        {% if doc.categoria %}
-                            <span class="badge bg-info text-dark border">{{ doc.categoria.nome }}</span>
-                        {% endif %}
-                    </td>
-                    
-                    <td class="align-middle">{{ doc.data_criacao|date:"d/m/Y" }}</td>
-                    
-                    <td class="text-end pe-4 align-middle">
-                        <a href="{{ doc.arquivo_template.url }}" download class="btn btn-outline-success btn-sm fw-bold">
-                            ⬇️ Baixar
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="4" class="text-center p-4">Nenhum modelo cadastrado.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 align-middle" id="tabelaModelos">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col" class="ps-4" style="width: 40%;">Título da Peça</th>
+                        <th scope="col" style="width: 30%;">Classificação</th>
+                        <th scope="col" style="width: 15%;">Data</th>
+                        <th scope="col" class="text-end pe-4" style="width: 15%;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in templates %}
+                    <tr class="linha-modelo" 
+                        data-titulo="{{ doc.titulo|lower }}" 
+                        data-setor="{{ doc.setor.id }}" 
+                        data-area="{{ doc.area.id|default:'0' }}"
+                        data-categoria="{{ doc.categoria.id|default:'0' }}">
+                        
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-file-word text-primary fs-4 me-3 opacity-75"></i>
+                                <div>
+                                    <span class="fw-bold text-dark d-block">{{ doc.titulo }}</span>
+                                    <small class="text-muted">{{ doc.descricao|truncatechars:60 }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td>
+                            <span class="badge bg-primary badge-setor mb-1">{{ doc.setor.nome }}</span>
+                            {% if doc.area %} 
+                                <span class="badge bg-light text-dark border ms-1">{{ doc.area.nome }}</span> 
+                            {% endif %}
+                            {% if doc.categoria %}
+                                <div class="mt-1">
+                                    <small class="text-muted"><i class="fa-solid fa-tag me-1"></i> {{ doc.categoria.nome }}</small>
+                                </div>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="text-muted small">
+                            <i class="fa-regular fa-calendar me-1"></i> {{ doc.data_criacao|date:"d/m/Y" }}
+                        </td>
+                        
+                        <td class="text-end pe-4">
+                            {% if doc.arquivo_template %}
+                                <a href="{{ doc.arquivo_template.url }}" download class="btn btn-outline-success btn-sm fw-bold shadow-sm">
+                                    <i class="fa-solid fa-download me-1"></i> Baixar
+                                </a>
+                            {% else %}
+                                <button class="btn btn-sm btn-light text-muted border" disabled>Indisponível</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center p-5 text-muted">Nenhum modelo cadastrado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         
         <div id="msgNenhumResultado" class="text-center p-5 text-muted" style="display: none;">
-            <h4>🔍 Nada encontrado com esses filtros.</h4>
+            <i class="fa-solid fa-magnifying-glass fa-2x mb-3 opacity-50"></i>
+            <h4>Nada encontrado com esses filtros.</h4>
         </div>
     </div>
 </div>
@@ -112,7 +131,7 @@
         // 1. Pegar valores dos inputs
         let texto = document.getElementById("inputBusca").value.toLowerCase();
         let setorID = document.getElementById("filtroSetor").value;
-        let areaID = document.getElementById("filtroArea").value; // Novo
+        let areaID = document.getElementById("filtroArea").value;
         let catID = document.getElementById("filtroCategoria").value;
         
         // 2. Pegar todas as linhas
@@ -123,7 +142,7 @@
         for (let linha of linhas) {
             let titulo = linha.getAttribute("data-titulo");
             let linhaSetor = linha.getAttribute("data-setor");
-            let linhaArea = linha.getAttribute("data-area"); // Novo
+            let linhaArea = linha.getAttribute("data-area");
             let linhaCat = linha.getAttribute("data-categoria");
 
             let mostrar = true;
@@ -142,7 +161,7 @@
 
             // Aplica ou remove o display
             if (mostrar) {
-                linha.style.display = "";
+                linha.style.display = ""; // Remove o display:none do CSS se houver
                 visiveis++;
             } else {
                 linha.style.display = "none";
@@ -153,6 +172,7 @@
         let msg = document.getElementById("msgNenhumResultado");
         let tabela = document.getElementById("tabelaModelos");
         
+        // Oculta o cabeçalho da tabela se não tiver resultados para ficar mais bonito
         if (visiveis === 0) {
             tabela.style.display = "none";
             msg.style.display = "block";

@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'drf_yasg',
     'docgen',
 ]
 
@@ -130,3 +132,40 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# --- CONFIGURAÇÕES DE TIMEOUT DA SESSÃO ---
+
+# 1. Tempo de vida da sessão em segundos
+# 1800 segundos = 30 minutos
+# 3600 segundos = 1 hora
+SESSION_COOKIE_AGE = 1800  
+
+# 2. Timeout por Inatividade (Sliding Expiration)
+# Se True: O tempo reseta a cada clique/página carregada (ex: banco).
+# Se False: O tempo é absoluto e desloga mesmo se estiver usando.
+SESSION_SAVE_EVERY_REQUEST = True
+
+# 3. Segurança Extra: Fechar navegador encerra sessão?
+# Se True: Se o usuário fechar o Chrome/Edge, ele é deslogado na hora.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    # --- NOVO: LIMITAÇÃO DE TAXA (Throttling) ---
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle', # Para não logados
+        'rest_framework.throttling.UserRateThrottle'  # Para logados
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '10/minute',   # Desconhecidos: max 10 req/min
+        'user': '100/minute',  # Usuários logados: max 100 req/min
+        'doc_gen': '20/minute', # Específico para gerar documentos (pesado)
+    }
+}
+

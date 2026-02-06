@@ -34,13 +34,13 @@
             letter-spacing: -0.5px;
         }
 
-        /* --- NAVBAR INVERTIDA --- */
+        /* --- NAVBAR ALTO CONTRASTE --- */
         .navbar {
-            /* Agora vai do CLARO (#1e2a78) para o ESCURO (#050714) */
-            background: linear-gradient(90deg, #1e2a78 0%, #050714 100%) !important;
+            /* Gradiente Agressivo: Azul Vibrante (#004ecb) -> Preto Quase Total (#02040a) */
+            background: linear-gradient(90deg, #004ecb 0%, #001233 60%, #02040a 100%) !important;
             
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border-bottom: 1px solid rgba(255,255,255,0.15); /* Borda um pouco mais visível */
+            box-shadow: 0 4px 25px rgba(0,0,0,0.25); /* Sombra mais marcada */
         }
 
         .navbar-brand {
@@ -48,20 +48,29 @@
             color: #fff !important;
             font-size: 1.4rem;
             letter-spacing: 0.5px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Sombra de texto mais forte */
         }
 
         .navbar-icon {
-            height: 32px;
+            height: 34px; /* Levemente maior */
             width: auto;
             margin-right: 12px;
-            /* Filtro para garantir destaque */
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) brightness(1.1);
+            /* Aumenta o brilho da imagem para ela "saltar" do fundo azul */
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)) brightness(1.2) contrast(1.1);
         }
 
         .footer {
             background-color: var(--duna-dark);
             color: #8da2fb;
+        }
+        
+        /* Ajuste fino para os links da navbar */
+        .nav-link {
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-link:hover {
+            color: #66b2ff !important; /* Azul claro no hover */
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -72,7 +81,7 @@
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
                 <img src="{% static 'img/logo-duna-colorida.png' %}" alt="Logo" class="navbar-icon">
-                Doc
+                DunaDoc
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
