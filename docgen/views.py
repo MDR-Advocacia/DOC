@@ -11,6 +11,8 @@ from django.views import generic
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from django.db.models import Q
+from django.core.paginator import Paginator
 
 # Bibliotecas de processamento de DOCX
 from docxtpl import DocxTemplate, InlineImage 
@@ -267,17 +269,47 @@ def dashboard(request):
 
 @login_required
 def biblioteca_modelos(request):
-    """Repositório simples para baixar os modelos originais."""
-    templates = Template.objects.filter(ativo=True).order_by('setor__nome', 'area__nome', 'titulo')
+    """
+    Biblioteca com Busca Server-Side e Paginação.
+    """
+    # 1. Base
+    templates_list = Template.objects.filter(ativo=True)
+
+    # 2. Filtros (Mesma lógica do Catálogo)
+    busca = request.GET.get('q')
+    setor_id = request.GET.get('setor')
+    area_id = request.GET.get('area')
+    categoria_id = request.GET.get('categoria')
+
+    if busca:
+        templates_list = templates_list.filter(
+            Q(titulo__icontains=busca) | Q(descricao__icontains=busca)
+        )
+    if setor_id and setor_id != 'todos':
+        templates_list = templates_list.filter(setor_id=setor_id)
+    if area_id and area_id != 'todos':
+        templates_list = templates_list.filter(area_id=area_id)
+    if categoria_id and categoria_id != 'todos':
+        templates_list = templates_list.filter(categoria_id=categoria_id)
+
+    # 3. Ordenação e Paginação
+    templates_list = templates_list.order_by('setor__nome', 'area__nome', 'titulo')
+    
+    paginator = Paginator(templates_list, 15) # 15 itens por página na tabela
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Contexto
     setores = Setor.objects.all().order_by('nome')
-    categorias = Categoria.objects.all().order_by('nome')
     areas = Area.objects.all().order_by('nome')
+    categorias = Categoria.objects.all().order_by('nome')
     
     return render(request, 'docgen/biblioteca.html', {
-        'templates': templates,
+        'templates': page_obj,
         'setores': setores,
-        'categorias': categorias,
         'areas': areas,
+        'categorias': categorias,
+        'filtros_atuais': request.GET # Mantém a busca na barra
     })
 
 # ==============================================================================
@@ -301,3 +333,55 @@ class SignUpView(generic.CreateView):
 def guia_modelos(request):
     """Página estática de ajuda para criação de modelos."""
     return render(request, 'docgen/guia.html')
+
+@login_required
+def lista_templates(request):
+    """
+    Catálogo com Busca e Paginação no Server-Side.
+    Suporta volume infinito de dados sem travar o navegador.
+    """
+    # 1. Base Query
+    templates_list = Template.objects.filter(ativo=True)
+
+    # 2. Aplicação de Filtros (Recebidos via GET)
+    busca = request.GET.get('q')
+    setor_id = request.GET.get('setor')
+    area_id = request.GET.get('area')
+    categoria_id = request.GET.get('categoria')
+
+    if busca:
+        # Busca no Título OU na Descrição (Insensitive)
+        templates_list = templates_list.filter(
+            Q(titulo__icontains=busca) | Q(descricao__icontains=busca)
+        )
+    
+    if setor_id and setor_id != 'todos':
+        templates_list = templates_list.filter(setor_id=setor_id)
+    
+    if area_id and area_id != 'todos':
+        templates_list = templates_list.filter(area_id=area_id)
+
+    if categoria_id and categoria_id != 'todos':
+        templates_list = templates_list.filter(categoria_id=categoria_id)
+
+    # 3. Ordenação
+    templates_list = templates_list.order_by('setor__nome', 'area__nome', 'titulo')
+
+    # 4. Paginação (9 por página)
+    paginator = Paginator(templates_list, 9)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Listas para os dropdowns
+    setores = Setor.objects.all().order_by('nome')
+    areas = Area.objects.all().order_by('nome')
+    categorias = Categoria.objects.all().order_by('nome')
+    
+    return render(request, 'docgen/lista.html', {
+        'templates': page_obj,
+        'setores': setores,
+        'areas': areas,
+        'categorias': categorias,
+        # Devolvemos os valores atuais para manter os inputs preenchidos
+        'filtros_atuais': request.GET 
+    })
