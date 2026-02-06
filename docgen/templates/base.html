@@ -81,7 +81,7 @@
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
                 <img src="{% static 'img/logo-duna-colorida.png' %}" alt="Logo" class="navbar-icon">
-                DunaDoc
+                Doc
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -95,6 +95,7 @@
                         <li class="nav-item"><a class="nav-link" href="{% url 'lista_templates' %}">Gerador</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'biblioteca' %}">Biblioteca</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Histórico</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'guia_modelos' %}">FAQ</a></li>
                     {% endif %}
                 </ul>
 
@@ -145,7 +146,7 @@
     <footer class="footer py-4 mt-auto text-center small">
         <div class="container">
             <p class="mb-0">© 2026 Duna.Tech - Soluções Jurídicas.</p>
-            <p class="mb-0 opacity-50">DunaDoc v1.0</p>
+            <p class="mb-0 opacity-50">Doc v1.0</p>
         </div>
     </footer>
 

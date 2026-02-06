@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Guia de Criação de Modelos{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <h2 class="fw-bold text-dark"><i class="fa-solid fa-book-open-reader me-2"></i>Guia de Criação de Modelos</h2>
+        <p class="text-muted">Aprenda a configurar seus arquivos Word (.docx) para funcionarem com o DunaDoc.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="list-group sticky-top" style="top: 20px; z-index: 1;">
+            <a href="#basico" class="list-group-item list-group-item-action fw-bold active">1. O Básico (Variáveis)</a>
+            <a href="#tipos" class="list-group-item list-group-item-action">2. Tipos de Campos</a>
+            <a href="#logica" class="list-group-item list-group-item-action">3. Lógica Condicional (Se/Então)</a>
+            <a href="#formatacao" class="list-group-item list-group-item-action">4. Formatação e Estilo</a>
+            <a href="#imagens" class="list-group-item list-group-item-action">5. Imagens e Assinaturas</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        
+        <section id="basico" class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <h4 class="fw-bold text-primary">1. O Básico: Criando Variáveis</h4>
+            </div>
+            <div class="card-body px-4">
+                <p>Para criar um espaço que será preenchido automaticamente, você deve usar <strong>chaves duplas</strong> no seu arquivo Word.</p>
+                
+                <div class="alert alert-secondary border-start border-4 border-primary">
+                    <strong>Sintaxe:</strong> <code>{% verbatim %}{{ nome_da_variavel }}{% endverbatim %}</code>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h6 class="text-danger fw-bold"><i class="fa-solid fa-xmark me-1"></i> Não faça assim:</h6>
+                        <ul class="list-unstyled text-muted small">
+                            <li><code>{ nome }</code> (Falta uma chave)</li>
+                            <li><code>(( nome ))</code> (Parênteses não funcionam)</li>
+                            <li><code>{% verbatim %}{{ Nome do Cliente }}{% endverbatim %}</code> (Evite espaços no nome da tag)</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-success fw-bold"><i class="fa-solid fa-check me-1"></i> Recomendado:</h6>
+                        <ul class="list-unstyled text-muted small">
+                            <li><code>{% verbatim %}{{ nome_cliente }}{% endverbatim %}</code> (Use underline)</li>
+                            <li><code>{% verbatim %}{{ cpf }}{% endverbatim %}</code> (Simples e direto)</li>
+                            <li><code>{% verbatim %}{{ data_assinatura }}{% endverbatim %}</code></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tipos" class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <h4 class="fw-bold text-primary">2. Tipos de Campos Disponíveis</h4>
+            </div>
+            <div class="card-body px-4">
+                <p>Ao configurar o modelo no sistema, você poderá escolher o "Tipo de Resposta". Isso muda como o formulário aparece para o advogado.</p>
+                
+                <table class="table table-bordered table-hover mt-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tipo no Sistema</th>
+                            <th>Quando usar?</th>
+                            <th>Como configurar no Word</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="fw-bold text-primary">Texto Curto</td>
+                            <td>Nomes, Cidades, Profissões.</td>
+                            <td><code>{% verbatim %}{{ profissao }}{% endverbatim %}</code></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-primary">Texto Longo</td>
+                            <td>Fatos, descrições detalhadas, parágrafos inteiros.</td>
+                            <td><code>{% verbatim %}{{ dos_fatos }}{% endverbatim %}</code></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-primary">Data</td>
+                            <td>Datas de assinatura, audiência, ajuizamento.</td>
+                            <td><code>{% verbatim %}{{ data_audiencia }}{% endverbatim %}</code> (O sistema formatará para DD/MM/AAAA)</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-primary">CPF/CNPJ</td>
+                            <td>Documentos. O sistema aplica máscara automática.</td>
+                            <td><code>{% verbatim %}{{ cpf_autor }}{% endverbatim %}</code></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-primary">Moeda (R$)</td>
+                            <td>Valores da causa, indenizações.</td>
+                            <td><code>{% verbatim %}{{ valor_causa }}{% endverbatim %}</code></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-primary">Sim/Não (Checkbox)</td>
+                            <td>Para ativar/desativar parágrafos (ver Lógica abaixo).</td>
+                            <td><code>{% verbatim %}{{ pede_justica_gratuita }}{% endverbatim %}</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="logica" class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <h4 class="fw-bold text-primary">3. Lógica Condicional</h4>
+            </div>
+            <div class="card-body px-4">
+                <p>Você pode fazer parágrafos aparecerem ou sumirem dependendo de uma resposta <strong>Sim/Não</strong>.</p>
+                
+                <div class="card bg-light border-warning mb-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold"><i class="fa-solid fa-bolt text-warning me-2"></i>Exemplo Prático: Justiça Gratuita</h6>
+                        <p class="mb-1">No Word, escreva assim:</p>
+                        <code class="d-block p-2 bg-dark text-white rounded mb-2">
+                            {% verbatim %}
+                            {% if justiça_gratuita %}
+                            Requer, preliminarmente, os benefícios da Justiça Gratuita, por ser pobre na forma da lei.
+                            {% endif %}
+                            {% endverbatim %}
+                        </code>
+                        <p class="small text-muted mb-0">No sistema, configure a variável <strong>justiça_gratuita</strong> como tipo <strong>Checkbox (Sim/Não)</strong>.</p>
+                    </div>
+                </div>
+
+                <p>Se o advogado marcar "Sim", o texto aparece. Se não marcar, o texto é removido do documento final.</p>
+                
+                <h6 class="fw-bold mt-4">Lógica de Alternativa (Se... Senão)</h6>
+                <code class="d-block p-2 bg-dark text-white rounded">
+                    {% verbatim %}
+                    {% if eh_empresa %}
+                        Inscrito no CNPJ sob o nº {{ cnpj }}
+                    {% else %}
+                        Inscrito no CPF sob o nº {{ cpf }}
+                    {% endif %}
+                    {% endverbatim %}
+                </code>
+            </div>
+        </section>
+
+        <section id="formatacao" class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <h4 class="fw-bold text-primary">4. Formatação e Estilo</h4>
+            </div>
+            <div class="card-body px-4">
+                <p>O sistema respeita a formatação que você aplicar na tag dentro do Word.</p>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 text-center">
+                            <p class="mb-1 text-muted">Se você colocar negrito na tag:</p>
+                            <h3><strong>{% verbatim %}{{ nome }}{% endverbatim %}</strong></h3>
+                            <p class="mb-0 text-muted">O resultado final sairá em negrito.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 text-center">
+                            <p class="mb-1 text-muted">Se você colocar cor vermelha:</p>
+                            <h3 class="text-danger">{% verbatim %}{{ prazo }}{% endverbatim %}</h3>
+                            <p class="mb-0 text-muted">O resultado final sairá vermelho.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="imagens" class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <h4 class="fw-bold text-primary">5. Imagens e Assinaturas</h4>
+            </div>
+            <div class="card-body px-4">
+                <p>Para inserir prints, fotos de documentos ou assinaturas dinâmicas.</p>
+                <ol>
+                    <li>Coloque uma tag normal no Word: <code>{% verbatim %}{{ print_whatsapp }}{% endverbatim %}</code></li>
+                    <li>No sistema, configure essa variável com o tipo <strong>Imagem/Print</strong>.</li>
+                    <li>O sistema irá redimensionar automaticamente a imagem enviada para caber na largura da página (16cm).</li>
+                </ol>
+            </div>
+        </section>
+
+    </div>
+</div>
+{% endblock %}

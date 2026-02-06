@@ -296,3 +296,8 @@ class SignUpView(generic.CreateView):
         user.save()
         messages.info(self.request, "✅ Cadastro realizado! Aguarde a liberação do seu acesso pelo administrador.")
         return redirect('login')
+    
+@login_required
+def guia_modelos(request):
+    """Página estática de ajuda para criação de modelos."""
+    return render(request, 'docgen/guia.html')
