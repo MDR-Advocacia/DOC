@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Configurar: {{ template.titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+            <div>
+                <h3 class="fw-bold mb-1">Mapeamento de Campos</h3>
+                <p class="text-muted mb-0">O sistema encontrou as seguintes variáveis no seu arquivo.</p>
+            </div>
+            <a href="{% url 'lista_templates' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-times me-2"></i> Cancelar
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-primary">
+                    <i class="fa-solid fa-file-word me-2"></i> {{ template.titulo }}
+                </span>
+                <span class="badge bg-secondary">{{ campos|length }} variáveis detectadas</span>
+            </div>
+            
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if not campos %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fa-regular fa-file-code fa-3x mb-3 opacity-50"></i>
+                            <h5>Nenhuma variável encontrada!</h5>
+                            <p>O robô leu o arquivo e não achou nada entre <code>&#123;&#123; chaves &#125;&#125;</code>.</p>
+                            <a href="{% url 'lista_templates' %}" class="btn btn-primary mt-2">Voltar</a>
+                        </div>
+                    {% else %}
+                        
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover">
+                                <thead class="table-light">
+                                    <tr class="text-uppercase small text-muted">
+                                        <th style="width: 30%">Variável (Word)</th>
+                                        <th style="width: 40%">Nome da Pergunta (Label)</th>
+                                        <th style="width: 30%">Tipo de Resposta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for campo in campos %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-light text-dark border me-2">
+                                                    <i class="fa-solid fa-code"></i>
+                                                </span>
+                                                <code class="fw-bold text-dark fs-6">&#123;&#123; {{ campo.tag }} &#125;&#125;</code>
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <input type="text" 
+                                                   name="label_{{ campo.tag }}" 
+                                                   class="form-control" 
+                                                   value="{{ campo.label }}" 
+                                                   placeholder="Ex: Nome do Cliente"
+                                                   required>
+                                        </td>
+
+                                        <td>
+                                            <select name="tipo_{{ campo.tag }}" class="form-select border-0 bg-light fw-bold text-secondary">
+                                                <option value="text" {% if campo.tipo == 'text' %}selected{% endif %}>🔤 Texto Curto</option>
+                                                <option value="textarea" {% if campo.tipo == 'textarea' %}selected{% endif %}>📝 Texto Longo (Parágrafos)</option>
+                                                <option value="date" {% if campo.tipo == 'date' %}selected{% endif %}>📅 Data</option>
+                                                <option value="currency" {% if campo.tipo == 'currency' %}selected{% endif %}>💲 Dinheiro (R$)</option>
+                                                <option value="cpf" {% if campo.tipo == 'cpf' %}selected{% endif %}>🆔 CPF/CNPJ</option>
+                                                <option value="checkbox" {% if campo.tipo == 'checkbox' %}selected{% endif %}>✅ Sim/Não (Checkbox)</option>
+                                                <option value="image" {% if campo.tipo == 'image' %}selected{% endif %}>🖼️ Imagem/Print</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-success btn-lg px-5 fw-bold shadow-sm">
+                                <i class="fa-solid fa-check-circle me-2"></i> SALVAR E FINALIZAR
+                            </button>
+                        </div>
+
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        
+        <div class="alert alert-info mt-3 border-0 shadow-sm d-flex align-items-center">
+            <i class="fa-solid fa-circle-info me-3 fs-4"></i>
+            <div class="small">
+                <strong>Como funciona:</strong> O sistema leu seu arquivo Word. Agora, você define o que cada código significa para que o formulário final fique fácil de preencher.
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

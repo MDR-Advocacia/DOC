@@ -1,6 +1,8 @@
-from django.urls import path, include  # <--- 1. ADICIONE O 'include' AQUI
+from django.urls import path, include
 from . import views
 from . import api_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # 1. Nova Home (Dashboard com Gráficos)
@@ -18,15 +20,18 @@ urlpatterns = [
     # 5. Biblioteca de Modelos
     path('biblioteca/', views.biblioteca_modelos, name='biblioteca'),
 
-    # --- AUTENTICAÇÃO (O QUE ESTAVA FALTANDO) ---
-    # Essa linha mágica cria as rotas: /accounts/login/, /accounts/logout/, etc.
-    path('accounts/', include('django.contrib.auth.urls')),  # <--- 2. ESSA LINHA É OBRIGATÓRIA
-
-    # 6. Cadastro de Usuário (Customizado)
-    # Nota: Certifique-se que sua view de signup chama SignUpView mesmo, ou views.signup
+    # --- AUTENTICAÇÃO ---
+    path('accounts/', include('django.contrib.auth.urls')), 
     path('accounts/signup/', views.SignUpView.as_view(), name='signup'),
+
+    # --- ROTAS ADMINISTRATIVAS (Supervisores) ---
+    path('novo-modelo/', views.criar_template, name='criar_template'),
+    path('configurar/<int:template_id>/', views.configurar_template, name='configurar_template'),
 
     # --- ROTAS DE API (Endpoints) ---
     path('api/v1/biblioteca/', api_views.BibliotecaAPIView.as_view(), name='api_biblioteca'),
     path('api/v1/gerar/', api_views.GerarDocumentoAPIView.as_view(), name='api_gerar'),
+
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
