@@ -11,6 +11,8 @@ from django.views import generic
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from django.db.models import Q
+from django.core.paginator import Paginator
 
 # Bibliotecas de processamento de DOCX
 from docxtpl import DocxTemplate, InlineImage 
@@ -78,14 +80,15 @@ def criar_template(request):
 @staff_member_required
 def configurar_template(request, template_id):
     """
-    PASSO 2: Tela para definir Labels e Tipos das variáveis encontradas no Word.
+    PASSO 2: Tela para definir Labels, Tipos e DEPENDÊNCIAS das variáveis.
     """
     template = get_object_or_404(Template, pk=template_id)
     
-    # 1. O Robô lê o arquivo físico e acha as tags {{ ... }}
+    # 1. O Robô lê o arquivo físico e acha as tags
+    # Nota: Com o novo utils.py, isso já traz na ordem correta e inclui os 'if'
     tags_encontradas = extrair_tags_do_docx(template.arquivo_template.path)
     
-    # 2. Carrega configuração existente (se houver) para manter edições anteriores
+    # 2. Carrega configuração existente
     config_atual = template.configuracao_campos or []
     dict_config = {item['tag']: item for item in config_atual}
 
@@ -95,31 +98,35 @@ def configurar_template(request, template_id):
         for tag in tags_encontradas:
             label_input = request.POST.get(f'label_{tag}')
             tipo_input = request.POST.get(f'tipo_{tag}')
+            dependencia_input = request.POST.get(f'dependencia_{tag}') # <--- NOVO (Captura quem é o pai)
             
             nova_configuracao.append({
                 "tag": tag,
                 "label": label_input or tag.replace('_', ' ').title(),
-                "tipo": tipo_input
+                "tipo": tipo_input,
+                "dependencia": dependencia_input # <--- NOVO (Salva no banco)
             })
         
         template.configuracao_campos = nova_configuracao
         template.save()
-        messages.success(request, f"Modelo '{template.titulo}' configurado e pronto para uso!")
+        messages.success(request, f"Configuração salva com sucesso!")
         return redirect('lista_templates')
 
-    # 4. Exibir (GET) - Mescla tags do arquivo com configurações do banco
+    # 4. Exibir (GET)
     campos_para_exibir = []
     for tag in tags_encontradas:
         dados = dict_config.get(tag, {})
         campos_para_exibir.append({
             'tag': tag,
             'label': dados.get('label', tag.replace('_', ' ').title()),
-            'tipo': dados.get('tipo', 'text')
+            'tipo': dados.get('tipo', 'text'),
+            'dependencia': dados.get('dependencia', '') # <--- NOVO (Lê do banco para a tela)
         })
 
     return render(request, 'docgen/configurar_template.html', {
         'template': template,
-        'campos': campos_para_exibir
+        'campos': campos_para_exibir,
+        'todas_tags': tags_encontradas # <--- NOVO (Necessário para popular o dropdown de pais)
     })
 
 
@@ -267,17 +274,47 @@ def dashboard(request):
 
 @login_required
 def biblioteca_modelos(request):
-    """Repositório simples para baixar os modelos originais."""
-    templates = Template.objects.filter(ativo=True).order_by('setor__nome', 'area__nome', 'titulo')
+    """
+    Biblioteca com Busca Server-Side e Paginação.
+    """
+    # 1. Base
+    templates_list = Template.objects.filter(ativo=True)
+
+    # 2. Filtros (Mesma lógica do Catálogo)
+    busca = request.GET.get('q')
+    setor_id = request.GET.get('setor')
+    area_id = request.GET.get('area')
+    categoria_id = request.GET.get('categoria')
+
+    if busca:
+        templates_list = templates_list.filter(
+            Q(titulo__icontains=busca) | Q(descricao__icontains=busca)
+        )
+    if setor_id and setor_id != 'todos':
+        templates_list = templates_list.filter(setor_id=setor_id)
+    if area_id and area_id != 'todos':
+        templates_list = templates_list.filter(area_id=area_id)
+    if categoria_id and categoria_id != 'todos':
+        templates_list = templates_list.filter(categoria_id=categoria_id)
+
+    # 3. Ordenação e Paginação
+    templates_list = templates_list.order_by('setor__nome', 'area__nome', 'titulo')
+    
+    paginator = Paginator(templates_list, 15) # 15 itens por página na tabela
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Contexto
     setores = Setor.objects.all().order_by('nome')
-    categorias = Categoria.objects.all().order_by('nome')
     areas = Area.objects.all().order_by('nome')
+    categorias = Categoria.objects.all().order_by('nome')
     
     return render(request, 'docgen/biblioteca.html', {
-        'templates': templates,
+        'templates': page_obj,
         'setores': setores,
-        'categorias': categorias,
         'areas': areas,
+        'categorias': categorias,
+        'filtros_atuais': request.GET # Mantém a busca na barra
     })
 
 # ==============================================================================
@@ -301,3 +338,55 @@ class SignUpView(generic.CreateView):
 def guia_modelos(request):
     """Página estática de ajuda para criação de modelos."""
     return render(request, 'docgen/guia.html')
+
+@login_required
+def lista_templates(request):
+    """
+    Catálogo com Busca e Paginação no Server-Side.
+    Suporta volume infinito de dados sem travar o navegador.
+    """
+    # 1. Base Query
+    templates_list = Template.objects.filter(ativo=True)
+
+    # 2. Aplicação de Filtros (Recebidos via GET)
+    busca = request.GET.get('q')
+    setor_id = request.GET.get('setor')
+    area_id = request.GET.get('area')
+    categoria_id = request.GET.get('categoria')
+
+    if busca:
+        # Busca no Título OU na Descrição (Insensitive)
+        templates_list = templates_list.filter(
+            Q(titulo__icontains=busca) | Q(descricao__icontains=busca)
+        )
+    
+    if setor_id and setor_id != 'todos':
+        templates_list = templates_list.filter(setor_id=setor_id)
+    
+    if area_id and area_id != 'todos':
+        templates_list = templates_list.filter(area_id=area_id)
+
+    if categoria_id and categoria_id != 'todos':
+        templates_list = templates_list.filter(categoria_id=categoria_id)
+
+    # 3. Ordenação
+    templates_list = templates_list.order_by('setor__nome', 'area__nome', 'titulo')
+
+    # 4. Paginação (9 por página)
+    paginator = Paginator(templates_list, 9)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Listas para os dropdowns
+    setores = Setor.objects.all().order_by('nome')
+    areas = Area.objects.all().order_by('nome')
+    categorias = Categoria.objects.all().order_by('nome')
+    
+    return render(request, 'docgen/lista.html', {
+        'templates': page_obj,
+        'setores': setores,
+        'areas': areas,
+        'categorias': categorias,
+        # Devolvemos os valores atuais para manter os inputs preenchidos
+        'filtros_atuais': request.GET 
+    })

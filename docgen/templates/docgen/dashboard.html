@@ -1,90 +1,36 @@
 {% extends 'base.html' %}
 
-{% block title %}Histórico - DOC MDR{% endblock %}
+{% block title %}Meus Documentos{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
-        <h2 class="fw-bold text-dark">🗂️ Histórico de Documentos</h2>
-        <p class="text-muted">
-            {% if user.is_staff %}
-                Visão Geral (Administrador) - Acompanhe a produção de todos os advogados.
-            {% else %}
-                Aqui estão os documentos que você gerou recentemente.
-            {% endif %}
-        </p>
+        <h2 class="fw-bold">Meus Documentos Gerados</h2>
     </div>
 </div>
 
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0 align-middle">
-                <thead class="table-dark">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
                     <tr>
-                        <th class="ps-4 py-3">Data/Hora</th>
-                        <th class="py-3">Modelo Utilizado</th>
-                        
-                        {% if user.is_staff %}
-                            <th class="py-3">Usuário</th>
-                        {% endif %}
-                        
-                        <th class="py-3">Dados Principais</th>
-                        <th class="text-end pe-4 py-3">Status</th>
+                        <th class="ps-4">Documento</th>
+                        <th>Gerado em</th>
+                        <th>Usuário</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for doc in historico %}
                     <tr>
-                        <td class="ps-4 fw-bold text-secondary">
-                            {{ doc.data_geracao|date:"d/m/Y" }} 
-                            <small class="fw-normal">{{ doc.data_geracao|date:"H:i" }}</small>
-                        </td>
-
-                        <td>
-                            <span class="badge bg-primary text-white">
-                                {{ doc.template.titulo }}
-                            </span>
-                        </td>
-                        
-                        {% if user.is_staff %}
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-light rounded-circle text-center border me-2" style="width: 30px; height: 30px; line-height: 30px;">
-                                        <i class="fa-solid fa-user text-muted small"></i>
-                                    </div>
-                                    <span class="fw-bold text-dark">{{ doc.usuario.username }}</span>
-                                </div>
-                            </td>
-                        {% endif %}
-
-                        <td>
-                            <small class="text-muted d-block" style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                {% for chave, valor in doc.dados_inputados.items %}
-                                    {% if valor and chave != 'csrfmiddlewaretoken' %}
-                                        <strong>{{ chave }}:</strong> {{ valor }} | 
-                                    {% endif %}
-                                {% endfor %}
-                            </small>
-                        </td>
-
-                        <td class="text-end pe-4">
-                            {% if doc.arquivo_final %}
-                                <a href="{{ doc.arquivo_final.url }}" class="btn btn-sm btn-outline-success fw-bold" download>
-                                    <i class="fa-solid fa-download"></i> Baixar
-                                </a>
-                            {% else %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success">
-                                    <i class="fa-solid fa-check"></i> Gerado
-                                </span>
-                            {% endif %}
-                        </td>
+                        <td class="ps-4 fw-bold">{{ doc.template.titulo }}</td>
+                        <td>{{ doc.data_geracao|date:"d/m/Y H:i" }}</td>
+                        <td>{{ doc.usuario.username }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="{% if user.is_staff %}5{% else %}4{% endif %}" class="text-center p-5 text-muted">
-                            <i class="fa-regular fa-folder-open fs-1 mb-3 opacity-50"></i>
-                            <p class="mb-0">Nenhum documento encontrado no histórico.</p>
+                        <td colspan="3" class="text-center p-5 text-muted">
+                            Nenhum documento gerado ainda.
                         </td>
                     </tr>
                     {% endfor %}
@@ -92,8 +38,8 @@
             </table>
         </div>
     </div>
-    <div class="card-footer bg-light text-end py-3">
-        <small class="text-muted">Total de registros: <strong>{{ historico.count }}</strong></small>
-    </div>
 </div>
+
+{% include 'includes/pagination.html' with page_obj=historico %}
+
 {% endblock %}
