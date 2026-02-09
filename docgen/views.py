@@ -80,14 +80,15 @@ def criar_template(request):
 @staff_member_required
 def configurar_template(request, template_id):
     """
-    PASSO 2: Tela para definir Labels e Tipos das variáveis encontradas no Word.
+    PASSO 2: Tela para definir Labels, Tipos e DEPENDÊNCIAS das variáveis.
     """
     template = get_object_or_404(Template, pk=template_id)
     
-    # 1. O Robô lê o arquivo físico e acha as tags {{ ... }}
+    # 1. O Robô lê o arquivo físico e acha as tags
+    # Nota: Com o novo utils.py, isso já traz na ordem correta e inclui os 'if'
     tags_encontradas = extrair_tags_do_docx(template.arquivo_template.path)
     
-    # 2. Carrega configuração existente (se houver) para manter edições anteriores
+    # 2. Carrega configuração existente
     config_atual = template.configuracao_campos or []
     dict_config = {item['tag']: item for item in config_atual}
 
@@ -97,31 +98,35 @@ def configurar_template(request, template_id):
         for tag in tags_encontradas:
             label_input = request.POST.get(f'label_{tag}')
             tipo_input = request.POST.get(f'tipo_{tag}')
+            dependencia_input = request.POST.get(f'dependencia_{tag}') # <--- NOVO (Captura quem é o pai)
             
             nova_configuracao.append({
                 "tag": tag,
                 "label": label_input or tag.replace('_', ' ').title(),
-                "tipo": tipo_input
+                "tipo": tipo_input,
+                "dependencia": dependencia_input # <--- NOVO (Salva no banco)
             })
         
         template.configuracao_campos = nova_configuracao
         template.save()
-        messages.success(request, f"Modelo '{template.titulo}' configurado e pronto para uso!")
+        messages.success(request, f"Configuração salva com sucesso!")
         return redirect('lista_templates')
 
-    # 4. Exibir (GET) - Mescla tags do arquivo com configurações do banco
+    # 4. Exibir (GET)
     campos_para_exibir = []
     for tag in tags_encontradas:
         dados = dict_config.get(tag, {})
         campos_para_exibir.append({
             'tag': tag,
             'label': dados.get('label', tag.replace('_', ' ').title()),
-            'tipo': dados.get('tipo', 'text')
+            'tipo': dados.get('tipo', 'text'),
+            'dependencia': dados.get('dependencia', '') # <--- NOVO (Lê do banco para a tela)
         })
 
     return render(request, 'docgen/configurar_template.html', {
         'template': template,
-        'campos': campos_para_exibir
+        'campos': campos_para_exibir,
+        'todas_tags': tags_encontradas # <--- NOVO (Necessário para popular o dropdown de pais)
     })
 
 

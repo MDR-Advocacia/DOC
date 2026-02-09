@@ -41,20 +41,19 @@
                             <table class="table align-middle table-hover">
                                 <thead class="table-light">
                                     <tr class="text-uppercase small text-muted">
-                                        <th style="width: 30%">Variável (Word)</th>
-                                        <th style="width: 40%">Nome da Pergunta (Label)</th>
-                                        <th style="width: 30%">Tipo de Resposta</th>
-                                    </tr>
+                                        <th style="width: 25%">Variável (Word)</th>
+                                        <th style="width: 30%">Nome da Pergunta (Label)</th>
+                                        <th style="width: 20%">Tipo de Resposta</th>
+                                        <th style="width: 25%">Condição (Aparece se...)</th> </tr>
                                 </thead>
                                 <tbody>
                                     {% for campo in campos %}
                                     <tr>
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <span class="badge bg-light text-dark border me-2">
-                                                    <i class="fa-solid fa-code"></i>
-                                                </span>
-                                                <code class="fw-bold text-dark fs-6">&#123;&#123; {{ campo.tag }} &#125;&#125;</code>
+                                                <code class="fw-bold text-dark fs-6 bg-light border px-2 py-1 rounded">
+                                                    {{ campo.tag }}
+                                                </code>
                                             </div>
                                         </td>
 
@@ -70,12 +69,25 @@
                                         <td>
                                             <select name="tipo_{{ campo.tag }}" class="form-select border-0 bg-light fw-bold text-secondary">
                                                 <option value="text" {% if campo.tipo == 'text' %}selected{% endif %}>🔤 Texto Curto</option>
-                                                <option value="textarea" {% if campo.tipo == 'textarea' %}selected{% endif %}>📝 Texto Longo (Parágrafos)</option>
+                                                <option value="textarea" {% if campo.tipo == 'textarea' %}selected{% endif %}>📝 Texto Longo</option>
                                                 <option value="date" {% if campo.tipo == 'date' %}selected{% endif %}>📅 Data</option>
                                                 <option value="currency" {% if campo.tipo == 'currency' %}selected{% endif %}>💲 Dinheiro (R$)</option>
                                                 <option value="cpf" {% if campo.tipo == 'cpf' %}selected{% endif %}>🆔 CPF/CNPJ</option>
-                                                <option value="checkbox" {% if campo.tipo == 'checkbox' %}selected{% endif %}>✅ Sim/Não (Checkbox)</option>
+                                                <option value="checkbox" {% if campo.tipo == 'checkbox' %}selected{% endif %}>✅ Check (Sim/Não)</option>
                                                 <option value="image" {% if campo.tipo == 'image' %}selected{% endif %}>🖼️ Imagem/Print</option>
+                                            </select>
+                                        </td>
+
+                                        <td>
+                                            <select name="dependencia_{{ campo.tag }}" class="form-select form-select-sm text-muted">
+                                                <option value="">-- Sempre visível --</option>
+                                                {% for tag_pai in todas_tags %}
+                                                    {% if tag_pai != campo.tag %}
+                                                        <option value="{{ tag_pai }}" {% if campo.dependencia == tag_pai %}selected{% endif %}>
+                                                            Se "{{ tag_pai }}" for SIM
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
                                             </select>
                                         </td>
                                     </tr>
@@ -99,6 +111,7 @@
             <i class="fa-solid fa-circle-info me-3 fs-4"></i>
             <div class="small">
                 <strong>Como funciona:</strong> O sistema leu seu arquivo Word. Agora, você define o que cada código significa para que o formulário final fique fácil de preencher.
+                <br>Use a coluna <strong>"Condição"</strong> para criar campos que só aparecem se outro for marcado.
             </div>
         </div>
 

@@ -23,30 +23,46 @@
                     {% csrf_token %}
                     
                     {% for campo in campos %}
-                        <div class="mb-4">
+                        <div class="mb-4 field-wrapper" 
+                             id="div_{{ campo.tag }}" 
+                             data-tag="{{ campo.tag }}" 
+                             data-dependencia="{{ campo.dependencia|default:'' }}"
+                             style="transition: all 0.3s ease; {% if campo.dependencia %}display:none;{% endif %}">
                             
+                            {% if campo.dependencia %}
+                                <div class="d-flex align-items-center text-muted small mb-2 ms-3">
+                                    <i class="fa-solid fa-level-up-alt fa-rotate-90 me-2"></i> 
+                                    <span>Condicionado a: <strong>{{ campo.dependencia }}</strong></span>
+                                </div>
+                                <div class="ps-4 border-start border-3 border-light ms-2">
+                            {% endif %}
+
+
                             {% if campo.tipo == 'textarea' %}
                                 <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <textarea name="{{ campo.tag }}" class="form-control bg-light" rows="5" placeholder="Digite os parágrafos aqui..."></textarea>
+                                <textarea name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light" rows="5" placeholder="Digite os parágrafos aqui..."></textarea>
 
                             {% elif campo.tipo == 'date' %}
                                 <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <input type="date" name="{{ campo.tag }}" class="form-control bg-light" required>
+                                <input type="date" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light" required>
 
                             {% elif campo.tipo == 'currency' %}
                                 <label class="form-label fw-bold">{{ campo.label }}</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white text-muted">R$</span>
-                                    <input type="text" name="{{ campo.tag }}" class="form-control bg-light" placeholder="0,00">
+                                    <input type="text" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light" placeholder="0,00">
                                 </div>
 
                             {% elif campo.tipo == 'cpf' %}
                                 <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <input type="text" name="{{ campo.tag }}" class="form-control bg-light" placeholder="000.000.000-00">
+                                <input type="text" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light" placeholder="000.000.000-00">
 
                             {% elif campo.tipo == 'checkbox' %}
                                 <div class="form-check form-switch p-3 border rounded bg-light d-flex align-items-center">
-                                    <input class="form-check-input me-3" type="checkbox" role="switch" name="{{ campo.tag }}" id="{{ campo.tag }}" style="width: 3em; height: 1.5em;">
+                                    <input class="form-check-input me-3" type="checkbox" role="switch" 
+                                           name="{{ campo.tag }}" id="{{ campo.tag }}" 
+                                           style="width: 3em; height: 1.5em;"
+                                           onchange="verificarDependencias()">
                                     <label class="form-check-label fw-bold mb-0 pointer" for="{{ campo.tag }}">
                                         {{ campo.label }}
                                     </label>
@@ -54,13 +70,17 @@
 
                             {% elif campo.tipo == 'image' %}
                                 <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <input type="file" name="{{ campo.tag }}" class="form-control" accept="image/*">
+                                <input type="file" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control" accept="image/*">
                                 <div class="form-text"><i class="fa-regular fa-image"></i> Suporta JPG ou PNG (será ajustado para 16cm).</div>
 
                             {% else %}
                                 <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <input type="text" name="{{ campo.tag }}" class="form-control bg-light">
+                                <input type="text" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light">
                             
+                            {% endif %}
+
+                            {% if campo.dependencia %}
+                                </div> 
                             {% endif %}
                         </div>
                     {% endfor %}
@@ -82,4 +102,36 @@
         </p>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function verificarDependencias() {
+        const wrappers = document.querySelectorAll('.field-wrapper');
+        wrappers.forEach(div => {
+            const dependencia = div.getAttribute('data-dependencia');
+            
+            // Se esse campo depende de alguém
+            if (dependencia && dependencia !== "") {
+                const paiInput = document.getElementById(dependencia);
+                
+                // Só processa se o pai for um checkbox
+                if (paiInput && paiInput.type === 'checkbox') {
+                    if (paiInput.checked) {
+                        div.style.display = 'block'; // Mostra
+                        setTimeout(() => { div.style.opacity = '1'; }, 50);
+                    } else {
+                        div.style.display = 'none'; // Esconde
+                        div.style.opacity = '0';
+                    }
+                }
+            }
+        });
+    }
+
+    // Roda ao carregar a página
+    document.addEventListener('DOMContentLoaded', function() {
+        verificarDependencias();
+    });
+</script>
 {% endblock %}
