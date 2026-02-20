@@ -27,13 +27,14 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG') == 'True'
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.0.31", "doc.mdr.local"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.0.31", "doc.mdr.local", "https://doc.mdradvocacia.com"]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000", 
     "http://127.0.0.1:8000", 
     "http://192.168.0.31:8000",
-    "http://doc.mdr.local"
+    "http://doc.mdr.local",
+    "https://doc.mdradvocacia.com"
 ]
 # Application definition
 
