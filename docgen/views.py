@@ -26,6 +26,8 @@ from datetime import datetime
 from .models import Template, DocumentoGerado, Setor, Categoria, Area, PastaPersonalizada, TemplateFavorito
 from .utils import extrair_tags_do_docx 
 
+import json
+
 # ==============================================================================
 #  ÁREA ADMINISTRATIVA (SUPERVISORES)
 # ==============================================================================
@@ -476,21 +478,66 @@ def toggle_favorito(request, template_id):
 @login_required
 def minha_biblioteca(request):
     """
-    Exibe apenas os modelos favoritados pelo usuário logado para acesso rápido.
+    Exibe os modelos favoritados, divididos por pastas.
     """
-    # Pega os IDs dos templates que ESTE usuário favoritou
-    favoritos_ids = TemplateFavorito.objects.filter(usuario=request.user).values_list('template_id', flat=True)
+    pasta_selecionada = request.GET.get('pasta')
     
-    # Filtra os templates que estão nessa lista
-    templates_list = Template.objects.filter(id__in=favoritos_ids, ativo=True).order_by('titulo')
+    # Ao invés de buscar os Templates, buscamos a relação de Favoritos 
+    # (porque ela já diz em qual pasta o arquivo está)
+    favoritos_query = TemplateFavorito.objects.filter(usuario=request.user).select_related('template', 'pasta')
     
-    # Paginação
-    paginator = Paginator(templates_list, 15)
+    # Filtra pela pasta clicada no menu lateral
+    if pasta_selecionada == 'sem_pasta':
+        favoritos_query = favoritos_query.filter(pasta__isnull=True)
+    elif pasta_selecionada:
+        favoritos_query = favoritos_query.filter(pasta_id=pasta_selecionada)
+        
+    favoritos_query = favoritos_query.order_by('template__titulo')
+    
+    paginator = Paginator(favoritos_query, 12)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    # Busca as pastas criadas por este usuário para o menu lateral
+    pastas = PastaPersonalizada.objects.filter(usuario=request.user)
+    
     return render(request, 'docgen/minha_biblioteca.html', {
-        'templates': page_obj,
+        'favoritos': page_obj,      # Agora enviamos o 'TemplateFavorito' (que contém .template e .pasta)
         'page_obj': page_obj,
-        'favoritos_ids': favoritos_ids
+        'pastas': pastas,
+        'pasta_atual': pasta_selecionada
     })
+
+@login_required
+def criar_pasta(request):
+    """Cria uma nova pasta para o usuário."""
+    if request.method == 'POST':
+        nome = request.POST.get('nome')
+        if nome:
+            PastaPersonalizada.objects.get_or_create(usuario=request.user, nome=nome)
+            messages.success(request, f"Pasta '{nome}' criada com sucesso!")
+    return redirect('minha_biblioteca')
+
+@login_required
+def mover_para_pasta(request, template_id):
+    """Move um template favoritado para uma pasta específica via JavaScript."""
+    if request.method == 'POST':
+        try:
+            dados = json.loads(request.body)
+            pasta_id = dados.get('pasta_id')
+            
+            # Pega o registro de favorito desse template para este usuário
+            favorito = get_object_or_404(TemplateFavorito, template_id=template_id, usuario=request.user)
+            
+            if not pasta_id or pasta_id == 'nenhuma':
+                favorito.pasta = None
+            else:
+                pasta = get_object_or_404(PastaPersonalizada, id=pasta_id, usuario=request.user)
+                favorito.pasta = pasta
+                
+            favorito.save()
+            return JsonResponse({'status': 'sucesso'})
+        except Exception as e:
+            return JsonResponse({'erro': str(e)}, status=400)
+            
+    return JsonResponse({'erro': 'Método inválido'}, status=400)
