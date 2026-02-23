@@ -68,7 +68,7 @@
                         </div>
                     </div>
 
-                    {% for sub in pasta.sub_pastas.all %}
+                    {% for sub in pasta.pastapersonalizada_set.all %}
                     <div class="list-group-item list-group-item-action py-2 subpasta-item d-flex justify-content-between align-items-center {% if pasta_atual_id == sub.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
                         <a href="?pasta={{ sub.id }}" class="text-decoration-none text-truncate flex-grow-1 {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-dark{% endif %}">
                             <i class="fa-solid fa-turn-up fa-rotate-90 me-2 opacity-50"></i>
@@ -105,7 +105,7 @@
                                     <li><a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="nenhuma">Sem pasta</a></li>
                                     {% for p in pastas %}
                                         <li><a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ p.id }}">📁 {{ p.nome }}</a></li>
-                                        {% for sub in p.sub_pastas.all %}
+                                        {% for sub in p.pastapersonalizada_set.all %}
                                             <li><a class="dropdown-item small btn-mover ps-4" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ sub.id }}">↳ {{ sub.nome }}</a></li>
                                         {% endfor %}
                                     {% endfor %}
@@ -215,7 +215,9 @@
         </div>
     </div>
 </div>
-{% endblock %} {% block extra_js %}
+{% endblock %}
+
+{% block extra_js %}
 <script>
     // Script de Abrir Modal de Compartilhar
     function abrirModalCompartilhar(pastaId) {
