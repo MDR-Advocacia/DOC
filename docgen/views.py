@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views import generic
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
@@ -17,6 +17,7 @@ from django.contrib.auth.models import User
 from django.db.models import ProtectedError
 from .models import Equipe
 from django.db import models
+
 
 # Bibliotecas de processamento de DOCX
 from docxtpl import DocxTemplate, InlineImage 
@@ -488,6 +489,47 @@ def gerenciar_equipes(request):
     
     return render(request, 'docgen/gerenciar_equipes.html', {
         'equipes': equipes
+    })
+
+@login_required
+@staff_member_required
+def gerenciar_membros_equipe(request, equipe_id):
+    """
+    Lógica para o Coordenador adicionar ou remover advogados e 
+    supervisores de um núcleo específico.
+    """
+    equipe = get_object_or_404(Equipe, id=equipe_id)
+    
+    if request.method == 'POST':
+        acao = request.POST.get('acao')
+        usuario_id = request.POST.get('usuario_id')
+        
+        if usuario_id:
+            usuario = get_object_or_404(User, id=usuario_id)
+            if acao == 'adicionar_membro':
+                equipe.membros.add(usuario)
+                messages.success(request, f"{usuario.username} adicionado como membro.")
+            elif acao == 'remover_membro':
+                equipe.membros.remove(usuario)
+                messages.warning(request, f"{usuario.username} removido dos membros.")
+            elif acao == 'adicionar_supervisor':
+                equipe.supervisores.add(usuario)
+                messages.success(request, f"{usuario.username} promovido a supervisor.")
+            elif acao == 'remover_supervisor':
+                equipe.supervisores.remove(usuario)
+                messages.warning(request, f"{usuario.username} removido da supervisão.")
+                
+        return redirect('gerenciar_membros_equipe', equipe_id=equipe.id)
+
+    # Filtra usuários que já estão na equipe para não repetir na lista
+    usuarios_na_equipe = list(equipe.membros.values_list('id', flat=True)) + \
+                         list(equipe.supervisores.values_list('id', flat=True))
+    
+    usuarios_disponiveis = User.objects.exclude(id__in=usuarios_na_equipe).filter(is_active=True).order_by('first_name')
+
+    return render(request, 'docgen/gerenciar_membros.html', {
+        'equipe': equipe,
+        'usuarios_disponiveis': usuarios_disponiveis
     })
 
 @login_required
