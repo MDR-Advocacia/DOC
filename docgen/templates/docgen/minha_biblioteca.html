@@ -12,7 +12,9 @@
     .list-group-item.active { background-color: #2e5bf0 !important; border-color: #2e5bf0 !important; }
     .list-group-item.active .text-warning { color: #ffd43b !important; }
     
-    /* Hover para o botão de excluir */
+    /* Estilo para subpastas (recuo) */
+    .subpasta-item { padding-left: 2.5rem !important; font-size: 0.9em; }
+    
     .text-hover-danger:hover { color: #dc3545 !important; opacity: 1 !important; }
 </style>
 {% endblock %}
@@ -32,33 +34,55 @@
                 <span class="text-dark"><i class="fa-solid fa-folder-tree me-2 text-primary"></i> Organização</span>
                 <button class="btn btn-sm btn-light border text-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modalNovaPasta" title="Nova Pasta">
                     <i class="fa-solid fa-plus"></i>
-                    <input type="hidden" name="pasta_pai" value="{{ pasta_atual|default:'' }}">
                 </button>
             </div>
             <div class="list-group list-group-flush rounded-bottom">
-                <a href="{% url 'minha_biblioteca' %}" class="list-group-item list-group-item-action py-3 {% if not pasta_atual %}active fw-bold{% endif %}">
+                <a href="{% url 'minha_biblioteca' %}" class="list-group-item list-group-item-action py-3 {% if not pasta_atual_id %}active fw-bold{% endif %}">
                     <i class="fa-solid fa-layer-group me-2" style="width: 20px; text-align: center;"></i> Tudo
                 </a>
-                <a href="?pasta=sem_pasta" class="list-group-item list-group-item-action py-3 {% if pasta_atual == 'sem_pasta' %}active fw-bold{% endif %}">
+                <a href="?pasta=sem_pasta" class="list-group-item list-group-item-action py-3 {% if pasta_atual_id == 'sem_pasta' %}active fw-bold{% endif %}">
                     <i class="fa-solid fa-box-open me-2 text-secondary" style="width: 20px; text-align: center;"></i> Sem pasta
                 </a>
                 
                 {% for pasta in pastas %}
-                <div class="list-group-item list-group-item-action py-2 d-flex justify-content-between align-items-center {% if pasta_atual == pasta.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
-                    
-                    <a href="?pasta={{ pasta.id }}" class="text-decoration-none text-truncate flex-grow-1 {% if pasta_atual == pasta.id|stringformat:'s' %}text-white{% else %}text-dark{% endif %}">
-                        <i class="fa-solid fa-folder me-2 {% if pasta_atual == pasta.id|stringformat:'s' %}text-white{% else %}text-warning{% endif %}" style="width: 20px; text-align: center;"></i> 
-                        {{ pasta.nome }}
-                    </a>
-                    
-                    <form action="{% url 'excluir_pasta' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Tem certeza que deseja excluir a pasta {{ pasta.nome }}? (Seus modelos favoritados NÃO serão apagados, apenas ficarão soltos).')">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-link p-0 text-decoration-none {% if pasta_atual == pasta.id|stringformat:'s' %}text-white{% else %}text-danger opacity-50 text-hover-danger{% endif %}" title="Excluir Pasta">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </form>
-                    
-                </div>
+                    <div class="list-group-item list-group-item-action py-2 d-flex justify-content-between align-items-center {% if pasta_atual_id == pasta.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
+                        <a href="?pasta={{ pasta.id }}" class="text-decoration-none text-truncate flex-grow-1 {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-dark{% endif %}">
+                            <i class="fa-solid fa-folder me-2 {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-warning{% endif %}" style="width: 20px; text-align: center;"></i> 
+                            {{ pasta.nome }}
+                        </a>
+                        
+                        <div class="d-flex gap-2">
+                             {% if pasta.usuario == request.user %}
+                            <button class="btn btn-link p-0 text-decoration-none {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-primary opacity-50{% endif %}" 
+                                    onclick="abrirModalCompartilhar('{{ pasta.id }}')" title="Compartilhar com Equipe">
+                                <i class="fa-solid fa-share-nodes"></i>
+                            </button>
+                            {% endif %}
+
+                            <form action="{% url 'excluir_pasta' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir esta pasta?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link p-0 text-decoration-none {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-danger opacity-50 text-hover-danger{% endif %}">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {% for sub in pasta.sub_pastas.all %}
+                    <div class="list-group-item list-group-item-action py-2 subpasta-item d-flex justify-content-between align-items-center {% if pasta_atual_id == sub.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
+                        <a href="?pasta={{ sub.id }}" class="text-decoration-none text-truncate flex-grow-1 {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-dark{% endif %}">
+                            <i class="fa-solid fa-turn-up fa-rotate-90 me-2 opacity-50"></i>
+                            <i class="fa-solid fa-folder-open me-1 {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-warning{% endif %}"></i>
+                            {{ sub.nome }}
+                        </a>
+                        <form action="{% url 'excluir_pasta' sub.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir esta subpasta?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link p-0 text-decoration-none {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-danger opacity-50 text-hover-danger{% endif %}">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
                 {% endfor %}
             </div>
         </div>
@@ -70,53 +94,36 @@
             <div class="col" id="card-{{ fav.template.id }}">
                 <div class="card card-template border-0 shadow-sm h-100">
                     <div class="card-body d-flex flex-column pb-2">
-                        
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <span class="badge bg-primary badge-setor">{{ fav.template.setor.nome }}</span>
-                            
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-light border text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="btn btn-sm btn-light border text-muted" type="button" data-bs-toggle="dropdown">
                                     <i class="fa-solid fa-ellipsis-vertical px-1"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                     <li><h6 class="dropdown-header">Mover para...</h6></li>
-                                    <li>
-                                        <a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="nenhuma">
-                                            {% if not fav.pasta %}<i class="fa-solid fa-check text-success me-1"></i>{% endif %} Sem pasta
-                                        </a>
-                                    </li>
+                                    <li><a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="nenhuma">Sem pasta</a></li>
                                     {% for p in pastas %}
-                                    <li>
-                                        <a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ p.id }}">
-                                            {% if fav.pasta.id == p.id %}<i class="fa-solid fa-check text-success me-1"></i>{% endif %} <i class="fa-solid fa-folder text-warning me-1"></i> {{ p.nome }}
-                                        </a>
-                                    </li>
+                                        <li><a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ p.id }}">📁 {{ p.nome }}</a></li>
+                                        {% for sub in p.sub_pastas.all %}
+                                            <li><a class="dropdown-item small btn-mover ps-4" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ sub.id }}">↳ {{ sub.nome }}</a></li>
+                                        {% endfor %}
                                     {% endfor %}
                                     <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <a class="dropdown-item text-danger small btn-remover-favorito" href="#" data-id="{{ fav.template.id }}">
-                                            <i class="fa-solid fa-trash-can me-1"></i> Remover da Biblioteca
-                                        </a>
-                                    </li>
+                                    <li><a class="dropdown-item text-danger small btn-remover-favorito" href="#" data-id="{{ fav.template.id }}">Remover</a></li>
                                 </ul>
                             </div>
                         </div>
-
                         <h5 class="card-title fw-bold text-dark mt-2 mb-1">{{ fav.template.titulo }}</h5>
-                        
                         {% if fav.pasta %}
                             <p class="mb-2"><span class="badge bg-warning text-dark bg-opacity-25 border border-warning"><i class="fa-solid fa-folder me-1"></i> {{ fav.pasta.nome }}</span></p>
                         {% endif %}
-
-                        <p class="card-text text-muted small mt-2 flex-grow-1">
-                            {{ fav.template.descricao|default:"Sem descrição."|truncatechars:70 }}
-                        </p>
+                        <p class="card-text text-muted small mt-2 flex-grow-1">{{ fav.template.descricao|truncatechars:70 }}</p>
                     </div>
-                    
                     <div class="card-footer bg-white border-0 pt-0 pb-3">
                         <div class="d-grid">
                             <a href="{% url 'gerar_documento' fav.template.id %}" class="btn btn-primary fw-bold">
-                                <i class="fa-solid fa-bolt me-1"></i> Preencher Rápido
+                                <i class="fa-solid fa-bolt me-1"></i> Preencher
                             </a>
                         </div>
                     </div>
@@ -132,7 +139,6 @@
             </div>
             {% endfor %}
         </div>
-        
         <div class="mt-4">
             {% include 'includes/pagination.html' with page_obj=favoritos %}
         </div>
@@ -176,9 +182,49 @@
     </div>
 </div>
 
-{% block extra_js %}
+<div class="modal fade" id="modalCompartilhar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-share-nodes text-primary me-2"></i>Compartilhar Pasta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'compartilhar_pasta' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="pasta_id" id="share_pasta_id">
+                <div class="modal-body p-4">
+                    <p class="text-muted small">Selecione os núcleos que terão acesso a esta pasta e aos modelos dentro dela.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">NÚCLEOS DISPONÍVEIS</label>
+                        <div class="border rounded p-3 bg-white" style="max-height: 200px; overflow-y: auto;">
+                            {% for eq in equipes_disponiveis %}
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="equipes" value="{{ eq.id }}" id="eq_{{ eq.id }}">
+                                <label class="form-check-label text-dark" for="eq_{{ eq.id }}">
+                                    {{ eq.nome }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="submit" class="btn btn-primary fw-bold w-100">Salvar Permissões</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block extra_js %}
 <script>
-    // Script 1: Remover Favorito 
+    // Script de Abrir Modal de Compartilhar
+    function abrirModalCompartilhar(pastaId) {
+        const modal = new bootstrap.Modal(document.getElementById('modalCompartilhar'));
+        document.getElementById('share_pasta_id').value = pastaId;
+        modal.show();
+    }
+
+    // Script: Remover Favorito 
     document.querySelectorAll('.btn-remover-favorito').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -189,9 +235,7 @@
             card.style.opacity = '0';
             card.style.transform = 'scale(0.8)';
             
-            setTimeout(() => {
-                card.remove();
-            }, 300);
+            setTimeout(() => { card.remove(); }, 300);
             
             fetch(`/favoritar/${templateId}/`, {
                 method: 'POST',
@@ -200,7 +244,7 @@
         });
     });
 
-    // Script 2: Mover para Pasta sem recarregar a tela
+    // Script: Mover para Pasta sem recarregar
     document.querySelectorAll('.btn-mover').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -212,9 +256,7 @@
                 headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pasta_id: pastaId })
             }).then(response => {
-                if(response.ok) {
-                    window.location.reload(); 
-                }
+                if(response.ok) { window.location.reload(); }
             });
         });
     });
