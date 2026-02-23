@@ -35,7 +35,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://192.168.0.31:8000",
     "http://doc.mdr.local",
     "https://doc.mdradvocacia.com",
-    "doc-lab.mdradvocacia.com"
+    "https://doc-lab.mdradvocacia.com"
 ]
 # Application definition
 
