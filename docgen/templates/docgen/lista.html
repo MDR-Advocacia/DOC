@@ -87,11 +87,19 @@
     <div class="col">
         <div class="card card-template border-0 shadow-sm h-100">
             <div class="card-body d-flex flex-column">
+                
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <span class="badge bg-primary badge-setor">{{ doc.setor.nome }}</span>
-                    {% if doc.categoria %}
-                        <small class="text-muted fw-bold" style="font-size: 0.75rem;">{{ doc.categoria.nome }}</small>
-                    {% endif %}
+                    <div class="d-flex align-items-center gap-2">
+                        {% if doc.categoria %}
+                            <small class="text-muted fw-bold" style="font-size: 0.75rem;">{{ doc.categoria.nome }}</small>
+                        {% endif %}
+                        
+                        <button class="btn btn-link p-0 text-decoration-none btn-favoritar" 
+                                data-id="{{ doc.id }}" title="Favoritar modelo">
+                            <i class="{% if doc.id in favoritos_ids %}fa-solid text-warning{% else %}fa-regular text-muted{% endif %} fa-star fs-5 star-icon" style="transition: all 0.2s;"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <h5 class="card-title fw-bold text-dark mt-2 mb-1">{{ doc.titulo }}</h5>
@@ -134,4 +142,48 @@
 
 {% include 'includes/pagination.html' %}
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.btn-favoritar').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const templateId = this.getAttribute('data-id');
+            const icon = this.querySelector('.star-icon');
+            
+            // Efeito imediato na tela (finge que já salvou para ser rápido pro usuário)
+            const isSolid = icon.classList.contains('fa-solid');
+            if (isSolid) {
+                icon.classList.replace('fa-solid', 'fa-regular');
+                icon.classList.replace('text-warning', 'text-muted');
+            } else {
+                icon.classList.replace('fa-regular', 'fa-solid');
+                icon.classList.replace('text-muted', 'text-warning');
+                // Efeito de "pulo" ao favoritar
+                icon.style.transform = 'scale(1.3)';
+                setTimeout(() => icon.style.transform = 'scale(1)', 200);
+            }
+            
+            // Manda o aviso silencioso pro servidor (não recarrega a página)
+            fetch(`/favoritar/${templateId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            }).catch(err => {
+                console.error("Erro na rede. Revertendo estrela.");
+                // Se der erro de internet, ele desfaz a pintura da estrela
+                if (isSolid) {
+                    icon.classList.replace('fa-regular', 'fa-solid');
+                    icon.classList.replace('text-muted', 'text-warning');
+                } else {
+                    icon.classList.replace('fa-solid', 'fa-regular');
+                    icon.classList.replace('text-warning', 'text-muted');
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}
