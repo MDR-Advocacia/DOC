@@ -47,6 +47,9 @@ urlpatterns = [
     # 5. Biblioteca de Modelos (agora Acervo)
     path('biblioteca/', views.biblioteca_modelos, name='biblioteca'),
 
+    # NOVA ROTA: Minha Biblioteca (Favoritos)
+    path('minha-biblioteca/', views.minha_biblioteca, name='minha_biblioteca'),
+
     # NOVA ROTA: Favoritar via JavaScript (AJAX)
     path('favoritar/<int:template_id>/', views.toggle_favorito, name='toggle_favorito'),
 

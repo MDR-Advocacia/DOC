@@ -472,3 +472,25 @@ def toggle_favorito(request, template_id):
         return JsonResponse({'status': 'adicionado'})
         
     return JsonResponse({'erro': 'Método inválido'}, status=400)
+
+@login_required
+def minha_biblioteca(request):
+    """
+    Exibe apenas os modelos favoritados pelo usuário logado para acesso rápido.
+    """
+    # Pega os IDs dos templates que ESTE usuário favoritou
+    favoritos_ids = TemplateFavorito.objects.filter(usuario=request.user).values_list('template_id', flat=True)
+    
+    # Filtra os templates que estão nessa lista
+    templates_list = Template.objects.filter(id__in=favoritos_ids, ativo=True).order_by('titulo')
+    
+    # Paginação
+    paginator = Paginator(templates_list, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'docgen/minha_biblioteca.html', {
+        'templates': page_obj,
+        'page_obj': page_obj,
+        'favoritos_ids': favoritos_ids
+    })
