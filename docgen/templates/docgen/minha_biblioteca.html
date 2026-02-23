@@ -12,8 +12,13 @@
     .list-group-item.active { background-color: #2e5bf0 !important; border-color: #2e5bf0 !important; }
     .list-group-item.active .text-warning { color: #ffd43b !important; }
     
-    /* Estilo para subpastas (recuo) */
-    .subpasta-item { padding-left: 2.5rem !important; font-size: 0.9em; }
+    /* Estilo para subpastas (recuo visual e fonte menor) */
+    .subpasta-item { 
+        padding-left: 2.5rem !important; 
+        font-size: 0.9em; 
+        background-color: #f8f9fa; 
+        border-left: 3px solid #dee2e6; 
+    }
     
     .text-hover-danger:hover { color: #dc3545 !important; opacity: 1 !important; }
 </style>
@@ -52,13 +57,13 @@
                         </a>
                         
                         <div class="d-flex gap-2">
-                             {% if pasta.usuario == request.user %}
+                            {% if pasta.usuario == request.user %}
                             <button class="btn btn-link p-0 text-decoration-none {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-primary opacity-50{% endif %}" 
                                     onclick="abrirModalCompartilhar('{{ pasta.id }}')" title="Compartilhar com Equipe">
                                 <i class="fa-solid fa-share-nodes"></i>
                             </button>
                             {% endif %}
-
+                            
                             <form action="{% url 'excluir_pasta' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir esta pasta?')">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-link p-0 text-decoration-none {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-danger opacity-50 text-hover-danger{% endif %}">
@@ -68,11 +73,11 @@
                         </div>
                     </div>
 
-                    {% for sub in pasta.pastapersonalizada_set.all %}
+                    {% for sub in pasta.subpastas.all %}
                     <div class="list-group-item list-group-item-action py-2 subpasta-item d-flex justify-content-between align-items-center {% if pasta_atual_id == sub.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
                         <a href="?pasta={{ sub.id }}" class="text-decoration-none text-truncate flex-grow-1 {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-dark{% endif %}">
-                            <i class="fa-solid fa-turn-up fa-rotate-90 me-2 opacity-50"></i>
-                            <i class="fa-solid fa-folder-open me-1 {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-warning{% endif %}"></i>
+                            <i class="fa-solid fa-turn-up fa-rotate-90 me-2 opacity-50 ps-1"></i>
+                            <i class="fa-regular fa-folder-open me-1 {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-warning{% endif %}"></i>
                             {{ sub.nome }}
                         </a>
                         <form action="{% url 'excluir_pasta' sub.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir esta subpasta?')">
@@ -83,6 +88,7 @@
                         </form>
                     </div>
                     {% endfor %}
+
                 {% endfor %}
             </div>
         </div>
@@ -103,14 +109,16 @@
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                     <li><h6 class="dropdown-header">Mover para...</h6></li>
                                     <li><a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="nenhuma">Sem pasta</a></li>
+                                    
                                     {% for p in pastas %}
                                         <li><a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ p.id }}">📁 {{ p.nome }}</a></li>
-                                        {% for sub in p.pastapersonalizada_set.all %}
+                                        {% for sub in p.subpastas.all %}
                                             <li><a class="dropdown-item small btn-mover ps-4" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ sub.id }}">↳ {{ sub.nome }}</a></li>
                                         {% endfor %}
                                     {% endfor %}
+
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger small btn-remover-favorito" href="#" data-id="{{ fav.template.id }}">Remover</a></li>
+                                    <li><a class="dropdown-item text-danger small btn-remover-favorito" href="#" data-id="{{ fav.template.id }}">Remover Favorito</a></li>
                                 </ul>
                             </div>
                         </div>
@@ -159,7 +167,6 @@
                         <label class="form-label fw-bold small text-muted">NOME DA PASTA</label>
                         <input type="text" name="nome" class="form-control form-control-lg" placeholder="Ex: Modelos Iniciais" required autocomplete="off">
                     </div>
-                    
                     <div class="mb-2">
                         <label class="form-label fw-bold small text-muted">CRIAR DENTRO DE (OPCIONAL)</label>
                         <select name="pasta_pai" class="form-select">
@@ -174,8 +181,7 @@
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold">Salvar Pasta</button>
+                    <button type="button" class="btn btn-primary fw-bold">Salvar Pasta</button>
                 </div>
             </form>
         </div>
@@ -219,26 +225,21 @@
 
 {% block extra_js %}
 <script>
-    // Script de Abrir Modal de Compartilhar
+    // JS: Abrir modal de compartilhar
     function abrirModalCompartilhar(pastaId) {
         const modal = new bootstrap.Modal(document.getElementById('modalCompartilhar'));
         document.getElementById('share_pasta_id').value = pastaId;
         modal.show();
     }
-
-    // Script: Remover Favorito 
+    
+    // JS: Remover Favorito
     document.querySelectorAll('.btn-remover-favorito').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             const templateId = this.getAttribute('data-id');
             const card = document.getElementById('card-' + templateId);
-            
-            card.style.transition = "opacity 0.3s ease, transform 0.3s ease";
             card.style.opacity = '0';
-            card.style.transform = 'scale(0.8)';
-            
             setTimeout(() => { card.remove(); }, 300);
-            
             fetch(`/favoritar/${templateId}/`, {
                 method: 'POST',
                 headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' }
@@ -246,20 +247,17 @@
         });
     });
 
-    // Script: Mover para Pasta sem recarregar
+    // JS: Mover para pasta
     document.querySelectorAll('.btn-mover').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             const templateId = this.getAttribute('data-id');
             const pastaId = this.getAttribute('data-pasta');
-            
             fetch(`/minha-biblioteca/mover/${templateId}/`, {
                 method: 'POST',
                 headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pasta_id: pastaId })
-            }).then(response => {
-                if(response.ok) { window.location.reload(); }
-            });
+            }).then(response => { if(response.ok) { window.location.reload(); } });
         });
     });
 </script>
