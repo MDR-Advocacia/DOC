@@ -32,6 +32,7 @@
                 <span class="text-dark"><i class="fa-solid fa-folder-tree me-2 text-primary"></i> Organização</span>
                 <button class="btn btn-sm btn-light border text-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modalNovaPasta" title="Nova Pasta">
                     <i class="fa-solid fa-plus"></i>
+                    <input type="hidden" name="pasta_pai" value="{{ pasta_atual|default:'' }}">
                 </button>
             </div>
             <div class="list-group list-group-flush rounded-bottom">

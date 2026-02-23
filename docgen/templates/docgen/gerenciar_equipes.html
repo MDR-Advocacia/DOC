@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestão de Equipes - DunaDoc{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="fw-bold text-dark mb-1">Gestão de Equipes e Núcleos</h2>
+        <p class="text-muted mb-0">Crie a hierarquia do escritório para compartilhar Kits e Pastas.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <button class="btn btn-primary fw-bold px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaEquipe">
+            <i class="fa-solid fa-plus me-2"></i> Criar Nova Estrutura
+        </button>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 bg-white">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width: 40%">Nome do Núcleo / Equipe</th>
+                        <th style="width: 25%">Pertence a (Hierarquia)</th>
+                        <th style="width: 20%">Data de Criação</th>
+                        <th class="text-end pe-4" style="width: 15%">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for equipe in equipes %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ equipe.nome }}</div>
+                            <small class="text-muted">{{ equipe.descricao|default:"Sem descrição"|truncatechars:50 }}</small>
+                        </td>
+                        <td>
+                            {% if equipe.equipe_pai %}
+                                <span class="badge bg-light text-secondary border">
+                                    <i class="fa-solid fa-level-up-alt fa-rotate-90 me-1"></i> {{ equipe.equipe_pai.nome }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle">
+                                    <i class="fa-solid fa-sitemap me-1"></i> Equipe Raiz
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">
+                            {{ equipe.criada_em|date:"d/m/Y" }}
+                        </td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-outline-secondary fw-bold" title="Adicionar Membros (Em breve)">
+                                <i class="fa-solid fa-users me-1"></i> Membros
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-users-slash fa-3x mb-3 opacity-50"></i>
+                            <h5 class="mt-2">Nenhuma equipe cadastrada.</h5>
+                            <p>Clique no botão acima para começar a estruturar seu escritório.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNovaEquipe" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-sitemap text-primary me-2"></i>Nova Estrutura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'gerenciar_equipes' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">NOME DA EQUIPE OU NÚCLEO</label>
+                        <input type="text" name="nome" class="form-control" placeholder="Ex: Célula Banco do Brasil" required autocomplete="off">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">HIERARQUIA (OPCIONAL)</label>
+                        <select name="equipe_pai" class="form-select">
+                            <option value="">-- Nenhuma (Equipe Raiz) --</option>
+                            {% for e in equipes %}
+                                <option value="{{ e.id }}">{{ e.nome }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small">Selecione se este núcleo fica dentro de uma equipe maior.</div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-muted">DESCRIÇÃO (OPCIONAL)</label>
+                        <textarea name="descricao" class="form-control" rows="2" placeholder="Qual o foco deste time?"></textarea>
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold">Criar Estrutura</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

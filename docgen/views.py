@@ -15,6 +15,8 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.db.models import ProtectedError
+from .models import Equipe
+from django.db import models
 
 # Bibliotecas de processamento de DOCX
 from docxtpl import DocxTemplate, InlineImage 
@@ -454,6 +456,41 @@ def gerenciar_usuarios(request):
     })
 
 @login_required
+@staff_member_required
+def gerenciar_equipes(request):
+    """
+    Painel exclusivo para a Coordenação criar e visualizar 
+    Equipes, Núcleos e Sub-núcleos do escritório.
+    """
+    if request.method == 'POST':
+        nome = request.POST.get('nome')
+        descricao = request.POST.get('descricao')
+        equipe_pai_id = request.POST.get('equipe_pai')
+        
+        if nome:
+            try:
+                nova_equipe = Equipe.objects.create(
+                    nome=nome,
+                    descricao=descricao,
+                    # Se não selecionar pai, fica None (é uma Equipe Raiz)
+                    equipe_pai_id=equipe_pai_id if equipe_pai_id else None 
+                )
+                # O coordenador que criou a equipe já vira supervisor dela automaticamente
+                nova_equipe.supervisores.add(request.user)
+                messages.success(request, f"Estrutura '{nome}' criada com sucesso!")
+            except Exception as e:
+                messages.error(request, f"Erro ao criar equipe: {e}")
+                
+        return redirect('gerenciar_equipes')
+
+    # Busca todas as equipes para listar e para popular o seletor de Equipe Pai
+    equipes = Equipe.objects.all().select_related('equipe_pai').order_by('equipe_pai__nome', 'nome')
+    
+    return render(request, 'docgen/gerenciar_equipes.html', {
+        'equipes': equipes
+    })
+
+@login_required
 def toggle_favorito(request, template_id):
     """Ativa ou desativa o favorito sem recarregar a página."""
     if request.method == 'POST':
@@ -478,61 +515,94 @@ def toggle_favorito(request, template_id):
 @login_required
 def minha_biblioteca(request):
     """
-    Exibe os modelos favoritados, divididos por pastas.
+    Exibe os modelos favoritados, suportando hierarquia de pastas e 
+    pastas compartilhadas via Equipes/Núcleos da MDR Advocacia.
     """
-    pasta_selecionada = request.GET.get('pasta')
+    pasta_id = request.GET.get('pasta')
     
-    # Ao invés de buscar os Templates, buscamos a relação de Favoritos 
-    # (porque ela já diz em qual pasta o arquivo está)
+    # 1. Busca as Equipes que o usuário faz parte (para ver pastas compartilhadas)
+    equipes_usuario = request.user.equipes_participa.all()
+
+    # 2. Define as pastas do menu lateral (Apenas as Raiz)
+    # Mostra pastas do próprio usuário OU compartilhadas com as equipes dele
+    pastas_sidebar = PastaPersonalizada.objects.filter(
+        (models.Q(usuario=request.user) | models.Q(equipes_permitidas__in=equipes_usuario)),
+        pasta_pai__isnull=True
+    ).distinct()
+
+    # 3. Busca os Favoritos (Arquivos)
     favoritos_query = TemplateFavorito.objects.filter(usuario=request.user).select_related('template', 'pasta')
-    
-    # Filtra pela pasta clicada no menu lateral
-    if pasta_selecionada == 'sem_pasta':
+
+    if pasta_id == 'sem_pasta':
         favoritos_query = favoritos_query.filter(pasta__isnull=True)
-    elif pasta_selecionada:
-        favoritos_query = favoritos_query.filter(pasta_id=pasta_selecionada)
-        
+    elif pasta_id:
+        favoritos_query = favoritos_query.filter(pasta_id=pasta_id)
+
     favoritos_query = favoritos_query.order_by('template__titulo')
     
+    # 4. Busca Subpastas (se houver uma pasta selecionada)
+    subpastas = []
+    if pasta_id and pasta_id != 'sem_pasta':
+        subpastas = PastaPersonalizada.objects.filter(pasta_pai_id=pasta_id)
+
+    # 5. Paginação
     paginator = Paginator(favoritos_query, 12)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(request.GET.get('page'))
     
-    # Busca as pastas criadas por este usuário para o menu lateral
-    pastas = PastaPersonalizada.objects.filter(usuario=request.user)
-    
-    return render(request, 'docgen/minha_biblioteca.html', {
-        'favoritos': page_obj,      # Agora enviamos o 'TemplateFavorito' (que contém .template e .pasta)
+    # --- O CONTEXTO VAI AQUI (A sacola de dados para o HTML) ---
+    context = {
+        'favoritos': page_obj,
         'page_obj': page_obj,
-        'pastas': pastas,
-        'pasta_atual': pasta_selecionada
-    })
+        'pastas': pastas_sidebar,
+        'subpastas': subpastas,
+        'pasta_atual_id': pasta_id,
+        # Essa linha abaixo é a que permite o modal de compartilhar listar os núcleos:
+        'equipes_disponiveis': Equipe.objects.all().order_by('nome'), 
+    }
+
+    return render(request, 'docgen/minha_biblioteca.html', context)
 
 @login_required
 def criar_pasta(request):
-    """Cria uma nova pasta para o usuário."""
+    """Cria uma nova pasta ou subpasta."""
     if request.method == 'POST':
         nome = request.POST.get('nome')
+        pai_id = request.POST.get('pasta_pai') # ID da pasta onde você está no momento
+        
         if nome:
-            PastaPersonalizada.objects.get_or_create(usuario=request.user, nome=nome)
-            messages.success(request, f"Pasta '{nome}' criada com sucesso!")
-    return redirect('minha_biblioteca')
+            nova_pasta = PastaPersonalizada.objects.create(
+                usuario=request.user, 
+                nome=nome,
+                pasta_pai_id=pai_id if pai_id else None
+            )
+            messages.success(request, f"Pasta '{nome}' criada!")
+    
+    # Retorna para a pasta de origem para não perder o fluxo
+    redirect_url = reverse('minha_biblioteca')
+    if pai_id:
+        redirect_url += f"?pasta={pai_id}"
+        
+    return redirect(redirect_url)
 
 @login_required
 def mover_para_pasta(request, template_id):
-    """Move um template favoritado para uma pasta específica via JavaScript."""
+    """Move um template favoritado entre pastas (incluindo subpastas)."""
     if request.method == 'POST':
         try:
             dados = json.loads(request.body)
-            pasta_id = dados.get('pasta_id')
+            nova_pasta_id = dados.get('pasta_id')
             
-            # Pega o registro de favorito desse template para este usuário
             favorito = get_object_or_404(TemplateFavorito, template_id=template_id, usuario=request.user)
             
-            if not pasta_id or pasta_id == 'nenhuma':
+            if not nova_pasta_id or nova_pasta_id == 'nenhuma':
                 favorito.pasta = None
             else:
-                pasta = get_object_or_404(PastaPersonalizada, id=pasta_id, usuario=request.user)
+                # Garante que o usuário só mova para pastas que ele tem acesso
+                equipes = request.user.equipes_participa.all()
+                pasta = get_object_or_404(
+                    PastaPersonalizada, 
+                    models.Q(id=nova_pasta_id) & (models.Q(usuario=request.user) | models.Q(equipes_permitidas__in=equipes))
+                )
                 favorito.pasta = pasta
                 
             favorito.save()
@@ -550,4 +620,19 @@ def excluir_pasta(request, pasta_id):
         nome_pasta = pasta.nome
         pasta.delete() # O on_delete=models.SET_NULL no model garante que os templates não sejam apagados
         messages.success(request, f"Pasta '{nome_pasta}' excluída. Os modelos voltaram para 'Sem pasta'.")
+    return redirect('minha_biblioteca')
+
+@login_required
+def compartilhar_pasta(request):
+    """Lógica para vincular uma pasta a múltiplas equipes."""
+    if request.method == 'POST':
+        pasta_id = request.POST.get('pasta_id')
+        equipes_ids = request.POST.getlist('equipes') # Pega todos os checkboxes marcados
+        
+        pasta = get_object_or_404(PastaPersonalizada, id=pasta_id, usuario=request.user)
+        
+        # Atualiza as permissões
+        pasta.equipes_permitidas.set(equipes_ids)
+        messages.success(request, f"Permissões da pasta '{pasta.nome}' atualizadas!")
+        
     return redirect('minha_biblioteca')
