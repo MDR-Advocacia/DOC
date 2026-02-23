@@ -1,0 +1,50 @@
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light text-muted small text-uppercase">
+            <tr>
+                <th class="ps-4" style="width: 40px;">
+                    <input class="form-check-input" type="checkbox" onclick="toggleAll(this, '{{ prefix }}')">
+                </th>
+                <th>Usuário</th>
+                <th>Nome Completo</th>
+                <th>Email</th>
+                <th>Cadastrado em</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usuarios %}
+            <tr>
+                <td class="ps-4">
+                    <input class="form-check-input {{ prefix }}-chk" type="checkbox" name="usuarios" value="{{ u.id }}">
+                </td>
+                <td class="fw-bold text-dark">
+                    {{ u.username }}
+                    {% if u.is_superuser %}
+                        <i class="fa-solid fa-crown text-warning ms-1" title="Super Admin"></i>
+                    {% elif u.is_staff %}
+                        <i class="fa-solid fa-star text-primary ms-1" title="Admin"></i>
+                    {% endif %}
+                </td>
+                <td>{{ u.get_full_name|default:"-" }}</td>
+                <td>{{ u.email|default:"-" }}</td>
+                <td class="text-muted small">{{ u.date_joined|date:"d/m/Y H:i" }}</td>
+                <td>
+                    {% if u.is_active %}
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success">Ativo</span>
+                    {% else %}
+                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">Pendente</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                    <i class="fa-regular fa-folder-open fa-2x mb-2 opacity-50"></i><br>
+                    Nenhum usuário encontrado nesta lista.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
