@@ -666,15 +666,31 @@ def excluir_pasta(request, pasta_id):
 
 @login_required
 def compartilhar_pasta(request):
-    """Lógica para vincular uma pasta a múltiplas equipes."""
+    """
+    Víncula uma pasta a equipes e replica a permissão para todas as subpastas (Cascata).
+    """
     if request.method == 'POST':
         pasta_id = request.POST.get('pasta_id')
-        equipes_ids = request.POST.getlist('equipes') # Pega todos os checkboxes marcados
+        equipes_ids = request.POST.getlist('equipes') # IDs que vieram do formulário
         
-        pasta = get_object_or_404(PastaPersonalizada, id=pasta_id, usuario=request.user)
+        # 1. Pega a pasta principal (Pai)
+        pasta_principal = get_object_or_404(PastaPersonalizada, id=pasta_id, usuario=request.user)
         
-        # Atualiza as permissões
-        pasta.equipes_permitidas.set(equipes_ids)
-        messages.success(request, f"Permissões da pasta '{pasta.nome}' atualizadas!")
+        # 2. Carrega os objetos das equipes para poder atribuir
+        equipes_selecionadas = Equipe.objects.filter(id__in=equipes_ids)
+
+        # 3. Função Mágica: Aplica na pasta atual e chama a si mesma para as filhas
+        def aplicar_permissao_em_cascata(pasta_alvo):
+            # Limpa as permissões antigas e define as novas
+            pasta_alvo.equipes_permitidas.set(equipes_selecionadas)
+            
+            # CORREÇÃO AQUI: Usando 'subpastas' (tudo junto) conforme seu models.py
+            for sub in pasta_alvo.subpastas.all():
+                aplicar_permissao_em_cascata(sub)
+
+        # 4. Dispara a cascata começando da pasta pai
+        aplicar_permissao_em_cascata(pasta_principal)
+        
+        messages.success(request, f"Permissões aplicadas à pasta '{pasta_principal.nome}' e todas as suas subpastas!")
         
     return redirect('minha_biblioteca')
