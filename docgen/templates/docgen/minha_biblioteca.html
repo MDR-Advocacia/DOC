@@ -7,100 +7,187 @@
     .card-template { height: 100%; transition: all 0.3s ease; cursor: default; }
     .card-template:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important; }
     .badge-setor { font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; }
+    
+    /* Menu lateral de pastas */
+    .list-group-item.active { background-color: #2e5bf0 !important; border-color: #2e5bf0 !important; }
+    .list-group-item.active .text-warning { color: #ffd43b !important; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="row mb-4 align-items-center">
     <div class="col-12">
-        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-star text-warning me-2"></i>Minha Biblioteca</h2>
-        <p class="text-muted mb-0">Suas peças mais utilizadas e favoritadas para acesso ultra-rápido.</p>
+        <h2 class="fw-bold text-dark mb-1">Minha Biblioteca</h2>
+        <p class="text-muted mb-0">Organize suas peças favoritas para acesso rápido.</p>
     </div>
 </div>
 
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-    {% for doc in templates %}
-    <div class="col" id="card-{{ doc.id }}">
-        <div class="card card-template border-0 shadow-sm h-100">
-            <div class="card-body d-flex flex-column">
+<div class="row">
+    <div class="col-lg-3 col-md-4 mb-4">
+        <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+            <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center border-bottom">
+                <span class="text-dark"><i class="fa-solid fa-folder-tree me-2 text-primary"></i> Organização</span>
+                <button class="btn btn-sm btn-light border text-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modalNovaPasta" title="Nova Pasta">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+            <div class="list-group list-group-flush rounded-bottom">
+                <a href="{% url 'minha_biblioteca' %}" class="list-group-item list-group-item-action py-3 {% if not pasta_atual %}active fw-bold{% endif %}">
+                    <i class="fa-solid fa-layer-group me-2" style="width: 20px; text-align: center;"></i> Tudo
+                </a>
+                <a href="?pasta=sem_pasta" class="list-group-item list-group-item-action py-3 {% if pasta_atual == 'sem_pasta' %}active fw-bold{% endif %}">
+                    <i class="fa-solid fa-box-open me-2 text-secondary" style="width: 20px; text-align: center;"></i> Sem pasta
+                </a>
                 
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="badge bg-primary badge-setor">{{ doc.setor.nome }}</span>
-                    <div class="d-flex align-items-center gap-2">
-                        {% if doc.categoria %}
-                            <small class="text-muted fw-bold" style="font-size: 0.75rem;">{{ doc.categoria.nome }}</small>
-                        {% endif %}
+                {% for pasta in pastas %}
+                <a href="?pasta={{ pasta.id }}" class="list-group-item list-group-item-action py-3 d-flex justify-content-between align-items-center {% if pasta_atual == pasta.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
+                    <span class="text-truncate">
+                        <i class="fa-solid fa-folder me-2 {% if pasta_atual == pasta.id|stringformat:'s' %}text-white{% else %}text-warning{% endif %}" style="width: 20px; text-align: center;"></i> 
+                        {{ pasta.nome }}
+                    </span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-9 col-md-8">
+        <div class="row row-cols-1 row-cols-lg-2 g-4">
+            {% for fav in favoritos %}
+            <div class="col" id="card-{{ fav.template.id }}">
+                <div class="card card-template border-0 shadow-sm h-100">
+                    <div class="card-body d-flex flex-column pb-2">
                         
-                        <button class="btn btn-link p-0 text-decoration-none btn-remover-favorito" 
-                                data-id="{{ doc.id }}" title="Remover da Minha Biblioteca">
-                            <i class="fa-solid text-warning fa-star fs-5 star-icon" style="transition: all 0.2s;"></i>
-                        </button>
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary badge-setor">{{ fav.template.setor.nome }}</span>
+                            
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-ellipsis-vertical px-1"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                    <li><h6 class="dropdown-header">Mover para...</h6></li>
+                                    <li>
+                                        <a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="nenhuma">
+                                            {% if not fav.pasta %}<i class="fa-solid fa-check text-success me-1"></i>{% endif %} Sem pasta
+                                        </a>
+                                    </li>
+                                    {% for p in pastas %}
+                                    <li>
+                                        <a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ p.id }}">
+                                            {% if fav.pasta.id == p.id %}<i class="fa-solid fa-check text-success me-1"></i>{% endif %} <i class="fa-solid fa-folder text-warning me-1"></i> {{ p.nome }}
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger small btn-remover-favorito" href="#" data-id="{{ fav.template.id }}">
+                                            <i class="fa-regular fa-star-half-stroke me-1"></i> Remover da Biblioteca
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <h5 class="card-title fw-bold text-dark mt-2 mb-1">{{ fav.template.titulo }}</h5>
+                        
+                        {% if fav.pasta %}
+                            <p class="mb-2"><span class="badge bg-warning text-dark bg-opacity-25 border border-warning"><i class="fa-solid fa-folder me-1"></i> {{ fav.pasta.nome }}</span></p>
+                        {% endif %}
+
+                        <p class="card-text text-muted small mt-2 flex-grow-1">
+                            {{ fav.template.descricao|default:"Sem descrição."|truncatechars:70 }}
+                        </p>
+                    </div>
+                    
+                    <div class="card-footer bg-white border-0 pt-0 pb-3">
+                        <div class="d-grid">
+                            <a href="{% url 'gerar_documento' fav.template.id %}" class="btn btn-primary fw-bold">
+                                <i class="fa-solid fa-bolt me-1"></i> Preencher Rápido
+                            </a>
+                        </div>
                     </div>
                 </div>
-
-                <h5 class="card-title fw-bold text-dark mt-2 mb-1">{{ doc.titulo }}</h5>
-                
-                {% if doc.area %}
-                    <p class="mb-2"><span class="badge bg-light text-secondary border">{{ doc.area.nome }}</span></p>
-                {% endif %}
-
-                <p class="card-text text-muted small mt-3 flex-grow-1">
-                    {{ doc.descricao|default:"Sem descrição."|truncatechars:85 }}
-                </p>
             </div>
-            
-            <div class="card-footer bg-white border-0 pt-0 pb-3">
-                <div class="d-grid">
-                    <a href="{% url 'gerar_documento' doc.id %}" class="btn btn-primary fw-bold">
-                        <i class="fa-solid fa-bolt me-1"></i> Preencher Rápido
-                    </a>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <div class="text-muted">
+                    <i class="fa-regular fa-folder-open fa-3x mb-3 opacity-50"></i>
+                    <h4 class="mt-3">Nenhuma peça nesta pasta.</h4>
+                    <p>Adicione modelos ou selecione outra pasta no menu.</p>
                 </div>
             </div>
+            {% endfor %}
+        </div>
+        
+        <div class="mt-4">
+            {% include 'includes/pagination.html' with page_obj=favoritos %}
         </div>
     </div>
-    {% empty %}
-    <div class="col-12 text-center py-5">
-        <div class="text-muted">
-            <i class="fa-regular fa-star fa-3x mb-3 opacity-50"></i>
-            <h4 class="mt-3">Sua biblioteca está vazia.</h4>
-            <p>Vá até o Catálogo e clique na estrela dos modelos que você quer fixar aqui!</p>
-            <a href="{% url 'lista_templates' %}" class="btn btn-outline-primary mt-2 fw-bold">Ir para o Catálogo</a>
-        </div>
-    </div>
-    {% endfor %}
 </div>
 
-{% include 'includes/pagination.html' %}
-
+<div class="modal fade" id="modalNovaPasta" tabindex="-1" aria-labelledby="modalNovaPastaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="modalNovaPastaLabel"><i class="fa-solid fa-folder-plus text-primary me-2"></i>Criar Nova Pasta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'criar_pasta' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <label class="form-label fw-bold small text-muted">NOME DA PASTA</label>
+                    <input type="text" name="nome" class="form-control form-control-lg" placeholder="Ex: Kits BB Trabalhista" required autocomplete="off">
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold">Salvar Pasta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Script 1: Remover Favorito (mantido e atualizado)
     document.querySelectorAll('.btn-remover-favorito').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             const templateId = this.getAttribute('data-id');
             const card = document.getElementById('card-' + templateId);
             
-            // Efeito visual: o card encolhe e some suavemente
             card.style.transition = "opacity 0.3s ease, transform 0.3s ease";
             card.style.opacity = '0';
             card.style.transform = 'scale(0.8)';
             
             setTimeout(() => {
                 card.remove();
-                // Se a tela ficar vazia, recarrega para mostrar a mensagem de "biblioteca vazia"
-                if(document.querySelectorAll('.card-template').length === 0) {
-                    location.reload();
-                }
             }, 300);
             
-            // Avisa o servidor para remover do banco
             fetch(`/favoritar/${templateId}/`, {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json'
+                headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' }
+            });
+        });
+    });
+
+    // Script 2: Mover para Pasta sem recarregar a tela
+    document.querySelectorAll('.btn-mover').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const templateId = this.getAttribute('data-id');
+            const pastaId = this.getAttribute('data-pasta');
+            
+            fetch(`/minha-biblioteca/mover/${templateId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pasta_id: pastaId })
+            }).then(response => {
+                if(response.ok) {
+                    // Recarrega a página rapidamente para atualizar a visualização da pasta
+                    window.location.reload(); 
                 }
             });
         });
