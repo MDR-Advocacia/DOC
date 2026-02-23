@@ -387,7 +387,7 @@ def lista_templates(request):
         'setores': setores,
         'areas': areas,
         'categorias': categorias,
-        'filtros_atuais': request.GET 
+        'filtros_atuais': request.GET,
         'favoritos_ids': favoritos_ids
     })
 
