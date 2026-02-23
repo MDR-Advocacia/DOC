@@ -54,29 +54,63 @@ class DocumentoGerado(models.Model):
 # NOVOS MODELOS: MINHA BIBLIOTECA E FAVORITOS
 # ==========================================
 
-class PastaPersonalizada(models.Model):
-    """Pastas que cada usuário cria para organizar seus modelos favoritos."""
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pastas')
+class Equipe(models.Model):
+    """
+    Representa os Grupos e Núcleos. 
+    Se tiver uma 'equipe_pai', ele atua como um sub-núcleo.
+    """
     nome = models.CharField(max_length=100)
+    descricao = models.TextField(blank=True, null=True)
+    
+    # Auto-referência: Permite criar "Núcleo Banco do Brasil" dentro de "Equipe Trabalhista"
+    equipe_pai = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='sub_equipes')
+    
+    # Supervisores gerenciam a equipe. Membros apenas consomem.
+    supervisores = models.ManyToManyField(User, related_name='equipes_gerenciadas')
+    membros = models.ManyToManyField(User, related_name='equipes_participa', blank=True)
+    
+    criada_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['nome']
+
+    def __str__(self):
+        if self.equipe_pai:
+            return f"{self.equipe_pai.nome} > {self.nome}"
+        return self.nome
+
+
+class PastaPersonalizada(models.Model):
+    """Pastas da biblioteca (agora suportam subpastas e compartilhamento em lote)."""
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pastas_criadas')
+    nome = models.CharField(max_length=100)
+    
+    # Auto-referência: Permite criar Pastas dentro de Pastas
+    pasta_pai = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subpastas')
+    
+    # Lógica de Compartilhamento
+    compartilhada = models.BooleanField(default=False)
+    equipes_permitidas = models.ManyToManyField(Equipe, blank=True, related_name='pastas_acessiveis')
+    
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['nome']
-        # Impede que o mesmo usuário tenha duas pastas com o exato mesmo nome
-        unique_together = ['usuario', 'nome'] 
 
     def __str__(self):
+        if self.pasta_pai:
+            return f"{self.pasta_pai.nome} / {self.nome}"
         return self.nome
 
+
 class TemplateFavorito(models.Model):
-    """Tabela de ligação que diz qual template o usuário favoritou e em qual pasta está."""
+    """Ligação entre o usuário (ou a equipe), o modelo e a pasta onde ele está guardado."""
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favoritos')
     template = models.ForeignKey(Template, on_delete=models.CASCADE)
     pasta = models.ForeignKey(PastaPersonalizada, on_delete=models.SET_NULL, null=True, blank=True, related_name='templates')
     adicionado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        # Impede que o usuário favorite o mesmo modelo duas vezes
         unique_together = ['usuario', 'template'] 
 
     def __str__(self):
