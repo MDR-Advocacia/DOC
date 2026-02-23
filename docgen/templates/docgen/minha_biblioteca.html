@@ -38,7 +38,6 @@
                 <a href="?pasta=sem_pasta" class="list-group-item list-group-item-action py-3 {% if pasta_atual == 'sem_pasta' %}active fw-bold{% endif %}">
                     <i class="fa-solid fa-box-open me-2 text-secondary" style="width: 20px; text-align: center;"></i> Sem pasta
                 </a>
-                
                 {% for pasta in pastas %}
                 <a href="?pasta={{ pasta.id }}" class="list-group-item list-group-item-action py-3 d-flex justify-content-between align-items-center {% if pasta_atual == pasta.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
                     <span class="text-truncate">
