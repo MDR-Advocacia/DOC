@@ -166,21 +166,6 @@ def home_dashboard(request):
     })
 
 @login_required
-def lista_templates(request):
-    """Catálogo de peças com filtros"""
-    templates = Template.objects.filter(ativo=True).order_by('setor__nome', 'area__nome', 'titulo')
-    setores = Setor.objects.all().order_by('nome')
-    areas = Area.objects.all().order_by('nome')
-    categorias = Categoria.objects.all().order_by('nome')
-    
-    return render(request, 'docgen/lista.html', {
-        'templates': templates,
-        'setores': setores,
-        'areas': areas,
-        'categorias': categorias
-    })
-
-@login_required
 def gerar_documento(request, template_id):
     """
     Motor de Geração: Recebe o POST do formulário dinâmico,
@@ -268,11 +253,19 @@ def dashboard(request):
     Staff/Admin vê tudo. Usuário comum vê só o seu.
     """
     if request.user.is_superuser or request.user.is_staff:
-        historico = DocumentoGerado.objects.all().order_by('-data_geracao')
+        historico_list = DocumentoGerado.objects.all().order_by('-data_geracao')
     else:
-        historico = DocumentoGerado.objects.filter(usuario=request.user).order_by('-data_geracao')
+        historico_list = DocumentoGerado.objects.filter(usuario=request.user).order_by('-data_geracao')
     
-    return render(request, 'docgen/dashboard.html', {'historico': historico})
+    # Aplicando a paginação (15 documentos por página)
+    paginator = Paginator(historico_list, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'docgen/dashboard.html', {
+        'historico': page_obj,
+        'page_obj': page_obj  # Essencial para o componente de paginação aparecer
+    })
 
 @login_required
 def biblioteca_modelos(request):
@@ -313,6 +306,7 @@ def biblioteca_modelos(request):
     
     return render(request, 'docgen/biblioteca.html', {
         'templates': page_obj,
+        'page_obj': page_obj,
         'setores': setores,
         'areas': areas,
         'categorias': categorias,
@@ -320,7 +314,7 @@ def biblioteca_modelos(request):
     })
 
 # ==============================================================================
-#  AUTENTICAÇÃO
+#  AUTENTICAÇÃO E UTILITÁRIOS
 # ==============================================================================
 
 class SignUpView(generic.CreateView):
@@ -386,6 +380,7 @@ def lista_templates(request):
     
     return render(request, 'docgen/lista.html', {
         'templates': page_obj,
+        'page_obj': page_obj,
         'setores': setores,
         'areas': areas,
         'categorias': categorias,
