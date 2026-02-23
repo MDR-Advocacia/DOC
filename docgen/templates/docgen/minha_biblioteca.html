@@ -139,18 +139,33 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalNovaPasta" tabindex="-1" aria-labelledby="modalNovaPastaLabel" aria-hidden="true">
+<div class="modal fade" id="modalNovaPasta" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold" id="modalNovaPastaLabel"><i class="fa-solid fa-folder-plus text-primary me-2"></i>Criar Nova Pasta</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-folder-plus text-primary me-2"></i>Nova Pasta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form action="{% url 'criar_pasta' %}" method="post">
                 {% csrf_token %}
                 <div class="modal-body p-4">
-                    <label class="form-label fw-bold small text-muted">NOME DA PASTA</label>
-                    <input type="text" name="nome" class="form-control form-control-lg" placeholder="Ex: Kits BB Trabalhista" required autocomplete="off">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">NOME DA PASTA</label>
+                        <input type="text" name="nome" class="form-control form-control-lg" placeholder="Ex: Modelos Iniciais" required autocomplete="off">
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-muted">CRIAR DENTRO DE (OPCIONAL)</label>
+                        <select name="pasta_pai" class="form-select">
+                            <option value="">-- Nenhuma (Pasta Raiz) --</option>
+                            {% for p in pastas %}
+                                <option value="{{ p.id }}" {% if pasta_atual_id == p.id|stringformat:'s' %}selected{% endif %}>
+                                    📁 {{ p.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small">Selecione se deseja que esta seja uma subpasta.</div>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
@@ -160,7 +175,6 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
 {% block extra_js %}
 <script>
