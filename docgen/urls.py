@@ -41,6 +41,15 @@ urlpatterns = [
     # NOVA ROTA: Painel de Usuários
     path('painel-usuarios/', views.gerenciar_usuarios, name='gerenciar_usuarios'),
 
+    # 4. Histórico do Usuário
+    path('meus-documentos/', views.dashboard, name='dashboard'),
+
+    # 5. Biblioteca de Modelos (agora Acervo)
+    path('biblioteca/', views.biblioteca_modelos, name='biblioteca'),
+
+    # NOVA ROTA: Favoritar via JavaScript (AJAX)
+    path('favoritar/<int:template_id>/', views.toggle_favorito, name='toggle_favorito'),
+
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

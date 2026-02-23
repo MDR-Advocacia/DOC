@@ -1,7 +1,7 @@
 # docgen/views.py
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
@@ -23,7 +23,7 @@ import io
 from datetime import datetime
 
 # Seus Models e Utils
-from .models import Template, DocumentoGerado, Setor, Categoria, Area
+from .models import Template, DocumentoGerado, Setor, Categoria, Area, PastaPersonalizada, TemplateFavorito
 from .utils import extrair_tags_do_docx 
 
 # ==============================================================================
@@ -377,6 +377,9 @@ def lista_templates(request):
     setores = Setor.objects.all().order_by('nome')
     areas = Area.objects.all().order_by('nome')
     categorias = Categoria.objects.all().order_by('nome')
+
+    # --> LISTA DE FAVORITOS DO USUÁRIO <--
+    favoritos_ids = list(TemplateFavorito.objects.filter(usuario=request.user).values_list('template_id', flat=True))
     
     return render(request, 'docgen/lista.html', {
         'templates': page_obj,
@@ -384,8 +387,8 @@ def lista_templates(request):
         'setores': setores,
         'areas': areas,
         'categorias': categorias,
-        # Devolvemos os valores atuais para manter os inputs preenchidos
         'filtros_atuais': request.GET 
+        'favoritos_ids': favoritos_ids
     })
 
 @login_required
@@ -447,3 +450,25 @@ def gerenciar_usuarios(request):
         'usuarios_pendentes': usuarios_pendentes,
         'usuarios_ativos': usuarios_ativos
     })
+
+@login_required
+def toggle_favorito(request, template_id):
+    """Ativa ou desativa o favorito sem recarregar a página."""
+    if request.method == 'POST':
+        template = get_object_or_404(Template, id=template_id)
+        
+        # Tenta pegar se já existe, senão cria
+        favorito, created = TemplateFavorito.objects.get_or_create(
+            usuario=request.user, 
+            template=template
+        )
+        
+        if not created:
+            # Se já existia, significa que o usuário clicou para DESFAVORITAR
+            favorito.delete()
+            return JsonResponse({'status': 'removido'})
+        
+        # Se foi criado agora, é porque FAVORITOU
+        return JsonResponse({'status': 'adicionado'})
+        
+    return JsonResponse({'erro': 'Método inválido'}, status=400)

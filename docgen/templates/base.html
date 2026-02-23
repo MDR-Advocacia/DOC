@@ -93,8 +93,7 @@
                     {% if user.is_authenticated %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Dashboard</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'lista_templates' %}">Gerador</a></li>
-                        <li class="nav-item"><a class="nav-link fw-bold text-warning" href="#">
-                            <i class="fa-solid fa-star me-1"></i>Minha Biblioteca</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#">Minha Biblioteca</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'biblioteca' %}">Acervo Geral</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Histórico</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'guia_modelos' %}">FAQ</a></li>
