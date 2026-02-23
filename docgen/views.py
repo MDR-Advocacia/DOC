@@ -13,6 +13,8 @@ from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from django.db.models import Q
 from django.core.paginator import Paginator
+from django.contrib.auth.models import User
+from django.db.models import ProtectedError
 
 # Bibliotecas de processamento de DOCX
 from docxtpl import DocxTemplate, InlineImage 
@@ -389,4 +391,64 @@ def lista_templates(request):
         'categorias': categorias,
         # Devolvemos os valores atuais para manter os inputs preenchidos
         'filtros_atuais': request.GET 
+    })
+
+@login_required
+@staff_member_required
+def gerenciar_usuarios(request):
+    """
+    Painel customizado para gestão de usuários.
+    Permite aprovação, inativação e promoção em lote.
+    """
+    if request.method == 'POST':
+        acao = request.POST.get('acao')
+        usuarios_ids = request.POST.getlist('usuarios') # Pega a lista de IDs marcados nos checkboxes
+
+        if not usuarios_ids:
+            messages.warning(request, "Nenhum usuário foi selecionado.")
+        else:
+            # Filtra os usuários selecionados
+            usuarios = User.objects.filter(id__in=usuarios_ids)
+            
+            # Executa a ação escolhida
+            if acao == 'aprovar':
+                usuarios.update(is_active=True)
+                messages.success(request, f"{usuarios.count()} usuário(s) aprovado(s) com sucesso!")
+                
+            elif acao == 'remover_acesso':
+                # Evita que o admin remova o próprio acesso sem querer
+                usuarios = usuarios.exclude(id=request.user.id)
+                usuarios.update(is_active=False)
+                messages.success(request, f"Acesso revogado para {usuarios.count()} usuário(s).")
+                
+            elif acao == 'promover_admin':
+                usuarios.update(is_staff=True)
+                messages.success(request, f"{usuarios.count()} usuário(s) promovido(s) a Administrador(es).")
+                
+            elif acao == 'rebaixar_admin':
+                usuarios = usuarios.exclude(id=request.user.id)
+                usuarios.update(is_staff=False, is_superuser=False)
+                messages.success(request, f"{usuarios.count()} usuário(s) rebaixado(s) a usuário(s) comum(ns).")
+                
+            elif acao == 'excluir':
+                # Remove o próprio usuário da lista de exclusão por segurança
+                usuarios = usuarios.exclude(id=request.user.id)
+                count = usuarios.count()
+                if count > 0:
+                    try:
+                        usuarios.delete()
+                        messages.success(request, f"{count} usuário(s) excluído(s) definitivamente.")
+                    except ProtectedError:
+                        # Se o usuário já gerou documentos, o banco bloqueia a exclusão por causa do on_delete=models.PROTECT
+                        messages.error(request, "Um ou mais usuários selecionados já geraram documentos e não podem ser excluídos para manter o histórico. Recomendamos apenas 'Revogar Acesso'.")
+
+        return redirect('gerenciar_usuarios')
+
+    # Separa os usuários para as abas
+    usuarios_pendentes = User.objects.filter(is_active=False).order_by('-date_joined')
+    usuarios_ativos = User.objects.filter(is_active=True).order_by('-date_joined')
+
+    return render(request, 'docgen/gerenciar_usuarios.html', {
+        'usuarios_pendentes': usuarios_pendentes,
+        'usuarios_ativos': usuarios_ativos
     })

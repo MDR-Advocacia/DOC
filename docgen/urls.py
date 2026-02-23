@@ -34,6 +34,13 @@ urlpatterns = [
 
     path('guia-modelos/', views.guia_modelos, name='guia_modelos'),
 
+    # --- ROTAS ADMINISTRATIVAS (Supervisores) ---
+    path('novo-modelo/', views.criar_template, name='criar_template'),
+    path('configurar/<int:template_id>/', views.configurar_template, name='configurar_template'),
+    
+    # NOVA ROTA: Painel de Usuários
+    path('painel-usuarios/', views.gerenciar_usuarios, name='gerenciar_usuarios'),
+
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

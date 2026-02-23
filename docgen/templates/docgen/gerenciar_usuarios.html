@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestão de Usuários - DunaDoc{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold text-dark"><i class="fa-solid fa-users-gear me-2"></i>Gestão de Usuários</h2>
+        <p class="text-muted">Aprove novos cadastros e gerencie permissões da equipe.</p>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white pt-3 pb-0 border-bottom">
+        <ul class="nav nav-tabs border-0" id="userTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold text-primary" id="pendentes-tab" data-bs-toggle="tab" data-bs-target="#pendentes" type="button" role="tab">
+                    Novos Cadastros 
+                    {% if usuarios_pendentes.count > 0 %}
+                        <span class="badge bg-danger ms-1">{{ usuarios_pendentes.count }}</span>
+                    {% endif %}
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold text-secondary" id="ativos-tab" data-bs-toggle="tab" data-bs-target="#ativos" type="button" role="tab">
+                    Equipe Ativa ({{ usuarios_ativos.count }})
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="card-body p-0">
+        <form method="post" id="form-usuarios">
+            {% csrf_token %}
+            <input type="hidden" name="acao" id="acao-input" value="">
+
+            <div class="tab-content" id="userTabsContent">
+                
+                <div class="tab-pane fade show active" id="pendentes" role="tabpanel">
+                    <div class="p-3 bg-light d-flex gap-2 border-bottom">
+                        <button type="button" class="btn btn-success btn-sm fw-bold shadow-sm" onclick="submeterAcao('aprovar')">
+                            <i class="fa-solid fa-check me-1"></i> Aprovar Selecionados
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm fw-bold" onclick="if(confirm('Tem certeza que deseja excluir?')) submeterAcao('excluir')">
+                            <i class="fa-solid fa-trash me-1"></i> Excluir Recusados
+                        </button>
+                    </div>
+                    {% include 'docgen/includes/tabela_usuarios.html' with usuarios=usuarios_pendentes prefix="p" %}
+                </div>
+
+                <div class="tab-pane fade" id="ativos" role="tabpanel">
+                    <div class="p-3 bg-light d-flex gap-2 border-bottom">
+                        <button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="submeterAcao('remover_acesso')">
+                            <i class="fa-solid fa-ban me-1"></i> Revogar Acesso
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="submeterAcao('promover_admin')">
+                            <i class="fa-solid fa-star me-1"></i> Promover a Admin
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm fw-bold" onclick="submeterAcao('rebaixar_admin')">
+                            <i class="fa-solid fa-arrow-down me-1"></i> Rebaixar Admin
+                        </button>
+                    </div>
+                    {% include 'docgen/includes/tabela_usuarios.html' with usuarios=usuarios_ativos prefix="a" %}
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Função para marcar/desmarcar todos os checkboxes de uma tabela específica
+    function toggleAll(source, prefix) {
+        let checkboxes = document.querySelectorAll('.' + prefix + '-chk');
+        for(let i=0; i<checkboxes.length; i++) {
+            checkboxes[i].checked = source.checked;
+        }
+    }
+
+    // Função que coloca a ação no input hidden e envia o form
+    function submeterAcao(acao) {
+        document.getElementById('acao-input').value = acao;
+        document.getElementById('form-usuarios').submit();
+    }
+</script>
+{% endblock %}

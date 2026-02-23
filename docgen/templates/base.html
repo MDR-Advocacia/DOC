@@ -107,13 +107,20 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                                 {% if user.is_staff %}
-                                    <li><a class="dropdown-item" href="/admin/" target="_blank">Painel Admin</a></li>
+                                    <li><a class="dropdown-item fw-bold text-primary" href="{% url 'gerenciar_usuarios' %}">
+                                        <i class="fa-solid fa-users-gear me-2"></i>Gestão de Usuários
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/admin/" target="_blank">
+                                        <i class="fa-solid fa-database me-2"></i>Admin Django
+                                    </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                 {% endif %}
                                 <li>
                                     <form action="{% url 'logout' %}" method="post">
                                         {% csrf_token %}
-                                        <button type="submit" class="dropdown-item text-danger">Sair</button>
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="fa-solid fa-right-from-bracket me-2"></i>Sair
+                                        </button>
                                     </form>
                                 </li>
                             </ul>
