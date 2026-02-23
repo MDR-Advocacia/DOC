@@ -11,6 +11,9 @@
     /* Menu lateral de pastas */
     .list-group-item.active { background-color: #2e5bf0 !important; border-color: #2e5bf0 !important; }
     .list-group-item.active .text-warning { color: #ffd43b !important; }
+    
+    /* Hover para o botão de excluir */
+    .text-hover-danger:hover { color: #dc3545 !important; opacity: 1 !important; }
 </style>
 {% endblock %}
 
@@ -38,13 +41,23 @@
                 <a href="?pasta=sem_pasta" class="list-group-item list-group-item-action py-3 {% if pasta_atual == 'sem_pasta' %}active fw-bold{% endif %}">
                     <i class="fa-solid fa-box-open me-2 text-secondary" style="width: 20px; text-align: center;"></i> Sem pasta
                 </a>
+                
                 {% for pasta in pastas %}
-                <a href="?pasta={{ pasta.id }}" class="list-group-item list-group-item-action py-3 d-flex justify-content-between align-items-center {% if pasta_atual == pasta.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
-                    <span class="text-truncate">
+                <div class="list-group-item list-group-item-action py-2 d-flex justify-content-between align-items-center {% if pasta_atual == pasta.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
+                    
+                    <a href="?pasta={{ pasta.id }}" class="text-decoration-none text-truncate flex-grow-1 {% if pasta_atual == pasta.id|stringformat:'s' %}text-white{% else %}text-dark{% endif %}">
                         <i class="fa-solid fa-folder me-2 {% if pasta_atual == pasta.id|stringformat:'s' %}text-white{% else %}text-warning{% endif %}" style="width: 20px; text-align: center;"></i> 
                         {{ pasta.nome }}
-                    </span>
-                </a>
+                    </a>
+                    
+                    <form action="{% url 'excluir_pasta' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Tem certeza que deseja excluir a pasta {{ pasta.nome }}? (Seus modelos favoritados NÃO serão apagados, apenas ficarão soltos).')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-link p-0 text-decoration-none {% if pasta_atual == pasta.id|stringformat:'s' %}text-white{% else %}text-danger opacity-50 text-hover-danger{% endif %}" title="Excluir Pasta">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </form>
+                    
+                </div>
                 {% endfor %}
             </div>
         </div>
@@ -81,7 +94,7 @@
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <a class="dropdown-item text-danger small btn-remover-favorito" href="#" data-id="{{ fav.template.id }}">
-                                            <i class="fa-regular fa-star-half-stroke me-1"></i> Remover da Biblioteca
+                                            <i class="fa-solid fa-trash-can me-1"></i> Remover da Biblioteca
                                         </a>
                                     </li>
                                 </ul>
@@ -150,7 +163,7 @@
 
 {% block extra_js %}
 <script>
-    // Script 1: Remover Favorito (mantido e atualizado)
+    // Script 1: Remover Favorito 
     document.querySelectorAll('.btn-remover-favorito').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -185,7 +198,6 @@
                 body: JSON.stringify({ pasta_id: pastaId })
             }).then(response => {
                 if(response.ok) {
-                    // Recarrega a página rapidamente para atualizar a visualização da pasta
                     window.location.reload(); 
                 }
             });

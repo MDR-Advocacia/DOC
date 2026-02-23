@@ -541,3 +541,13 @@ def mover_para_pasta(request, template_id):
             return JsonResponse({'erro': str(e)}, status=400)
             
     return JsonResponse({'erro': 'Método inválido'}, status=400)
+
+@login_required
+def excluir_pasta(request, pasta_id):
+    """Exclui a pasta do usuário. Os modelos dentro dela apenas perdem a referência da pasta."""
+    if request.method == 'POST':
+        pasta = get_object_or_404(PastaPersonalizada, id=pasta_id, usuario=request.user)
+        nome_pasta = pasta.nome
+        pasta.delete() # O on_delete=models.SET_NULL no model garante que os templates não sejam apagados
+        messages.success(request, f"Pasta '{nome_pasta}' excluída. Os modelos voltaram para 'Sem pasta'.")
+    return redirect('minha_biblioteca')

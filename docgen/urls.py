@@ -50,6 +50,7 @@ urlpatterns = [
     # NOVA ROTA: Minha Biblioteca (Favoritos)
     path('minha-biblioteca/', views.minha_biblioteca, name='minha_biblioteca'),
     path('minha-biblioteca/nova-pasta/', views.criar_pasta, name='criar_pasta'),
+    path('minha-biblioteca/excluir-pasta/<int:pasta_id>/', views.excluir_pasta, name='excluir_pasta'),
     path('minha-biblioteca/mover/<int:template_id>/', views.mover_para_pasta, name='mover_para_pasta'),
 
     # NOVA ROTA: Favoritar via JavaScript (AJAX)
