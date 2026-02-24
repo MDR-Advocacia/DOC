@@ -20,6 +20,14 @@
         border-left: 3px solid #dee2e6; 
     }
     
+    /* Animação da setinha do sanfona */
+    .btn-collapse[aria-expanded="true"] .fa-chevron-down {
+        transform: rotate(180deg);
+    }
+    .btn-collapse .fa-chevron-down {
+        transition: transform 0.3s ease;
+    }
+    
     .text-hover-danger:hover { color: #dc3545 !important; opacity: 1 !important; }
 </style>
 {% endblock %}
@@ -41,7 +49,8 @@
                     <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
-            <div class="list-group list-group-flush rounded-bottom">
+            
+            <div class="list-group list-group-flush rounded-bottom" id="accordionPastas">
                 <a href="{% url 'minha_biblioteca' %}" class="list-group-item list-group-item-action py-3 {% if not pasta_atual_id %}active fw-bold{% endif %}">
                     <i class="fa-solid fa-layer-group me-2" style="width: 20px; text-align: center;"></i> Tudo
                 </a>
@@ -51,44 +60,69 @@
                 
                 {% for pasta in pastas %}
                     <div class="list-group-item list-group-item-action py-2 d-flex justify-content-between align-items-center {% if pasta_atual_id == pasta.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
-                        <a href="?pasta={{ pasta.id }}" class="text-decoration-none text-truncate flex-grow-1 {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-dark{% endif %}">
+                        
+                        <a href="?pasta={{ pasta.id }}" class="text-decoration-none text-truncate flex-grow-1 me-2 {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-dark{% endif %}">
                             <i class="fa-solid fa-folder me-2 {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-warning{% endif %}" style="width: 20px; text-align: center;"></i> 
                             {{ pasta.nome }}
                         </a>
                         
-                        <div class="d-flex gap-2">
-                            {% if pasta.usuario == request.user %}
-                            <button class="btn btn-link p-0 text-decoration-none {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-primary opacity-50{% endif %}" 
-                                    onclick="abrirModalCompartilhar('{{ pasta.id }}')" title="Compartilhar com Equipe">
-                                <i class="fa-solid fa-share-nodes"></i>
+                        <div class="d-flex gap-2 align-items-center">
+                            {% if pasta.subpastas.exists %}
+                            <button class="btn btn-link p-0 text-decoration-none btn-collapse me-1 {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-secondary{% endif %}" 
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#collapse-{{ pasta.id }}" 
+                                    aria-expanded="false" 
+                                    title="Expandir/Recolher">
+                                <i class="fa-solid fa-chevron-down small"></i>
                             </button>
                             {% endif %}
-                            
-                            <form action="{% url 'excluir_pasta' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir esta pasta?')">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-link p-0 text-decoration-none {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-danger opacity-50 text-hover-danger{% endif %}">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </form>
+
+                            {% if pasta.usuario == request.user or request.user.is_staff %}
+                                {% if pasta.usuario == request.user %}
+                                    {% if pasta.compartilhada %}
+                                        <form action="{% url 'parar_compartilhamento' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Tornar privado novamente?')">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-link p-0 {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-warning opacity-75{% endif %}"><i class="fa-solid fa-slash"></i></button>
+                                        </form>
+                                    {% else %}
+                                        <button class="btn btn-link p-0 {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-primary opacity-50{% endif %}" onclick="abrirModalCompartilhar('{{ pasta.id }}')">
+                                            <i class="fa-solid fa-share-nodes"></i>
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                                <form action="{% url 'excluir_pasta' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-link p-0 {% if pasta_atual_id == pasta.id|stringformat:'s' %}text-white{% else %}text-danger opacity-50 text-hover-danger{% endif %}">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="opacity-50"><i class="fa-solid fa-users-viewfinder"></i></span>
+                            {% endif %}
                         </div>
                     </div>
 
-                    {% for sub in pasta.subpastas.all %}
-                    <div class="list-group-item list-group-item-action py-2 subpasta-item d-flex justify-content-between align-items-center {% if pasta_atual_id == sub.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
-                        <a href="?pasta={{ sub.id }}" class="text-decoration-none text-truncate flex-grow-1 {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-dark{% endif %}">
-                            <i class="fa-solid fa-turn-up fa-rotate-90 me-2 opacity-50 ps-1"></i>
-                            <i class="fa-regular fa-folder-open me-1 {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-warning{% endif %}"></i>
-                            {{ sub.nome }}
-                        </a>
-                        <form action="{% url 'excluir_pasta' sub.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir esta subpasta?')">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-link p-0 text-decoration-none {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-danger opacity-50 text-hover-danger{% endif %}">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </form>
+                    <div class="collapse" id="collapse-{{ pasta.id }}" data-bs-parent="#accordionPastas">
+                        {% for sub in pasta.subpastas.all %}
+                        <div class="list-group-item list-group-item-action py-2 subpasta-item d-flex justify-content-between align-items-center {% if pasta_atual_id == sub.id|stringformat:'s' %}active fw-bold text-white{% endif %}">
+                            <a href="?pasta={{ sub.id }}" class="text-decoration-none text-truncate flex-grow-1 {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-dark{% endif %}">
+                                <i class="fa-solid fa-turn-up fa-rotate-90 me-2 opacity-50 ps-1"></i>
+                                <i class="fa-regular fa-folder-open me-1 {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-warning{% endif %}"></i>
+                                {{ sub.nome }}
+                            </a>
+                            
+                            {% if sub.usuario == request.user or request.user.is_staff %}
+                            <form action="{% url 'excluir_pasta' sub.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir subpasta?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link p-0 text-decoration-none {% if pasta_atual_id == sub.id|stringformat:'s' %}text-white{% else %}text-danger opacity-50 text-hover-danger{% endif %}">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-
                 {% endfor %}
             </div>
         </div>
@@ -109,14 +143,12 @@
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                     <li><h6 class="dropdown-header">Mover para...</h6></li>
                                     <li><a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="nenhuma">Sem pasta</a></li>
-                                    
                                     {% for p in pastas %}
                                         <li><a class="dropdown-item small btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ p.id }}">📁 {{ p.nome }}</a></li>
                                         {% for sub in p.subpastas.all %}
                                             <li><a class="dropdown-item small btn-mover ps-4" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ sub.id }}">↳ {{ sub.nome }}</a></li>
                                         {% endfor %}
                                     {% endfor %}
-
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item text-danger small btn-remover-favorito" href="#" data-id="{{ fav.template.id }}">Remover Favorito</a></li>
                                 </ul>
@@ -181,7 +213,6 @@
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary fw-bold">Salvar Pasta</button>
                 </div>
             </form>
@@ -226,14 +257,13 @@
 
 {% block extra_js %}
 <script>
-    // JS: Abrir modal de compartilhar
+    // Scripts JS
     function abrirModalCompartilhar(pastaId) {
         const modal = new bootstrap.Modal(document.getElementById('modalCompartilhar'));
         document.getElementById('share_pasta_id').value = pastaId;
         modal.show();
     }
     
-    // JS: Remover Favorito
     document.querySelectorAll('.btn-remover-favorito').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -248,7 +278,6 @@
         });
     });
 
-    // JS: Mover para pasta
     document.querySelectorAll('.btn-mover').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
