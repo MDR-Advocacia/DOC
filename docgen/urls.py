@@ -44,6 +44,9 @@ urlpatterns = [
     path('api/v1/gerar/', api_views.GerarDocumentoAPIView.as_view(), name='api_gerar'),
 
     path('minha-biblioteca/compartilhar/', views.compartilhar_pasta, name='compartilhar_pasta'),
+
+    path('equipes/editar/<int:equipe_id>/', views.editar_equipe, name='editar_equipe'),
+    path('equipes/excluir/<int:equipe_id>/', views.excluir_equipe, name='excluir_equipe'),
 ]
 
 if settings.DEBUG:

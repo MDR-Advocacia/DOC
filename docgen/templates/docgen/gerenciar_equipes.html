@@ -5,12 +5,12 @@
 {% block content %}
 <div class="row mb-4 align-items-center">
     <div class="col-md-8">
-        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-sitemap text-primary me-2"></i>Gestão de Equipes e Núcleos</h2>
-        <p class="text-muted mb-0">Crie a hierarquia do escritório (Equipes > Núcleos) para compartilhar Pastas.</p>
+        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-sitemap text-primary me-2"></i>Organograma</h2>
+        <p class="text-muted mb-0">Gerencie a hierarquia do escritório. Crie Equipes e Núcleos para distribuir permissões.</p>
     </div>
     <div class="col-md-4 text-md-end">
         <button class="btn btn-primary fw-bold px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaEquipe">
-            <i class="fa-solid fa-plus me-2"></i> Criar Nova Estrutura
+            <i class="fa-solid fa-plus me-2"></i> Nova Estrutura
         </button>
     </div>
 </div>
@@ -18,36 +18,78 @@
 <div class="row">
     <div class="col-12">
         {% for equipe in equipes %}
-            {# Garante que só renderiza os blocos principais para as Equipes Raiz (que não têm pai) #}
+            {# Renderiza apenas as Equipes Pai (Raiz) #}
             {% if not equipe.equipe_pai %}
-            <div class="card shadow-sm border-0 mb-4 border-top border-primary border-4">
-                
-                <div class="card-header bg-white p-3 d-flex justify-content-between align-items-center border-bottom">
-                    <div>
-                        <span class="badge bg-primary mb-1">EQUIPE PRINCIPAL</span>
-                        <h4 class="mb-0 fw-bold text-dark">{{ equipe.nome }}</h4>
-                        {% if equipe.descricao %}<small class="text-muted">{{ equipe.descricao }}</small>{% endif %}
+            
+            <div class="card shadow-sm border-0 mb-4 overflow-hidden">
+                <div class="card-header bg-white p-4 border-bottom border-light">
+                    <div class="row align-items-center">
+                        <div class="col-lg-6">
+                            <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-1 rounded-pill fw-bold" style="font-size: 0.7em;">EQUIPE PRINCIPAL</span>
+                            <h4 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                                {{ equipe.nome }}
+                                <button class="btn btn-link text-secondary p-0 ms-2" onclick="abrirModalEditar('{{ equipe.id }}', '{{ equipe.nome }}')" title="Renomear">
+                                    <i class="fa-solid fa-pen-to-square fs-6"></i>
+                                </button>
+                            </h4>
+                            {% if equipe.descricao %}
+                                <p class="text-muted small mb-0 mt-1">{{ equipe.descricao }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-lg-6 text-lg-end mt-3 mt-lg-0">
+                            <div class="d-flex justify-content-lg-end gap-2">
+                                <a href="{% url 'gerenciar_membros_equipe' equipe.id %}" class="btn btn-outline-primary btn-sm fw-bold px-3">
+                                    <i class="fa-solid fa-users me-1"></i> Gerenciar Membros
+                                </a>
+                                
+                                <form action="{% url 'excluir_equipe' equipe.id %}" method="post" onsubmit="return confirm('ATENÇÃO: Excluir a equipe \'{{ equipe.nome }}\' deixará todos os membros sem equipe. Continuar?');" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm px-3" title="Excluir Equipe">
+                                        <i class="fa-regular fa-trash-can"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
-                    <a href="{% url 'gerenciar_membros_equipe' equipe.id %}" class="btn btn-outline-primary fw-bold">
-                        <i class="fa-solid fa-users me-1"></i> Membros da Equipe
-                    </a>
                 </div>
 
-                <div class="card-body p-0">
+                <div class="card-body p-0 bg-light bg-opacity-25">
                     <ul class="list-group list-group-flush">
                         {% for nucleo in equipe.sub_equipes.all %}
-                        <li class="list-group-item p-3 d-flex justify-content-between align-items-center bg-light">
-                            <div class="ps-3 border-start border-3 border-secondary">
-                                <span class="badge bg-secondary mb-1">NÚCLEO VINCULADO</span>
-                                <h6 class="fw-bold mb-0 text-dark">{{ nucleo.nome }}</h6>
+                        <li class="list-group-item p-3 d-flex justify-content-between align-items-center bg-transparent border-bottom-0 border-top">
+                            <div class="d-flex align-items-center">
+                                <div class="text-muted opacity-25 me-3 ps-3">
+                                    <i class="fa-solid fa-turn-up fa-rotate-90 fs-4"></i>
+                                </div>
+                                
+                                <div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill" style="font-size: 0.65em;">NÚCLEO</span>
+                                        <h6 class="fw-bold mb-0 text-dark">{{ nucleo.nome }}</h6>
+                                        <button class="btn btn-link text-secondary p-0 ms-1" onclick="abrirModalEditar('{{ nucleo.id }}', '{{ nucleo.nome }}')" title="Renomear">
+                                            <i class="fa-solid fa-pen fs-6" style="font-size: 0.8em;"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">{{ nucleo.user_set.count }} membros vinculados</small>
+                                </div>
                             </div>
-                            <a href="{% url 'gerenciar_membros_equipe' nucleo.id %}" class="btn btn-sm btn-white border fw-bold text-secondary">
-                                <i class="fa-solid fa-users-gear me-1"></i> Membros do Núcleo
-                            </a>
+
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'gerenciar_membros_equipe' nucleo.id %}" class="btn btn-sm btn-white border fw-bold text-secondary shadow-sm">
+                                    <i class="fa-solid fa-users-gear me-1"></i> Membros
+                                </a>
+                                <form action="{% url 'excluir_equipe' nucleo.id %}" method="post" onsubmit="return confirm('Excluir o núcleo \'{{ nucleo.nome }}\'?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-white border text-danger shadow-sm" title="Excluir Núcleo">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </li>
                         {% empty %}
-                        <li class="list-group-item p-4 text-center text-muted small">
-                            Nenhum núcleo específico criado dentro desta equipe.
+                        <li class="list-group-item p-4 text-center text-muted small bg-transparent border-0">
+                            <span class="opacity-75">Nenhum núcleo específico criado dentro desta equipe.</span>
                         </li>
                         {% endfor %}
                     </ul>
@@ -56,9 +98,17 @@
             {% endif %}
         {% empty %}
             <div class="text-center py-5">
-                <i class="fa-solid fa-sitemap fa-3x text-muted opacity-50 mb-3"></i>
-                <h5 class="text-dark">Organograma Vazio</h5>
-                <p class="text-muted">Crie a sua primeira Equipe Principal clicando no botão acima.</p>
+                <div class="mb-3">
+                    <span class="fa-stack fa-2x opacity-25">
+                        <i class="fa-solid fa-circle fa-stack-2x text-secondary"></i>
+                        <i class="fa-solid fa-sitemap fa-stack-1x fa-inverse"></i>
+                    </span>
+                </div>
+                <h5 class="text-dark fw-bold">Nenhuma equipe criada</h5>
+                <p class="text-muted">Comece criando a estrutura principal do escritório.</p>
+                <button class="btn btn-primary btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#modalNovaEquipe">
+                    Criar Primeira Equipe
+                </button>
             </div>
         {% endfor %}
     </div>
@@ -75,14 +125,14 @@
                 {% csrf_token %}
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">NOME</label>
-                        <input type="text" name="nome" class="form-control" placeholder="Ex: Cível, Trabalhista, Célula BB..." required autocomplete="off">
+                        <label class="form-label fw-bold small text-muted">NOME DA ESTRUTURA</label>
+                        <input type="text" name="nome" class="form-control form-control-lg" placeholder="Ex: Cível, Trabalhista..." required autocomplete="off">
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label fw-bold small text-muted">TIPO DE ESTRUTURA</label>
-                        <select name="equipe_pai" class="form-select form-select-lg border-primary">
-                            <option value="">⭐ Criar como EQUIPE PRINCIPAL (Raiz)</option>
+                        <select name="equipe_pai" class="form-select border-primary">
+                            <option value="">Criar como EQUIPE PRINCIPAL (Raiz)</option>
                             <optgroup label="Ou vincule como um NÚCLEO dentro de:">
                                 {% for e in equipes %}
                                     {% if not e.equipe_pai %}
@@ -91,18 +141,58 @@
                                 {% endfor %}
                             </optgroup>
                         </select>
+                        <div class="form-text small">Use "Equipe Principal" para grandes áreas e vinculados para sub-divisões.</div>
                     </div>
 
                     <div class="mb-2">
                         <label class="form-label fw-bold small text-muted">DESCRIÇÃO (OPCIONAL)</label>
-                        <textarea name="descricao" class="form-control" rows="2"></textarea>
+                        <textarea name="descricao" class="form-control" rows="2" placeholder="Breve descrição da função desta equipe..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
-                    <button type="submit" class="btn btn-primary fw-bold w-100">Criar Estrutura</button>
+                    <button type="button" class="btn btn-link text-decoration-none text-muted fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">Criar</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="modalEditarEquipe" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light py-2">
+                <h6 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen me-2"></i>Renomear</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formEditarEquipe" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-body p-3">
+                    <label class="form-label fw-bold small text-muted">NOVO NOME</label>
+                    <input type="text" name="nome_equipe" id="inputNomeEquipe" class="form-control" required>
+                </div>
+                <div class="modal-footer bg-light border-0 p-2">
+                    <button type="submit" class="btn btn-primary btn-sm fw-bold w-100">Salvar Alteração</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function abrirModalEditar(id, nomeAtual) {
+        // 1. Preenche o input com o nome atual da equipe
+        document.getElementById('inputNomeEquipe').value = nomeAtual;
+        
+        // 2. Constrói a URL correta substituindo o '0' pelo ID real
+        // O Django gera a URL base com um ID placeholder (0)
+        let urlBase = "{% url 'editar_equipe' 0 %}".replace('0', id);
+        document.getElementById('formEditarEquipe').action = urlBase;
+        
+        // 3. Abre o modal
+        new bootstrap.Modal(document.getElementById('modalEditarEquipe')).show();
+    }
+</script>
 {% endblock %}
