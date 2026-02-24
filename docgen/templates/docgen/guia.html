@@ -3,6 +3,25 @@
 
 {% block title %}Guia de Criação - DunaDoc{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Animação da setinha ao recolher/expandir */
+    .card-header[aria-expanded="true"] .fa-chevron-down {
+        transform: rotate(180deg);
+    }
+    .card-header .fa-chevron-down {
+        transition: transform 0.3s ease;
+    }
+    .card-header {
+        cursor: pointer; /* Indica que é clicável */
+    }
+    /* Ajuste para o scroll não ficar escondido pelo menu fixo quando clicar no link lateral */
+    section {
+        scroll-margin-top: 80px; 
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col-lg-8">
@@ -16,7 +35,7 @@
         <div class="list-group sticky-top shadow-sm" style="top: 20px; z-index: 1;">
             <a href="#basico" class="list-group-item list-group-item-action fw-bold active">1. O Básico</a>
             <a href="#tipos" class="list-group-item list-group-item-action">2. Tipos de Campos</a>
-            <a href="#logica" class="list-group-item list-group-item-action">3. Lógica Simples</a>
+            <a href="#logica" class="list-group-item list-group-item-action">3. Lógica (IF/ELSE)</a>
             <a href="#aninhamento" class="list-group-item list-group-item-action fw-bold text-primary">4. Dependências (Novo 🚀)</a>
             <a href="#filtros" class="list-group-item list-group-item-action">5. Formatação e Filtros</a>
             <a href="#imagens" class="list-group-item list-group-item-action">6. Imagens</a>
@@ -25,207 +44,260 @@
 
     <div class="col-md-9">
         
-        <section id="basico" class="card shadow-sm border-0 mb-5">
-            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-                <h4 class="fw-bold text-dark">1. O Básico: Criando Variáveis</h4>
+        <section id="basico" class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center" 
+                 data-bs-toggle="collapse" data-bs-target="#collapseBasico" aria-expanded="true">
+                <h4 class="fw-bold text-dark mb-0">1. O Básico: Criando Variáveis</h4>
+                <i class="fa-solid fa-chevron-down text-muted"></i>
             </div>
-            <div class="card-body px-4">
-                <p>Para criar um campo preenchível no Word, use <strong>chaves duplas</strong>.</p>
-                
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="alert alert-secondary border-start border-4 border-success">
-                            <strong><i class="fa-solid fa-check"></i> Certo:</strong><br>
-                            <code>{% verbatim %}{{ nome_cliente }}{% endverbatim %}</code><br>
-                            <code>{% verbatim %}{{ data_hoje }}{% endverbatim %}</code><br>
-                            <code>{% verbatim %}{{ valor_causa }}{% endverbatim %}</code>
+            <div id="collapseBasico" class="collapse show">
+                <div class="card-body px-4 pb-4">
+                    <p>Para criar um campo preenchível no Word, use <strong>chaves duplas</strong>.</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="alert alert-secondary border-start border-4 border-success">
+                                <strong><i class="fa-solid fa-check"></i> Certo:</strong><br>
+                                <code>{% verbatim %}{{ nome_cliente }}{% endverbatim %}</code><br>
+                                <code>{% verbatim %}{{ data_hoje }}{% endverbatim %}</code><br>
+                                <code>{% verbatim %}{{ valor_causa }}{% endverbatim %}</code>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="alert alert-secondary border-start border-4 border-danger">
-                            <strong><i class="fa-solid fa-xmark"></i> Errado:</strong><br>
-                            <code>{ nome }</code> (Falta chave)<br>
-                            <code>{% verbatim %}{{ Nome do Cliente }}{% endverbatim %}</code> (Tem espaços)<br>
-                            <code>{% verbatim %}{{ data-hoje }}{% endverbatim %}</code> (Use underline _)
+                        <div class="col-md-6">
+                            <div class="alert alert-secondary border-start border-4 border-danger">
+                                <strong><i class="fa-solid fa-xmark"></i> Errado:</strong><br>
+                                <code>{ nome }</code> (Falta chave)<br>
+                                <code>{% verbatim %}{{ Nome do Cliente }}{% endverbatim %}</code> (Tem espaços)<br>
+                                <code>{% verbatim %}{{ data-hoje }}{% endverbatim %}</code> (Use underline _)
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="tipos" class="card shadow-sm border-0 mb-5">
-            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-                <h4 class="fw-bold text-dark">2. Tipos de Campos no Sistema</h4>
+        <section id="tipos" class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#collapseTipos" aria-expanded="true">
+                <h4 class="fw-bold text-dark mb-0">2. Tipos de Campos no Sistema</h4>
+                <i class="fa-solid fa-chevron-down text-muted"></i>
             </div>
-            <div class="card-body px-4">
-                <p>Ao subir o arquivo, você deve configurar o tipo de cada variável:</p>
-                <table class="table table-bordered table-hover mt-3">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Tipo</th>
-                            <th>Uso Recomendado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Texto Curto</strong></td>
-                            <td>Nomes, Cidades, Profissões, RG.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Texto Longo</strong></td>
-                            <td>Parágrafos inteiros, descrições de fatos.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Data</strong></td>
-                            <td>O sistema exibe um calendário e formata como DD/MM/AAAA.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Moeda (R$)</strong></td>
-                            <td>Valores monetários.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>CPF/CNPJ</strong></td>
-                            <td>Aplica a máscara de pontos e traço automaticamente.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Checkbox</strong></td>
-                            <td>Fundamental para Lógica Condicional (Sim/Não).</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Imagem</strong></td>
-                            <td>Para prints e assinaturas.</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div id="collapseTipos" class="collapse show">
+                <div class="card-body px-4 pb-4">
+                    <p>Ao subir o arquivo, você deve configurar o tipo de cada variável:</p>
+                    <table class="table table-bordered table-hover mt-3">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Uso Recomendado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Texto Curto</strong></td>
+                                <td>Nomes, Cidades, Profissões, RG.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Texto Longo</strong></td>
+                                <td>Parágrafos inteiros, descrições de fatos.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Data</strong></td>
+                                <td>O sistema exibe um calendário e formata como DD/MM/AAAA.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Moeda (R$)</strong></td>
+                                <td>Valores monetários.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CPF/CNPJ</strong></td>
+                                <td>Aplica a máscara de pontos e traço automaticamente.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Checkbox</strong></td>
+                                <td>Fundamental para Lógica Condicional (Sim/Não).</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Imagem</strong></td>
+                                <td>Para prints e assinaturas.</td>
+                            </tr>
+                            <tr class="table-warning">
+                                <td><strong>Lista Suspensa (Dropdown)</strong></td>
+                                <td>Para forçar a escolha entre opções fixas (ex: Deferido/Indeferido).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="alert alert-warning mt-3 py-3 shadow-sm border-0">
+                        <h6 class="fw-bold"><i class="fa-solid fa-list-ul me-2"></i>Como configurar uma Lista Suspensa?</h6>
+                        <p class="mb-1 small">
+                            1. No Word, crie a variável normalmente: <code>{% verbatim %}{{ resultado_liminar }}{% endverbatim %}</code>.<br>
+                            2. No sistema (Tela de Configuração), selecione o tipo <strong>Lista Suspensa</strong>.<br>
+                            3. Digite as opções separadas por vírgula no campo que aparecerá (Ex: <code>Deferido, Indeferido, Aguardando</code>).
+                        </p>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section id="logica" class="card shadow-sm border-0 mb-5">
-            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-                <h4 class="fw-bold text-dark">3. Lógica Condicional (Se/Então)</h4>
+        <section id="logica" class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#collapseLogica" aria-expanded="true">
+                <h4 class="fw-bold text-dark mb-0">3. Lógica Simples e Avançada (IF)</h4>
+                <i class="fa-solid fa-chevron-down text-muted"></i>
             </div>
-            <div class="card-body px-4">
-                <p>Use para mostrar ou ocultar blocos de texto inteiros.</p>
-                <div class="card bg-light border-0">
-                    <div class="card-body">
-                        <p class="mb-1 text-muted small">No Word:</p>
-                        <code class="text-dark fw-bold">
+            <div id="collapseLogica" class="collapse show">
+                <div class="card-body px-4 pb-4">
+                    <p>Use para mostrar ou ocultar blocos de texto inteiros.</p>
+                    
+                    <h6 class="fw-bold mt-3"><i class="fa-regular fa-square-check me-2"></i>1. Sim ou Não (Checkbox)</h6>
+                    <div class="card bg-light border-0 mb-3">
+                        <div class="card-body font-monospace small">
+                            <span class="text-muted">// Se "pedir_gratuidade" estiver marcado:</span><br>
                             {% verbatim %}
                             {% if pedir_gratuidade %}
                                 Requer os benefícios da Justiça Gratuita, por ser pobre na forma da lei.
                             {% endif %}
                             {% endverbatim %}
-                        </code>
+                        </div>
                     </div>
-                </div>
-                <div class="alert alert-info mt-3 py-2 small">
-                    <i class="fa-solid fa-circle-info me-1"></i> <strong>Dica:</strong> Configure a variável <code>pedir_gratuidade</code> como <strong>Checkbox</strong> no sistema.
-                </div>
-            </div>
-        </section>
 
-        <section id="aninhamento" class="card shadow-sm border-0 mb-5 border-start border-4 border-warning">
-            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-                <h4 class="fw-bold text-primary">4. Aninhamento e Dependências 🚀</h4>
-            </div>
-            <div class="card-body px-4">
-                <p>Agora você pode criar formulários inteligentes onde campos só aparecem se uma opção anterior for marcada.</p>
-                
-                <h5 class="mt-4 fw-bold">Passo 1: No Word (A Matrioska)</h5>
-                <p>Coloque um <code>if</code> dentro de outro. Exemplo de Preliminares:</p>
-                
-                <div class="p-3 bg-dark text-white rounded font-monospace small">
-                    {% verbatim %}
-                    {% if tem_preliminares %}
-                        
-                        II. DAS PRELIMINARES
-                        
-                        {% if pede_incompetencia %}
-                        DA INCOMPETÊNCIA DO JUÍZO
-                        O juízo é incompetente em razão do lugar...
-                        {% endif %}
-
-                        {% if pede_ilegitimidade %}
-                        DA ILEGITIMIDADE PASSIVA
-                        A parte ré não possui relação jurídica...
-                        {% endif %}
-
-                    {% endif %}
-                    {% endverbatim %}
-                </div>
-
-                <h5 class="mt-4 fw-bold">Passo 2: No Sistema (Configuração)</h5>
-                <p>Para que o formulário entenda essa lógica e esconda os campos filhos:</p>
-                <ol>
-                    <li>Vá em <strong>Configurar Modelo</strong>.</li>
-                    <li>Defina <code>tem_preliminares</code> como <strong>Checkbox</strong>.</li>
-                    <li>Defina <code>pede_incompetencia</code> como Checkbox (ou outro tipo).</li>
-                    <li>
-                        Na coluna <strong>"Condição (Aparece se...)"</strong> da variável <code>pede_incompetencia</code>, 
-                        selecione: <strong>Se "tem_preliminares" for SIM</strong>.
-                    </li>
-                </ol>
-
-                <div class="alert alert-success d-flex align-items-center mt-3">
-                    <i class="fa-solid fa-magic fs-3 me-3"></i>
-                    <div>
-                        <strong>Resultado:</strong> No formulário de preenchimento, os campos filhos ficarão ocultos até que você marque "Tem Preliminares".
+                    <h6 class="fw-bold mt-4"><i class="fa-solid fa-list me-2"></i>2. Comparação de Texto (Dropdown)</h6>
+                    <div class="card bg-dark text-white border-0 mb-2">
+                        <div class="card-body font-monospace small">
+                            <span class="text-success">// Exemplo: Variável "estado_civil" com opções "Casado, Solteiro"</span>
+                            <br><br>
+                            {% verbatim %}
+                            {% if estado_civil == "Casado" %}
+                                casado, residente e domiciliado com sua esposa...
+                            {% elif estado_civil == "Solteiro" %}
+                                solteiro, residente e domiciliado...
+                            {% else %}
+                                estado civil declarado como {{ estado_civil }}...
+                            {% endif %}
+                            {% endverbatim %}
+                        </div>
+                    </div>
+                    <div class="alert alert-danger py-2 small mt-2">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> <strong>Atenção:</strong> O texto entre aspas deve ser <strong>IDÊNTICO</strong> (letras maiúsculas e acentos) ao cadastrado nas opções do sistema.
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="filtros" class="card shadow-sm border-0 mb-5">
-            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-                <h4 class="fw-bold text-dark">5. Formatação e Filtros</h4>
+        <section id="aninhamento" class="card shadow-sm border-0 mb-4 border-start border-4 border-warning">
+            <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#collapseAninhamento" aria-expanded="true">
+                <h4 class="fw-bold text-primary mb-0">4. Aninhamento e Dependências 🚀</h4>
+                <i class="fa-solid fa-chevron-down text-muted"></i>
             </div>
-            <div class="card-body px-4">
-                <p>Você pode alterar o texto diretamente na tag usando o pipe <code>|</code>.</p>
-                <table class="table table-sm table-striped align-middle">
-                    <thead>
-                        <tr>
-                            <th>Sintaxe</th>
-                            <th>Função</th>
-                            <th>Exemplo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>{% verbatim %}{{ nome|upper }}{% endverbatim %}</code></td>
-                            <td>Tudo Maiúsculo</td>
-                            <td>JOÃO SILVA</td>
-                        </tr>
-                        <tr>
-                            <td><code>{% verbatim %}{{ cidade|title }}{% endverbatim %}</code></td>
-                            <td>Primeira Letra Maiúscula</td>
-                            <td>Rio De Janeiro</td>
-                        </tr>
-                        <tr>
-                            <td><code>{% verbatim %}{{ estado|lower }}{% endverbatim %}</code></td>
-                            <td>Tudo minúsculo</td>
-                            <td>rio grande do norte</td>
-                        </tr>
-                        <tr>
-                            <td><code>{% verbatim %}{{ valor|default:"0,00" }}{% endverbatim %}</code></td>
-                            <td>Valor padrão se vazio</td>
-                            <td>0,00</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div id="collapseAninhamento" class="collapse show">
+                <div class="card-body px-4 pb-4">
+                    <p>Agora você pode criar formulários inteligentes onde campos só aparecem se uma opção anterior for marcada.</p>
+                    
+                    <h5 class="mt-4 fw-bold">Passo 1: No Word (A Matrioska)</h5>
+                    <p>Coloque um <code>if</code> dentro de outro. Exemplo de Preliminares:</p>
+                    
+                    <div class="p-3 bg-dark text-white rounded font-monospace small">
+                        {% verbatim %}
+                        {% if tem_preliminares %}
+                            
+                            II. DAS PRELIMINARES
+                            
+                            {% if pede_incompetencia %}
+                            DA INCOMPETÊNCIA DO JUÍZO
+                            O juízo é incompetente em razão do lugar...
+                            {% endif %}
+
+                            {% if pede_ilegitimidade %}
+                            DA ILEGITIMIDADE PASSIVA
+                            A parte ré não possui relação jurídica...
+                            {% endif %}
+
+                        {% endif %}
+                        {% endverbatim %}
+                    </div>
+
+                    <h5 class="mt-4 fw-bold">Passo 2: No Sistema (Configuração)</h5>
+                    <p>Para que o formulário entenda essa lógica e esconda os campos filhos:</p>
+                    <ol>
+                        <li>Vá em <strong>Configurar Modelo</strong>.</li>
+                        <li>Defina <code>tem_preliminares</code> como <strong>Checkbox</strong>.</li>
+                        <li>Defina <code>pede_incompetencia</code> como Checkbox (ou outro tipo).</li>
+                        <li>
+                            Na coluna <strong>"Condição (Aparece se...)"</strong> da variável <code>pede_incompetencia</code>, 
+                            selecione: <strong>Se "tem_preliminares" for SIM</strong>.
+                        </li>
+                    </ol>
+
+                    <div class="alert alert-success d-flex align-items-center mt-3">
+                        <i class="fa-solid fa-magic fs-3 me-3"></i>
+                        <div>
+                            <strong>Resultado:</strong> No formulário de preenchimento, os campos filhos ficarão ocultos até que você marque "Tem Preliminares".
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section id="imagens" class="card shadow-sm border-0 mb-5">
-            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-                <h4 class="fw-bold text-dark">6. Imagens e Prints</h4>
+        <section id="filtros" class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#collapseFiltros" aria-expanded="true">
+                <h4 class="fw-bold text-dark mb-0">5. Formatação e Filtros</h4>
+                <i class="fa-solid fa-chevron-down text-muted"></i>
             </div>
-            <div class="card-body px-4">
-                <p>Para inserir prints de WhatsApp, comprovantes ou assinaturas.</p>
-                <ul>
-                    <li>Use uma tag normal: <code>{% verbatim %}{{ print_conversa }}{% endverbatim %}</code></li>
-                    <li>No sistema, escolha o tipo <strong>Imagem/Print</strong>.</li>
-                    <li>O sistema redimensionará automaticamente a imagem para caber na página (máximo 16cm de largura), mantendo a proporção.</li>
-                </ul>
+            <div id="collapseFiltros" class="collapse show">
+                <div class="card-body px-4 pb-4">
+                    <p>Você pode alterar o texto diretamente na tag usando o pipe <code>|</code>.</p>
+                    <table class="table table-sm table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Sintaxe</th>
+                                <th>Função</th>
+                                <th>Exemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>{% verbatim %}{{ nome|upper }}{% endverbatim %}</code></td>
+                                <td>Tudo Maiúsculo</td>
+                                <td>JOÃO SILVA</td>
+                            </tr>
+                            <tr>
+                                <td><code>{% verbatim %}{{ cidade|title }}{% endverbatim %}</code></td>
+                                <td>Primeira Letra Maiúscula</td>
+                                <td>Rio De Janeiro</td>
+                            </tr>
+                            <tr>
+                                <td><code>{% verbatim %}{{ estado|lower }}{% endverbatim %}</code></td>
+                                <td>Tudo minúsculo</td>
+                                <td>rio grande do norte</td>
+                            </tr>
+                            <tr>
+                                <td><code>{% verbatim %}{{ valor|default:"0,00" }}{% endverbatim %}</code></td>
+                                <td>Valor padrão se vazio</td>
+                                <td>0,00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="imagens" class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#collapseImagens" aria-expanded="true">
+                <h4 class="fw-bold text-dark mb-0">6. Imagens e Prints</h4>
+                <i class="fa-solid fa-chevron-down text-muted"></i>
+            </div>
+            <div id="collapseImagens" class="collapse show">
+                <div class="card-body px-4 pb-4">
+                    <p>Para inserir prints de WhatsApp, comprovantes ou assinaturas.</p>
+                    <ul>
+                        <li>Use uma tag normal: <code>{% verbatim %}{{ print_conversa }}{% endverbatim %}</code></li>
+                        <li>No sistema, escolha o tipo <strong>Imagem/Print</strong>.</li>
+                        <li>O sistema redimensionará automaticamente a imagem para caber na página (máximo 16cm de largura), mantendo a proporção.</li>
+                    </ul>
+                </div>
             </div>
         </section>
 

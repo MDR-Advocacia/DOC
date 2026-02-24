@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views import generic
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
@@ -15,6 +15,9 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from django.db.models import ProtectedError
+from .models import Equipe
+from django.db import models
+
 
 # Bibliotecas de processamento de DOCX
 from docxtpl import DocxTemplate, InlineImage 
@@ -84,12 +87,11 @@ def criar_template(request):
 @staff_member_required
 def configurar_template(request, template_id):
     """
-    PASSO 2: Tela para definir Labels, Tipos e DEPENDÊNCIAS das variáveis.
+    PASSO 2: Tela para definir Labels, Tipos, DEPENDÊNCIAS e OPÇÕES das variáveis.
     """
     template = get_object_or_404(Template, pk=template_id)
     
     # 1. O Robô lê o arquivo físico e acha as tags
-    # Nota: Com o novo utils.py, isso já traz na ordem correta e inclui os 'if'
     tags_encontradas = extrair_tags_do_docx(template.arquivo_template.path)
     
     # 2. Carrega configuração existente
@@ -102,13 +104,15 @@ def configurar_template(request, template_id):
         for tag in tags_encontradas:
             label_input = request.POST.get(f'label_{tag}')
             tipo_input = request.POST.get(f'tipo_{tag}')
-            dependencia_input = request.POST.get(f'dependencia_{tag}') # <--- NOVO (Captura quem é o pai)
+            dependencia_input = request.POST.get(f'dependencia_{tag}')
+            opcoes_input = request.POST.get(f'opcoes_{tag}', '') # <--- NOVO: Captura opções do dropdown
             
             nova_configuracao.append({
                 "tag": tag,
                 "label": label_input or tag.replace('_', ' ').title(),
                 "tipo": tipo_input,
-                "dependencia": dependencia_input # <--- NOVO (Salva no banco)
+                "dependencia": dependencia_input,
+                "opcoes": opcoes_input # <--- NOVO: Salva no JSON
             })
         
         template.configuracao_campos = nova_configuracao
@@ -124,13 +128,14 @@ def configurar_template(request, template_id):
             'tag': tag,
             'label': dados.get('label', tag.replace('_', ' ').title()),
             'tipo': dados.get('tipo', 'text'),
-            'dependencia': dados.get('dependencia', '') # <--- NOVO (Lê do banco para a tela)
+            'dependencia': dados.get('dependencia', ''),
+            'opcoes': dados.get('opcoes', '') # <--- NOVO: Lê do banco para exibir na tela
         })
 
     return render(request, 'docgen/configurar_template.html', {
         'template': template,
         'campos': campos_para_exibir,
-        'todas_tags': tags_encontradas # <--- NOVO (Necessário para popular o dropdown de pais)
+        'todas_tags': tags_encontradas
     })
 
 
@@ -454,6 +459,82 @@ def gerenciar_usuarios(request):
     })
 
 @login_required
+@staff_member_required
+def gerenciar_equipes(request):
+    """
+    Painel exclusivo para a Coordenação criar e visualizar 
+    Equipes, Núcleos e Sub-núcleos do escritório.
+    """
+    if request.method == 'POST':
+        nome = request.POST.get('nome')
+        descricao = request.POST.get('descricao')
+        equipe_pai_id = request.POST.get('equipe_pai')
+        
+        if nome:
+            try:
+                nova_equipe = Equipe.objects.create(
+                    nome=nome,
+                    descricao=descricao,
+                    # Se não selecionar pai, fica None (é uma Equipe Raiz)
+                    equipe_pai_id=equipe_pai_id if equipe_pai_id else None 
+                )
+                # O coordenador que criou a equipe já vira supervisor dela automaticamente
+                nova_equipe.supervisores.add(request.user)
+                messages.success(request, f"Estrutura '{nome}' criada com sucesso!")
+            except Exception as e:
+                messages.error(request, f"Erro ao criar equipe: {e}")
+                
+        return redirect('gerenciar_equipes')
+
+    # Busca todas as equipes para listar e para popular o seletor de Equipe Pai
+    equipes = Equipe.objects.all().select_related('equipe_pai').order_by('equipe_pai__nome', 'nome')
+    
+    return render(request, 'docgen/gerenciar_equipes.html', {
+        'equipes': equipes
+    })
+
+@login_required
+@staff_member_required
+def gerenciar_membros_equipe(request, equipe_id):
+    """
+    Lógica para o Coordenador adicionar ou remover advogados e 
+    supervisores de um núcleo específico.
+    """
+    equipe = get_object_or_404(Equipe, id=equipe_id)
+    
+    if request.method == 'POST':
+        acao = request.POST.get('acao')
+        usuario_id = request.POST.get('usuario_id')
+        
+        if usuario_id:
+            usuario = get_object_or_404(User, id=usuario_id)
+            if acao == 'adicionar_membro':
+                equipe.membros.add(usuario)
+                messages.success(request, f"{usuario.username} adicionado como membro.")
+            elif acao == 'remover_membro':
+                equipe.membros.remove(usuario)
+                messages.warning(request, f"{usuario.username} removido dos membros.")
+            elif acao == 'adicionar_supervisor':
+                equipe.supervisores.add(usuario)
+                messages.success(request, f"{usuario.username} promovido a supervisor.")
+            elif acao == 'remover_supervisor':
+                equipe.supervisores.remove(usuario)
+                messages.warning(request, f"{usuario.username} removido da supervisão.")
+                
+        return redirect('gerenciar_membros_equipe', equipe_id=equipe.id)
+
+    # Filtra usuários que já estão na equipe para não repetir na lista
+    usuarios_na_equipe = list(equipe.membros.values_list('id', flat=True)) + \
+                         list(equipe.supervisores.values_list('id', flat=True))
+    
+    usuarios_disponiveis = User.objects.exclude(id__in=usuarios_na_equipe).filter(is_active=True).order_by('first_name')
+
+    return render(request, 'docgen/gerenciar_membros.html', {
+        'equipe': equipe,
+        'usuarios_disponiveis': usuarios_disponiveis
+    })
+
+@login_required
 def toggle_favorito(request, template_id):
     """Ativa ou desativa o favorito sem recarregar a página."""
     if request.method == 'POST':
@@ -478,61 +559,94 @@ def toggle_favorito(request, template_id):
 @login_required
 def minha_biblioteca(request):
     """
-    Exibe os modelos favoritados, divididos por pastas.
+    Exibe os modelos favoritados, suportando hierarquia de pastas e 
+    pastas compartilhadas via Equipes/Núcleos da MDR Advocacia.
     """
-    pasta_selecionada = request.GET.get('pasta')
+    pasta_id = request.GET.get('pasta')
     
-    # Ao invés de buscar os Templates, buscamos a relação de Favoritos 
-    # (porque ela já diz em qual pasta o arquivo está)
+    # 1. Busca as Equipes que o usuário faz parte (para ver pastas compartilhadas)
+    equipes_usuario = request.user.equipes_participa.all()
+
+    # 2. Define as pastas do menu lateral (Apenas as Raiz)
+    # Mostra pastas do próprio usuário OU compartilhadas com as equipes dele
+    pastas_sidebar = PastaPersonalizada.objects.filter(
+        (models.Q(usuario=request.user) | models.Q(equipes_permitidas__in=equipes_usuario)),
+        pasta_pai__isnull=True
+    ).distinct()
+
+    # 3. Busca os Favoritos (Arquivos)
     favoritos_query = TemplateFavorito.objects.filter(usuario=request.user).select_related('template', 'pasta')
-    
-    # Filtra pela pasta clicada no menu lateral
-    if pasta_selecionada == 'sem_pasta':
+
+    if pasta_id == 'sem_pasta':
         favoritos_query = favoritos_query.filter(pasta__isnull=True)
-    elif pasta_selecionada:
-        favoritos_query = favoritos_query.filter(pasta_id=pasta_selecionada)
-        
+    elif pasta_id:
+        favoritos_query = favoritos_query.filter(pasta_id=pasta_id)
+
     favoritos_query = favoritos_query.order_by('template__titulo')
     
+    # 4. Busca Subpastas (se houver uma pasta selecionada)
+    subpastas = []
+    if pasta_id and pasta_id != 'sem_pasta':
+        subpastas = PastaPersonalizada.objects.filter(pasta_pai_id=pasta_id)
+
+    # 5. Paginação
     paginator = Paginator(favoritos_query, 12)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(request.GET.get('page'))
     
-    # Busca as pastas criadas por este usuário para o menu lateral
-    pastas = PastaPersonalizada.objects.filter(usuario=request.user)
-    
-    return render(request, 'docgen/minha_biblioteca.html', {
-        'favoritos': page_obj,      # Agora enviamos o 'TemplateFavorito' (que contém .template e .pasta)
+    # --- O CONTEXTO VAI AQUI (A sacola de dados para o HTML) ---
+    context = {
+        'favoritos': page_obj,
         'page_obj': page_obj,
-        'pastas': pastas,
-        'pasta_atual': pasta_selecionada
-    })
+        'pastas': pastas_sidebar,
+        'subpastas': subpastas,
+        'pasta_atual_id': pasta_id,
+        # Essa linha abaixo é a que permite o modal de compartilhar listar os núcleos:
+        'equipes_disponiveis': Equipe.objects.all().order_by('nome'), 
+    }
+
+    return render(request, 'docgen/minha_biblioteca.html', context)
 
 @login_required
 def criar_pasta(request):
-    """Cria uma nova pasta para o usuário."""
+    """Cria uma nova pasta ou subpasta."""
     if request.method == 'POST':
         nome = request.POST.get('nome')
+        pai_id = request.POST.get('pasta_pai') # ID da pasta onde você está no momento
+        
         if nome:
-            PastaPersonalizada.objects.get_or_create(usuario=request.user, nome=nome)
-            messages.success(request, f"Pasta '{nome}' criada com sucesso!")
-    return redirect('minha_biblioteca')
+            nova_pasta = PastaPersonalizada.objects.create(
+                usuario=request.user, 
+                nome=nome,
+                pasta_pai_id=pai_id if pai_id else None
+            )
+            messages.success(request, f"Pasta '{nome}' criada!")
+    
+    # Retorna para a pasta de origem para não perder o fluxo
+    redirect_url = reverse('minha_biblioteca')
+    if pai_id:
+        redirect_url += f"?pasta={pai_id}"
+        
+    return redirect(redirect_url)
 
 @login_required
 def mover_para_pasta(request, template_id):
-    """Move um template favoritado para uma pasta específica via JavaScript."""
+    """Move um template favoritado entre pastas (incluindo subpastas)."""
     if request.method == 'POST':
         try:
             dados = json.loads(request.body)
-            pasta_id = dados.get('pasta_id')
+            nova_pasta_id = dados.get('pasta_id')
             
-            # Pega o registro de favorito desse template para este usuário
             favorito = get_object_or_404(TemplateFavorito, template_id=template_id, usuario=request.user)
             
-            if not pasta_id or pasta_id == 'nenhuma':
+            if not nova_pasta_id or nova_pasta_id == 'nenhuma':
                 favorito.pasta = None
             else:
-                pasta = get_object_or_404(PastaPersonalizada, id=pasta_id, usuario=request.user)
+                # Garante que o usuário só mova para pastas que ele tem acesso
+                equipes = request.user.equipes_participa.all()
+                pasta = get_object_or_404(
+                    PastaPersonalizada, 
+                    models.Q(id=nova_pasta_id) & (models.Q(usuario=request.user) | models.Q(equipes_permitidas__in=equipes))
+                )
                 favorito.pasta = pasta
                 
             favorito.save()
@@ -541,3 +655,44 @@ def mover_para_pasta(request, template_id):
             return JsonResponse({'erro': str(e)}, status=400)
             
     return JsonResponse({'erro': 'Método inválido'}, status=400)
+
+@login_required
+def excluir_pasta(request, pasta_id):
+    """Exclui a pasta do usuário. Os modelos dentro dela apenas perdem a referência da pasta."""
+    if request.method == 'POST':
+        pasta = get_object_or_404(PastaPersonalizada, id=pasta_id, usuario=request.user)
+        nome_pasta = pasta.nome
+        pasta.delete() # O on_delete=models.SET_NULL no model garante que os templates não sejam apagados
+        messages.success(request, f"Pasta '{nome_pasta}' excluída. Os modelos voltaram para 'Sem pasta'.")
+    return redirect('minha_biblioteca')
+
+@login_required
+def compartilhar_pasta(request):
+    """
+    Víncula uma pasta a equipes e replica a permissão para todas as subpastas (Cascata).
+    """
+    if request.method == 'POST':
+        pasta_id = request.POST.get('pasta_id')
+        equipes_ids = request.POST.getlist('equipes') # IDs que vieram do formulário
+        
+        # 1. Pega a pasta principal (Pai)
+        pasta_principal = get_object_or_404(PastaPersonalizada, id=pasta_id, usuario=request.user)
+        
+        # 2. Carrega os objetos das equipes para poder atribuir
+        equipes_selecionadas = Equipe.objects.filter(id__in=equipes_ids)
+
+        # 3. Função Mágica: Aplica na pasta atual e chama a si mesma para as filhas
+        def aplicar_permissao_em_cascata(pasta_alvo):
+            # Limpa as permissões antigas e define as novas
+            pasta_alvo.equipes_permitidas.set(equipes_selecionadas)
+            
+            # CORREÇÃO AQUI: Usando 'subpastas' (tudo junto) conforme seu models.py
+            for sub in pasta_alvo.subpastas.all():
+                aplicar_permissao_em_cascata(sub)
+
+        # 4. Dispara a cascata começando da pasta pai
+        aplicar_permissao_em_cascata(pasta_principal)
+        
+        messages.success(request, f"Permissões aplicadas à pasta '{pasta_principal.nome}' e todas as suas subpastas!")
+        
+    return redirect('minha_biblioteca')

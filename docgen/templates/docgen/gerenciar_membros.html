@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Membros da Estrutura - DunaDoc{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <a href="{% url 'gerenciar_equipes' %}" class="text-decoration-none text-muted small mb-2 d-block">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar para Organograma
+        </a>
+        <h2 class="fw-bold text-dark mb-1">
+            <i class="fa-solid fa-users text-primary me-2"></i>{{ equipe.nome }}
+        </h2>
+        <p class="text-muted mb-0">Gerencie quem pode usar as peças e quem coordena esta estrutura.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        
+        <div class="card shadow-sm border-0 mb-4 border-top border-warning border-3">
+            <div class="card-header bg-white fw-bold py-3 border-bottom">
+                <i class="fa-solid fa-crown text-warning me-2"></i> Supervisores (Coordenadores da Equipe)
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for sup in equipe.supervisores.all %}
+                <li class="list-group-item py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold text-dark">{{ sup.get_full_name|default:sup.username }}</span>
+                        <small class="text-muted d-block">{{ sup.email }}</small>
+                    </div>
+                    {% if sup != request.user %}
+                    <form action="{% url 'gerenciar_membros_equipe' equipe.id %}" method="post" class="m-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="remover_supervisor">
+                        <input type="hidden" name="usuario_id" value="{{ sup.id }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover da Supervisão">Remover</button>
+                    </form>
+                    {% else %}
+                        <span class="badge bg-light text-secondary border">Você</span>
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li class="list-group-item py-4 text-center text-muted">Nenhum supervisor atribuído.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="card shadow-sm border-0 border-top border-success border-3">
+            <div class="card-header bg-white fw-bold py-3 border-bottom">
+                <i class="fa-solid fa-user-tie text-success me-2"></i> Advogados / Membros Comuns
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for membro in equipe.membros.all %}
+                <li class="list-group-item py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold text-dark">{{ membro.get_full_name|default:membro.username }}</span>
+                        <small class="text-muted d-block">{{ membro.email }}</small>
+                    </div>
+                    <form action="{% url 'gerenciar_membros_equipe' equipe.id %}" method="post" class="m-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="remover_membro">
+                        <input type="hidden" name="usuario_id" value="{{ membro.id }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover Membro">Remover</button>
+                    </form>
+                </li>
+                {% empty %}
+                <li class="list-group-item py-4 text-center text-muted">Nenhum membro neste núcleo ainda.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 bg-light sticky-top" style="top: 20px;">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-user-plus text-primary me-2"></i>Adicionar Usuário</h5>
+                
+                <form action="{% url 'gerenciar_membros_equipe' equipe.id %}" method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">SELECIONE O ADVOGADO</label>
+                        <select name="usuario_id" class="form-select" required>
+                            <option value="">-- Escolha da lista --</option>
+                            {% for u in usuarios_disponiveis %}
+                                <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">QUAL O NÍVEL DE ACESSO?</label>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="acao" id="radioMembro" value="adicionar_membro" checked>
+                            <label class="form-check-label text-dark" for="radioMembro">
+                                <strong>Membro Comum</strong> <br>
+                                <small class="text-muted">Apenas visualiza e usa as pastas/peças.</small>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="acao" id="radioSupervisor" value="adicionar_supervisor">
+                            <label class="form-check-label text-dark" for="radioSupervisor">
+                                <strong>Supervisor</strong> <br>
+                                <small class="text-muted">Pode gerenciar membros e organizar as pastas deste núcleo.</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary fw-bold w-100">
+                        Adicionar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -19,6 +19,7 @@
         :root {
             --duna-dark: #0a0e27;
             --duna-primary: #2e5bf0;
+            --duna-success: #198754;
         }
 
         body {
@@ -36,11 +37,9 @@
 
         /* --- NAVBAR ALTO CONTRASTE --- */
         .navbar {
-            /* Gradiente Agressivo: Azul Vibrante (#004ecb) -> Preto Quase Total (#02040a) */
             background: linear-gradient(90deg, #004ecb 0%, #001233 60%, #02040a 100%) !important;
-            
-            border-bottom: 1px solid rgba(255,255,255,0.15); /* Borda um pouco mais visível */
-            box-shadow: 0 4px 25px rgba(0,0,0,0.25); /* Sombra mais marcada */
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 4px 25px rgba(0,0,0,0.25);
         }
 
         .navbar-brand {
@@ -48,30 +47,38 @@
             color: #fff !important;
             font-size: 1.4rem;
             letter-spacing: 0.5px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Sombra de texto mais forte */
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         .navbar-icon {
-            height: 34px; /* Levemente maior */
+            height: 34px;
             width: auto;
             margin-right: 12px;
-            /* Aumenta o brilho da imagem para ela "saltar" do fundo azul */
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)) brightness(1.2) contrast(1.1);
+        }
+
+        .nav-link {
+            font-weight: 500;
+            transition: color 0.2s;
+            color: rgba(255,255,255,0.85) !important;
+        }
+
+        .nav-link:hover {
+            color: #66b2ff !important;
+        }
+
+        .nav-link.active {
+            color: #fff !important;
+            font-weight: 700;
         }
 
         .footer {
             background-color: var(--duna-dark);
             color: #8da2fb;
         }
-        
-        /* Ajuste fino para os links da navbar */
-        .nav-link {
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-        .nav-link:hover {
-            color: #66b2ff !important; /* Azul claro no hover */
-        }
+
+        /* Estilo para os Alertas */
+        .alert { border-radius: 12px; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -106,20 +113,24 @@
                             <a class="nav-link dropdown-toggle active" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="fa-solid fa-circle-user me-1"></i> {{ user.username }}
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2">
                                 {% if user.is_staff %}
-                                    <li><a class="dropdown-item fw-bold text-primary" href="{% url 'gerenciar_usuarios' %}">
+                                    <li><h6 class="dropdown-header">Gestão Administrativa</h6></li>
+                                    <li><a class="dropdown-item fw-bold text-primary py-2" href="{% url 'gerenciar_usuarios' %}">
                                         <i class="fa-solid fa-users-gear me-2"></i>Gestão de Usuários
                                     </a></li>
-                                    <li><a class="dropdown-item" href="/admin/" target="_blank">
+                                    <li><a class="dropdown-item fw-bold text-success py-2" href="{% url 'gerenciar_equipes' %}">
+                                        <i class="fa-solid fa-sitemap me-2"></i>Gestão de Equipes
+                                    </a></li>
+                                    <li><a class="dropdown-item py-2" href="/admin/" target="_blank">
                                         <i class="fa-solid fa-database me-2"></i>Admin Django
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                 {% endif %}
                                 <li>
-                                    <form action="{% url 'logout' %}" method="post">
+                                    <form action="{% url 'logout' %}" method="post" class="m-0">
                                         {% csrf_token %}
-                                        <button type="submit" class="dropdown-item text-danger">
+                                        <button type="submit" class="dropdown-item text-danger py-2">
                                             <i class="fa-solid fa-right-from-bracket me-2"></i>Sair
                                         </button>
                                     </form>
@@ -139,7 +150,8 @@
     <div class="container mt-4">
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0" role="alert">
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm border-0" role="alert">
+                    <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% else %}fa-circle-info{% endif %} me-2"></i>
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
@@ -153,8 +165,7 @@
 
     <footer class="footer py-4 mt-auto text-center small">
         <div class="container">
-            <p class="mb-0">© 2026 Duna.Tech - Soluções Jurídicas.</p>
-            <p class="mb-0 opacity-50">Doc v1.0</p>
+            <p class="mb-0">© 2026 Duna.Tech - MDR Advocacia.</p>
         </div>
     </footer>
 

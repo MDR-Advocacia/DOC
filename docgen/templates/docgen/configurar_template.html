@@ -41,10 +41,11 @@
                             <table class="table align-middle table-hover">
                                 <thead class="table-light">
                                     <tr class="text-uppercase small text-muted">
-                                        <th style="width: 25%">Variável (Word)</th>
-                                        <th style="width: 30%">Nome da Pergunta (Label)</th>
-                                        <th style="width: 20%">Tipo de Resposta</th>
-                                        <th style="width: 25%">Condição (Aparece se...)</th> </tr>
+                                        <th style="width: 20%">Variável (Word)</th>
+                                        <th style="width: 25%">Nome da Pergunta (Label)</th>
+                                        <th style="width: 30%">Tipo de Resposta</th>
+                                        <th style="width: 25%">Condição (Aparece se...)</th> 
+                                    </tr>
                                 </thead>
                                 <tbody>
                                     {% for campo in campos %}
@@ -58,16 +59,11 @@
                                         </td>
 
                                         <td>
-                                            <input type="text" 
-                                                   name="label_{{ campo.tag }}" 
-                                                   class="form-control" 
-                                                   value="{{ campo.label }}" 
-                                                   placeholder="Ex: Nome do Cliente"
-                                                   required>
+                                            <input type="text" name="label_{{ campo.tag }}" class="form-control" value="{{ campo.label }}" placeholder="Ex: Nome do Cliente" required>
                                         </td>
 
                                         <td>
-                                            <select name="tipo_{{ campo.tag }}" class="form-select border-0 bg-light fw-bold text-secondary">
+                                            <select name="tipo_{{ campo.tag }}" id="tipo_{{ campo.tag }}" class="form-select border-0 bg-light fw-bold text-secondary mb-1" onchange="toggleOpcoes('{{ campo.tag }}')">
                                                 <option value="text" {% if campo.tipo == 'text' %}selected{% endif %}>🔤 Texto Curto</option>
                                                 <option value="textarea" {% if campo.tipo == 'textarea' %}selected{% endif %}>📝 Texto Longo</option>
                                                 <option value="date" {% if campo.tipo == 'date' %}selected{% endif %}>📅 Data</option>
@@ -75,7 +71,13 @@
                                                 <option value="cpf" {% if campo.tipo == 'cpf' %}selected{% endif %}>🆔 CPF/CNPJ</option>
                                                 <option value="checkbox" {% if campo.tipo == 'checkbox' %}selected{% endif %}>✅ Check (Sim/Não)</option>
                                                 <option value="image" {% if campo.tipo == 'image' %}selected{% endif %}>🖼️ Imagem/Print</option>
+                                                <option value="dropdown" {% if campo.tipo == 'dropdown' %}selected{% endif %}>🔽 Lista Suspensa</option>
                                             </select>
+
+                                            <div id="div_opcoes_{{ campo.tag }}" style="{% if campo.tipo != 'dropdown' %}display:none;{% endif %}">
+                                                <input type="text" name="opcoes_{{ campo.tag }}" value="{{ campo.opcoes }}" class="form-control form-control-sm border-primary" placeholder="Opção 1, Opção 2, Opção 3">
+                                                <div class="form-text small" style="font-size: 0.7em;">Separe por vírgulas.</div>
+                                            </div>
                                         </td>
 
                                         <td>
@@ -110,11 +112,25 @@
         <div class="alert alert-info mt-3 border-0 shadow-sm d-flex align-items-center">
             <i class="fa-solid fa-circle-info me-3 fs-4"></i>
             <div class="small">
-                <strong>Como funciona:</strong> O sistema leu seu arquivo Word. Agora, você define o que cada código significa para que o formulário final fique fácil de preencher.
-                <br>Use a coluna <strong>"Condição"</strong> para criar campos que só aparecem se outro for marcado.
+                <strong>Dica:</strong> Para criar uma Lista Suspensa, selecione a opção "🔽 Lista Suspensa" e digite as opções separadas por vírgula logo abaixo.
             </div>
         </div>
 
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleOpcoes(tag) {
+        const selectTipo = document.getElementById('tipo_' + tag);
+        const divOpcoes = document.getElementById('div_opcoes_' + tag);
+        
+        if (selectTipo.value === 'dropdown') {
+            divOpcoes.style.display = 'block';
+        } else {
+            divOpcoes.style.display = 'none';
+        }
+    }
+</script>
 {% endblock %}

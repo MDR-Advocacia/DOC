@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestão de Equipes - DunaDoc{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-sitemap text-primary me-2"></i>Gestão de Equipes e Núcleos</h2>
+        <p class="text-muted mb-0">Crie a hierarquia do escritório (Equipes > Núcleos) para compartilhar Pastas.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <button class="btn btn-primary fw-bold px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaEquipe">
+            <i class="fa-solid fa-plus me-2"></i> Criar Nova Estrutura
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% for equipe in equipes %}
+            {# Garante que só renderiza os blocos principais para as Equipes Raiz (que não têm pai) #}
+            {% if not equipe.equipe_pai %}
+            <div class="card shadow-sm border-0 mb-4 border-top border-primary border-4">
+                
+                <div class="card-header bg-white p-3 d-flex justify-content-between align-items-center border-bottom">
+                    <div>
+                        <span class="badge bg-primary mb-1">EQUIPE PRINCIPAL</span>
+                        <h4 class="mb-0 fw-bold text-dark">{{ equipe.nome }}</h4>
+                        {% if equipe.descricao %}<small class="text-muted">{{ equipe.descricao }}</small>{% endif %}
+                    </div>
+                    <a href="{% url 'gerenciar_membros_equipe' equipe.id %}" class="btn btn-outline-primary fw-bold">
+                        <i class="fa-solid fa-users me-1"></i> Membros da Equipe
+                    </a>
+                </div>
+
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for nucleo in equipe.sub_equipes.all %}
+                        <li class="list-group-item p-3 d-flex justify-content-between align-items-center bg-light">
+                            <div class="ps-3 border-start border-3 border-secondary">
+                                <span class="badge bg-secondary mb-1">NÚCLEO VINCULADO</span>
+                                <h6 class="fw-bold mb-0 text-dark">{{ nucleo.nome }}</h6>
+                            </div>
+                            <a href="{% url 'gerenciar_membros_equipe' nucleo.id %}" class="btn btn-sm btn-white border fw-bold text-secondary">
+                                <i class="fa-solid fa-users-gear me-1"></i> Membros do Núcleo
+                            </a>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item p-4 text-center text-muted small">
+                            Nenhum núcleo específico criado dentro desta equipe.
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        {% empty %}
+            <div class="text-center py-5">
+                <i class="fa-solid fa-sitemap fa-3x text-muted opacity-50 mb-3"></i>
+                <h5 class="text-dark">Organograma Vazio</h5>
+                <p class="text-muted">Crie a sua primeira Equipe Principal clicando no botão acima.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal fade" id="modalNovaEquipe" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-folder-tree text-primary me-2"></i>Nova Estrutura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'gerenciar_equipes' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">NOME</label>
+                        <input type="text" name="nome" class="form-control" placeholder="Ex: Cível, Trabalhista, Célula BB..." required autocomplete="off">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">TIPO DE ESTRUTURA</label>
+                        <select name="equipe_pai" class="form-select form-select-lg border-primary">
+                            <option value="">⭐ Criar como EQUIPE PRINCIPAL (Raiz)</option>
+                            <optgroup label="Ou vincule como um NÚCLEO dentro de:">
+                                {% for e in equipes %}
+                                    {% if not e.equipe_pai %}
+                                    <option value="{{ e.id }}">↳ Dentro de {{ e.nome }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-muted">DESCRIÇÃO (OPCIONAL)</label>
+                        <textarea name="descricao" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="submit" class="btn btn-primary fw-bold w-100">Criar Estrutura</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
