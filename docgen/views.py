@@ -17,6 +17,8 @@ from django.contrib.auth.models import User
 from django.db.models import ProtectedError
 from .models import Equipe
 from django.db import models
+import secrets
+import string
 
 
 # Bibliotecas de processamento de DOCX
@@ -324,17 +326,35 @@ def biblioteca_modelos(request):
 #  AUTENTICAÇÃO E UTILITÁRIOS
 # ==============================================================================
 
-class SignUpView(generic.CreateView):
-    form_class = UserCreationForm
-    success_url = reverse_lazy('login')
+class SignUpView(generic.View):
     template_name = 'registration/signup.html'
 
-    def form_valid(self, form):
-        # Cria usuário inativo por segurança
-        user = form.save(commit=False)
-        user.is_active = False 
-        user.save()
-        messages.info(self.request, "✅ Cadastro realizado! Aguarde a liberação do seu acesso pelo administrador.")
+    def get(self, request):
+        return render(request, self.template_name)
+
+    def post(self, request):
+        email = request.POST.get('email')
+        
+        if not email:
+            messages.error(request, "O e-mail é obrigatório.")
+            return render(request, self.template_name)
+
+        if User.objects.filter(username=email).exists():
+            messages.warning(request, "Este e-mail já possui uma solicitação ou cadastro.")
+            return redirect('login')
+
+        # Gera uma senha aleatória que o usuário não conhece
+        senha_temporaria = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+
+        # Cria o usuário inativo (Aguardando aprovação)
+        novo_usuario = User.objects.create_user(
+            username=email, 
+            email=email, 
+            password=senha_temporaria,
+            is_active=False # <--- Fundamental para cair no seu painel de aprovação
+        )
+        
+        messages.info(request, "✅ Solicitação enviada! Assim que sua conta for aprovada pela supervisão, você poderá definir sua senha no primeiro acesso.")
         return redirect('login')
     
 @login_required
@@ -887,3 +907,36 @@ def criar_nucleo_vinculado(request, equipe_pai_id):
             
             messages.success(request, f"Núcleo '{nome}' criado com sucesso!")
     return redirect('gerenciar_equipes')
+
+def definir_senha_primeiro_acesso(request):
+    """
+    Permite que usuários aprovados definam sua senha pela primeira vez.
+    """
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        nova_senha = request.POST.get('password')
+        confirmacao = request.POST.get('password_confirm')
+
+        try:
+            user = User.objects.get(username=email)
+            
+            if not user.is_active:
+                messages.error(request, "Sua conta ainda não foi aprovada pela supervisão.")
+                return redirect('login')
+            
+            if user.last_login: # Se já logou uma vez, não é mais "primeiro acesso"
+                messages.warning(request, "Esta conta já foi configurada. Use a recuperação de senha se necessário.")
+                return redirect('login')
+
+            if nova_senha != confirmacao:
+                messages.error(request, "As senhas não coincidem.")
+            else:
+                user.set_password(nova_senha)
+                user.save()
+                messages.success(request, "Senha definida com sucesso! Agora você pode entrar no sistema.")
+                return redirect('login')
+
+        except User.objects.DoesNotExist:
+            messages.error(request, "E-mail não encontrado ou solicitação inexistente.")
+
+    return render(request, 'registration/definir_primeira_senha.html')

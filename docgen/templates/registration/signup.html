@@ -1,147 +1,24 @@
 {% extends 'base.html' %}
-{% load static %}
-
-{% block title %}Criar Conta - DunaDoc{% endblock %}
-
-{% block extra_css %}
-<style>
-    /* 1. Limpeza */
-    nav, footer, .navbar, .footer { display: none !important; }
-    body { overflow: hidden; }
-
-    /* 2. Overlay Fundo */
-    .signup-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: 99999;
-        background: linear-gradient(135deg, #0a0e27 0%, #1a237e 50%, #00d2ff 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* 3. Cartão de Cadastro */
-    .card-signup {
-        position: relative; /* Necessário para o botão de voltar absoluto */
-        width: 90%;
-        max-width: 450px;
-        max-height: 90vh; 
-        overflow-y: auto;
-        
-        background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        padding: 40px 30px;
-        text-align: center;
-        
-        /* Scrollbar bonita */
-        scrollbar-width: thin;
-        scrollbar-color: #dee2e6 transparent;
-    }
-
-    .card-signup::-webkit-scrollbar { width: 6px; }
-    .card-signup::-webkit-scrollbar-thumb { background-color: #dee2e6; border-radius: 10px; }
-
-    /* 4. Botão de VOLTAR (Novidade) */
-    .btn-back-floating {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        color: #adb5bd; /* Cinza discreto */
-        font-size: 1.2rem;
-        transition: all 0.2s;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    
-    .btn-back-floating:hover {
-        color: #1a237e; /* Azul Duna no hover */
-        transform: translateX(-3px); /* Efeito de mover pra trás */
-    }
-    
-    .btn-back-text {
-        font-size: 0.8rem;
-        font-weight: 700;
-        font-family: 'Montserrat', sans-serif;
-        text-transform: uppercase;
-    }
-
-    /* 5. Estilos Gerais */
-    .logo-img { max-width: 180px; height: auto; margin-bottom: 5px; margin-top: 10px; }
-    .brand-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.5rem; color: #0a0e27; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-    .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 25px; }
-
-    .form-group { text-align: left; margin-bottom: 15px; }
-    .form-label { font-size: 0.75rem; font-weight: bold; color: #666; margin-bottom: 5px; display: block; letter-spacing: 0.5px; text-transform: uppercase; }
-    
-    .card-signup input {
-        width: 100%; background: #f1f3f5; border: 1px solid #dee2e6; padding: 12px; border-radius: 8px; transition: all 0.2s; font-size: 0.95rem;
-    }
-    .card-signup input:focus {
-        background: #fff; border-color: #00d2ff; outline: none; box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2);
-    }
-    
-    .help-text { font-size: 0.7rem; color: #888; margin-top: 4px; line-height: 1.2; }
-
-    .btn-signup {
-        width: 100%; background: linear-gradient(90deg, #1a237e 0%, #00d2ff 100%); color: white; font-weight: bold; border: none; padding: 12px; border-radius: 8px; margin-top: 20px; font-family: 'Montserrat', sans-serif; transition: transform 0.2s;
-    }
-    .btn-signup:hover { transform: scale(1.02); color: white; box-shadow: 0 5px 15px rgba(0, 210, 255, 0.4); }
-</style>
-{% endblock %}
-
 {% block content %}
-
-<div class="signup-overlay">
-    <div class="card-signup">
-        
-        <a href="{% url 'login' %}" class="btn-back-floating" title="Voltar para o Login">
-            <i class="fa-solid fa-arrow-left"></i>
-            <span class="btn-back-text">Voltar</span>
-        </a>
-
-        <img src="{% static 'img/logo-duna-colorida.png' %}" alt="Duna" class="logo-img" onerror="this.style.display='none'">
-        <h2 class="brand-title">Nova Conta</h2>
-        <p class="subtitle">Junte-se ao time DunaDoc</p>
-
-        <form method="post">
-            {% csrf_token %}
-            
-            {% for field in form %}
-            <div class="form-group">
-                <label class="form-label">{{ field.label }}</label>
-                {{ field }}
-                
-                {% if field.help_text %}
-                    <div class="help-text">{{ field.help_text }}</div>
-                {% endif %}
-                
-                {% for error in field.errors %}
-                    <div class="text-danger small mt-1 fw-bold">
-                        <i class="fa-solid fa-circle-exclamation me-1"></i> {{ error }}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow border-0 mt-5">
+            <div class="card-body p-5">
+                <h3 class="fw-bold mb-3">Solicitar Acesso</h3>
+                <p class="text-muted small mb-4">Informe seu e-mail institucional para que a supervisão aprove seu cadastro.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">E-MAIL</label>
+                        <input type="email" name="email" class="form-control form-control-lg" placeholder="exemplo@mdradvocacia.com" required>
                     </div>
-                {% endfor %}
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-3">ENVIAR SOLICITAÇÃO</button>
+                    <div class="text-center mt-4">
+                        <a href="{% url 'login' %}" class="text-decoration-none small text-muted">Já tem conta? Fazer Login</a>
+                    </div>
+                </form>
             </div>
-            {% endfor %}
-
-            <button type="submit" class="btn-signup">CRIAR CONTA</button>
-        </form>
-
-        <div class="mt-4 border-top pt-3">
-            <p class="mb-0 text-muted small">
-                Já tem cadastro? 
-                <a href="{% url 'login' %}" style="text-decoration: none; color: #1a237e; font-weight: bold;">
-                    Entrar
-                </a>
-            </p>
         </div>
-        
     </div>
 </div>
-
 {% endblock %}
