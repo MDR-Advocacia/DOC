@@ -11,7 +11,7 @@ services:
 
   web:
     build: .
-    command: 'sh -c "python manage.py migrate --fake docgen && python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000"'
+    command: 'sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000"'
     volumes:
       - media_volume:/app/media
     ports:
