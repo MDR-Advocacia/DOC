@@ -724,3 +724,166 @@ def excluir_equipe(request, equipe_id):
         messages.success(request, f"Equipe '{nome_antigo}' foi excluída. Os membros agora estão sem equipe.")
         
     return redirect('gerenciar_equipes')
+
+@login_required
+@staff_member_required
+def criar_nucleo_vinculado(request, equipe_pai_id):
+    equipe_pai = get_object_or_404(Equipe, id=equipe_pai_id)
+    
+    if request.method == 'POST':
+        nome_nucleo = request.POST.get('nome')
+        membros_selecionados_ids = request.POST.getlist('membros_selecionados') # Checkboxes
+        
+        # 1. Cria o Núcleo
+        novo_nucleo = Equipe.objects.create(
+            nome=nome_nucleo,
+            equipe_pai=equipe_pai,
+            descricao=f"Núcleo vinculado a {equipe_pai.nome}"
+        )
+        
+        # 2. HERANÇA AUTOMÁTICA DE SUPERVISORES (Lógica de Negócio)
+        # Pega quem é supervisor/staff na equipe pai e adiciona no filho automaticamente
+        # (Ajuste a lógica do 'is_staff' conforme sua modelagem de permissão interna)
+        supervisores_pai = equipe_pai.user_set.filter(is_staff=True) 
+        for sup in supervisores_pai:
+            novo_nucleo.user_set.add(sup)
+
+        # 3. ADICIONAR MEMBROS SELECIONADOS NA LISTA
+        if membros_selecionados_ids:
+            # Filtra para garantir que os IDs são válidos
+            membros_para_adicionar = User.objects.filter(id__in=membros_selecionados_ids)
+            for membro in membros_para_adicionar:
+                novo_nucleo.user_set.add(membro)
+        
+        messages.success(request, f"Núcleo '{nome_nucleo}' criado! Supervisores e {len(membros_selecionados_ids)} membros foram vinculados.")
+        return redirect('gerenciar_equipes')
+    
+    return redirect('gerenciar_equipes')
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponse, JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib import messages
+from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse, reverse_lazy
+from django.views import generic
+from django.db.models import Count, Q
+from django.db.models.functions import TruncMonth
+from django.utils import timezone
+from django.core.paginator import Paginator
+from django.contrib.auth.models import User
+from django.db.models import ProtectedError
+import io
+import json
+from datetime import datetime
+
+# Bibliotecas de processamento de DOCX
+from docxtpl import DocxTemplate, InlineImage 
+from docx.shared import Mm 
+
+# Seus Models e Utils
+from .models import Template, DocumentoGerado, Setor, Categoria, Area, PastaPersonalizada, TemplateFavorito, Equipe
+from .utils import extrair_tags_do_docx 
+
+# ==============================================================================
+#  GESTÃO DE EQUIPES E NÚCLEOS
+# ==============================================================================
+
+@login_required
+@staff_member_required
+def gerenciar_equipes(request):
+    if request.method == 'POST':
+        nome = request.POST.get('nome')
+        descricao = request.POST.get('descricao')
+        equipe_pai_id = request.POST.get('equipe_pai')
+        
+        if nome:
+            try:
+                nova_equipe = Equipe.objects.create(
+                    nome=nome,
+                    descricao=descricao,
+                    equipe_pai_id=equipe_pai_id if equipe_pai_id else None 
+                )
+                # O coordenador criador vira supervisor
+                nova_equipe.supervisores.add(request.user)
+                messages.success(request, f"Estrutura '{nome}' criada!")
+            except Exception as e:
+                messages.error(request, f"Erro: {e}")
+        return redirect('gerenciar_equipes')
+
+    equipes = Equipe.objects.all().select_related('equipe_pai').order_by('equipe_pai__nome', 'nome')
+    return render(request, 'docgen/gerenciar_equipes.html', {'equipes': equipes})
+
+@login_required
+@staff_member_required
+def editar_equipe(request, equipe_id):
+    equipe = get_object_or_404(Equipe, id=equipe_id)
+    if request.method == 'POST':
+        novo_nome = request.POST.get('nome_equipe')
+        if novo_nome:
+            equipe.nome = novo_nome
+            equipe.save()
+            messages.success(request, "Equipe renomeada!")
+    return redirect('gerenciar_equipes')
+
+@login_required
+@staff_member_required
+def excluir_equipe(request, equipe_id):
+    equipe = get_object_or_404(Equipe, id=equipe_id)
+    if request.method == 'POST':
+        equipe.delete()
+        messages.success(request, "Estrutura removida.")
+    return redirect('gerenciar_equipes')
+
+@login_required
+@staff_member_required
+def gerenciar_membros_equipe(request, equipe_id):
+    equipe = get_object_or_404(Equipe, id=equipe_id)
+    if request.method == 'POST':
+        acao = request.POST.get('acao')
+        usuario_id = request.POST.get('usuario_id')
+        if usuario_id:
+            usuario = get_object_or_404(User, id=usuario_id)
+            if acao == 'adicionar_membro': equipe.membros.add(usuario)
+            elif acao == 'remover_membro': equipe.membros.remove(usuario)
+            elif acao == 'adicionar_supervisor': equipe.supervisores.add(usuario)
+            elif acao == 'remover_supervisor': equipe.supervisores.remove(usuario)
+        return redirect('gerenciar_membros_equipe', equipe_id=equipe.id)
+
+    usuarios_na_equipe = list(equipe.membros.values_list('id', flat=True)) + \
+                         list(equipe.supervisores.values_list('id', flat=True))
+    usuarios_disponiveis = User.objects.exclude(id__in=usuarios_na_equipe).filter(is_active=True).order_by('first_name')
+
+    return render(request, 'docgen/gerenciar_membros.html', {
+        'equipe': equipe,
+        'usuarios_disponiveis': usuarios_disponiveis
+    })
+
+@login_required
+@staff_member_required
+def criar_nucleo_vinculado(request, equipe_pai_id):
+    """ Cria um núcleo dentro da tela de membros, herdando supervisores e migrando membros selecionados. """
+    equipe_pai = get_object_or_404(Equipe, id=equipe_pai_id)
+    if request.method == 'POST':
+        nome = request.POST.get('nome')
+        membros_ids = request.POST.getlist('membros_selecionados')
+        
+        if nome:
+            novo_nucleo = Equipe.objects.create(
+                nome=nome,
+                equipe_pai=equipe_pai,
+                descricao=f"Núcleo derivado de {equipe_pai.nome}"
+            )
+            # Herança automática de supervisores
+            for sup in equipe_pai.supervisores.all():
+                novo_nucleo.supervisores.add(sup)
+            
+            # Adição dos membros selecionados
+            if membros_ids:
+                membros = User.objects.filter(id__in=membros_ids)
+                for m in membros:
+                    novo_nucleo.membros.add(m)
+            
+            messages.success(request, f"Núcleo '{nome}' criado com sucesso!")
+    return redirect('gerenciar_equipes')

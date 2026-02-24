@@ -47,6 +47,8 @@ urlpatterns = [
 
     path('equipes/editar/<int:equipe_id>/', views.editar_equipe, name='editar_equipe'),
     path('equipes/excluir/<int:equipe_id>/', views.excluir_equipe, name='excluir_equipe'),
+
+    path('equipes/<int:equipe_pai_id>/criar-nucleo/', views.criar_nucleo_vinculado, name='criar_nucleo_vinculado'),
 ]
 
 if settings.DEBUG:
