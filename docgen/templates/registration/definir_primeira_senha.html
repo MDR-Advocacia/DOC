@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow border-0 mt-5 rounded-4">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <i class="fa-solid fa-key fa-3x text-primary mb-3"></i>
+                    <h3 class="fw-bold">Primeiro Acesso</h3>
+                    <p class="text-muted">Defina sua senha de acesso ao DunaDoc.</p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">SEU E-MAIL CADASTRADO</label>
+                        <input type="email" name="email" class="form-control" placeholder="email@mdradvocacia.com" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">NOVA SENHA</label>
+                        <input type="password" name="password" class="form-control" placeholder="Mínimo 6 caracteres" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">CONFIRME A SENHA</label>
+                        <input type="password" name="password_confirm" class="form-control" placeholder="Repita a senha" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                        DEFINIR SENHA E ENTRAR
+                    </button>
+                    
+                    <div class="text-center mt-4">
+                        <a href="{% url 'login' %}" class="text-decoration-none small text-muted">Voltar para Login</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
