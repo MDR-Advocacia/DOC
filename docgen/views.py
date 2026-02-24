@@ -696,3 +696,31 @@ def compartilhar_pasta(request):
         messages.success(request, f"Permissões aplicadas à pasta '{pasta_principal.nome}' e todas as suas subpastas!")
         
     return redirect('minha_biblioteca')
+
+@login_required
+@staff_member_required
+def editar_equipe(request, equipe_id):
+    equipe = get_object_or_404(Equipe, id=equipe_id)
+    
+    if request.method == 'POST':
+        novo_nome = request.POST.get('nome_equipe')
+        if novo_nome:
+            equipe.nome = novo_nome
+            equipe.save()
+            messages.success(request, f"Equipe renomeada para '{novo_nome}' com sucesso.")
+        else:
+            messages.warning(request, "O nome da equipe não pode ficar vazio.")
+    
+    return redirect('gerenciar_equipes')
+
+@login_required
+@staff_member_required
+def excluir_equipe(request, equipe_id):
+    equipe = get_object_or_404(Equipe, id=equipe_id)
+    
+    if request.method == 'POST':
+        nome_antigo = equipe.nome
+        equipe.delete()
+        messages.success(request, f"Equipe '{nome_antigo}' foi excluída. Os membros agora estão sem equipe.")
+        
+    return redirect('gerenciar_equipes')
