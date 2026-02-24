@@ -6,8 +6,6 @@ register = template.Library()
 def param_replace(context, **kwargs):
     """
     Retorna os parâmetros da URL atual atualizando apenas o que mudou.
-    Útil para paginação manter os filtros ativos.
-    Ex: ?q=busca&page=2
     """
     d = context['request'].GET.copy()
     for k, v in kwargs.items():
@@ -15,3 +13,19 @@ def param_replace(context, **kwargs):
     for k in [k for k, v in d.items() if not v]:
         del d[k]
     return d.urlencode()
+
+# --- FILTROS NOVOS ---
+
+@register.filter(name='split')
+def split_string(value, key):
+    """Quebra string em lista."""
+    if not value:
+        return []
+    return value.split(key)
+
+@register.filter(name='strip')
+def strip_string(value):
+    """Remove espaços."""
+    if not value:
+        return ""
+    return str(value).strip()

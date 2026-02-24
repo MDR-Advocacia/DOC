@@ -87,12 +87,11 @@ def criar_template(request):
 @staff_member_required
 def configurar_template(request, template_id):
     """
-    PASSO 2: Tela para definir Labels, Tipos e DEPENDÊNCIAS das variáveis.
+    PASSO 2: Tela para definir Labels, Tipos, DEPENDÊNCIAS e OPÇÕES das variáveis.
     """
     template = get_object_or_404(Template, pk=template_id)
     
     # 1. O Robô lê o arquivo físico e acha as tags
-    # Nota: Com o novo utils.py, isso já traz na ordem correta e inclui os 'if'
     tags_encontradas = extrair_tags_do_docx(template.arquivo_template.path)
     
     # 2. Carrega configuração existente
@@ -105,13 +104,15 @@ def configurar_template(request, template_id):
         for tag in tags_encontradas:
             label_input = request.POST.get(f'label_{tag}')
             tipo_input = request.POST.get(f'tipo_{tag}')
-            dependencia_input = request.POST.get(f'dependencia_{tag}') # <--- NOVO (Captura quem é o pai)
+            dependencia_input = request.POST.get(f'dependencia_{tag}')
+            opcoes_input = request.POST.get(f'opcoes_{tag}', '') # <--- NOVO: Captura opções do dropdown
             
             nova_configuracao.append({
                 "tag": tag,
                 "label": label_input or tag.replace('_', ' ').title(),
                 "tipo": tipo_input,
-                "dependencia": dependencia_input # <--- NOVO (Salva no banco)
+                "dependencia": dependencia_input,
+                "opcoes": opcoes_input # <--- NOVO: Salva no JSON
             })
         
         template.configuracao_campos = nova_configuracao
@@ -127,13 +128,14 @@ def configurar_template(request, template_id):
             'tag': tag,
             'label': dados.get('label', tag.replace('_', ' ').title()),
             'tipo': dados.get('tipo', 'text'),
-            'dependencia': dados.get('dependencia', '') # <--- NOVO (Lê do banco para a tela)
+            'dependencia': dados.get('dependencia', ''),
+            'opcoes': dados.get('opcoes', '') # <--- NOVO: Lê do banco para exibir na tela
         })
 
     return render(request, 'docgen/configurar_template.html', {
         'template': template,
         'campos': campos_para_exibir,
-        'todas_tags': tags_encontradas # <--- NOVO (Necessário para popular o dropdown de pais)
+        'todas_tags': tags_encontradas
     })
 
 

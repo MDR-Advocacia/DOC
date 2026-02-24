@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
-
-{% block title %}Preencher {{ template.titulo }}{% endblock %}
+{% load docgen_extras %} {% block title %}Preencher {{ template.titulo }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -73,6 +72,19 @@
                                 <input type="file" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control" accept="image/png, image/jpeg, image/jpg">
                                 <div class="form-text"><i class="fa-regular fa-image"></i> Apenas JPG ou PNG (será ajustado para 16cm).</div>
 
+                            {% elif campo.tipo == 'dropdown' %}
+                                <label class="form-label fw-bold">{{ campo.label }}</label>
+                                <select name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-select form-select-lg bg-light" required>
+                                    <option value="">-- Selecione uma opção --</option>
+                                    {% for opcao in campo.opcoes|split:"," %}
+                                        {% with opt_limpa=opcao|strip %}
+                                            {% if opt_limpa %}
+                                            <option value="{{ opt_limpa }}">{{ opt_limpa }}</option>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                </select>
+
                             {% else %}
                                 <label class="form-label fw-bold">{{ campo.label }}</label>
                                 <input type="text" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light">
@@ -112,9 +124,12 @@
             const dependencia = div.getAttribute('data-dependencia');
             if (dependencia && dependencia !== "") {
                 const paiInput = document.getElementById(dependencia);
+                
+                // Verifica se o pai existe e é um checkbox
                 if (paiInput && paiInput.type === 'checkbox') {
                     if (paiInput.checked) {
                         div.style.display = 'block';
+                        // Pequeno delay para animação suave
                         setTimeout(() => { div.style.opacity = '1'; }, 50);
                     } else {
                         div.style.display = 'none';
@@ -125,6 +140,7 @@
         });
     }
 
+    // Roda ao carregar a página para ajustar o estado inicial
     document.addEventListener('DOMContentLoaded', function() {
         verificarDependencias();
     });
