@@ -924,8 +924,8 @@ def definir_senha_primeiro_acesso(request):
                 messages.error(request, "Sua conta ainda não foi aprovada pela supervisão.")
                 return redirect('login')
             
-            if user.last_login: # Se já logou uma vez, não é mais "primeiro acesso"
-                messages.warning(request, "Esta conta já foi configurada. Use a recuperação de senha se necessário.")
+            if user.last_login: 
+                messages.warning(request, "Esta conta já foi configurada. Tente fazer login.")
                 return redirect('login')
 
             if nova_senha != confirmacao:
@@ -933,10 +933,12 @@ def definir_senha_primeiro_acesso(request):
             else:
                 user.set_password(nova_senha)
                 user.save()
-                messages.success(request, "Senha definida com sucesso! Agora você pode entrar no sistema.")
+                messages.success(request, "Senha definida! Agora você pode entrar.")
                 return redirect('login')
 
-        except User.objects.DoesNotExist:
-            messages.error(request, "E-mail não encontrado ou solicitação inexistente.")
+        except User.DoesNotExist: # <--- AQUI ESTAVA O ERRO (Removi o .objects)
+            # Redireciona o usuário para pedir a conta em vez de só dar erro
+            messages.error(request, "Não encontramos solicitação para este e-mail. Peça seu acesso aqui.")
+            return redirect('signup')
 
     return render(request, 'registration/definir_primeira_senha.html')
