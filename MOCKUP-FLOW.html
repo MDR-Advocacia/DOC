@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup Flow — Redesign DOC</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Jura:wght@500&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --duna-navy: 220 74% 14%;
+  --duna-blue: 217 100% 56%;
+  --duna-blue-soft: 215 95% 72%;
+  --duna-blue-tint: 217 100% 96%;
+  --bg: 220 15% 97%;
+  --surface: 0 0% 100%;
+  --surface-2: 220 20% 98%;
+  --border: 220 20% 90%;
+  --border-strong: 220 15% 80%;
+  --text: 220 74% 14%;
+  --text-muted: 220 15% 45%;
+  --text-soft: 220 15% 60%;
+  --success: 140 70% 45%;
+  --warning: 40 90% 50%;
+  --error: 0 75% 55%;
+  --radius: 1rem;
+  --radius-sm: .625rem;
+  --shadow-card: 0 4px 20px hsl(220 25% 15% / .06);
+  --shadow-elev: 0 8px 32px hsl(220 25% 15% / .1);
+  --transition: all .25s cubic-bezier(.4,0,.2,1);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  font-size:14px;
+  background: hsl(var(--bg));
+  color: hsl(var(--text));
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+body::before{
+  content:"";
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(circle at 50% 50%, hsl(var(--duna-blue) / .08), transparent 60%);
+}
+
+h1,h2,h3,h4,h5{font-weight:700;letter-spacing:-.02em;color:hsl(var(--text));margin:0}
+h1{font-size:1.5rem}
+h2{font-size:1.2rem;font-weight:600;letter-spacing:-.01em}
+.eyebrow{font-size:.68rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:hsl(var(--text-soft))}
+
+/* ========== APP SHELL ========== */
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh;position:relative;z-index:1}
+
+/* ========== SIDEBAR ========== */
+.sb{
+  background: hsl(var(--surface));
+  border-right: 1px solid hsl(var(--border));
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.sb-brand{
+  display:flex;align-items:center;gap:.6rem;
+  padding:1rem 1.25rem 1.25rem;
+  border-bottom:1px solid hsl(var(--border));
+}
+.sb-logo{
+  width:30px;height:30px;border-radius:8px;
+  background: linear-gradient(135deg, hsl(var(--duna-navy)), hsl(var(--duna-blue)));
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.85rem;
+  letter-spacing:-.05em;
+}
+.flow-mark{
+  font-family:'Jura','Inter',sans-serif;
+  font-weight:500;font-size:1.55rem;line-height:1;
+  background: linear-gradient(90deg, hsl(var(--duna-navy)) 0%, hsl(var(--duna-blue)) 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  filter: drop-shadow(0 0 4px hsl(217 100% 56% / .35));
+  animation: flow-pulse 2.6s ease-in-out infinite;
+}
+@keyframes flow-pulse{
+  0%,100%{filter:drop-shadow(0 0 3px hsl(217 100% 56% / .35))}
+  50%{filter:drop-shadow(0 0 8px hsl(217 100% 56% / .6))}
+}
+.sb-brand small{font-size:.6rem;color:hsl(var(--text-soft));letter-spacing:.18em;text-transform:uppercase;display:block;margin-top:2px}
+
+.sb-nav{padding:1rem .75rem;display:flex;flex-direction:column;gap:1px;flex:1}
+.sb-section{
+  font-size:.66rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:hsl(var(--text-soft));
+  padding: 1rem .75rem .35rem;
+}
+.sb-item{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.55rem .75rem;border-radius: var(--radius-sm);
+  color: hsl(var(--text-muted));
+  text-decoration:none;font-size:.875rem;font-weight:500;
+  transition: var(--transition);
+  position:relative;
+}
+.sb-item i{width:16px;text-align:center;font-size:.875rem;opacity:.85}
+.sb-item:hover{background:hsl(var(--surface-2));color:hsl(var(--duna-blue))}
+.sb-item.active{
+  background: hsl(var(--duna-blue-tint));
+  color: hsl(var(--duna-blue));
+  font-weight:600;
+}
+.sb-item.active::before{
+  content:"";position:absolute;left:-3px;top:25%;bottom:25%;
+  width:3px;border-radius:0 3px 3px 0;
+  background:hsl(var(--duna-blue));
+}
+.sb-foot{padding:.75rem 1.25rem 1rem;border-top:1px solid hsl(var(--border));font-size:.7rem;color:hsl(var(--text-soft))}
+
+/* ========== TOPBAR ========== */
+.main{display:flex;flex-direction:column;min-height:100vh}
+.topbar{
+  display:flex;align-items:center;gap:1rem;
+  height:60px;padding:0 1.5rem;
+  background:hsl(var(--surface));
+  border-bottom:1px solid hsl(var(--border));
+  position:sticky;top:0;z-index:20;
+  backdrop-filter: blur(8px);
+  background:hsl(var(--surface) / .9);
+}
+.topbar-search{
+  flex:1;max-width:480px;display:flex;align-items:center;gap:.6rem;
+  background:hsl(var(--surface-2));border:1px solid hsl(var(--border));
+  border-radius:var(--radius-sm);padding:.5rem .85rem;
+  transition:var(--transition);
+}
+.topbar-search:focus-within{
+  border-color:hsl(var(--duna-blue));
+  box-shadow:0 0 0 3px hsl(var(--duna-blue) / .12);
+}
+.topbar-search i{color:hsl(var(--text-soft));font-size:.85rem}
+.topbar-search input{border:none;background:transparent;outline:none;flex:1;font-size:.875rem;color:hsl(var(--text));font-family:inherit}
+.topbar-search input::placeholder{color:hsl(var(--text-soft))}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:.5rem}
+.topbar-icon{
+  width:36px;height:36px;border-radius:50%;
+  background:transparent;border:none;
+  display:flex;align-items:center;justify-content:center;
+  color:hsl(var(--text-muted));cursor:pointer;
+  transition:var(--transition);position:relative;
+}
+.topbar-icon:hover{background:hsl(var(--surface-2));color:hsl(var(--duna-blue))}
+.topbar-icon .dot{
+  position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:50%;
+  background:hsl(var(--error));border:2px solid hsl(var(--surface));
+}
+.topbar-user{
+  display:flex;align-items:center;gap:.6rem;
+  padding:.35rem .75rem .35rem .35rem;border-radius:999px;
+  background:transparent;border:1px solid transparent;
+  cursor:pointer;font-family:inherit;color:hsl(var(--text));
+  transition:var(--transition);
+}
+.topbar-user:hover{background:hsl(var(--surface-2));border-color:hsl(var(--border))}
+.topbar-user .avatar{
+  width:30px;height:30px;border-radius:50%;
+  background:linear-gradient(135deg,hsl(var(--duna-navy)),hsl(var(--duna-blue)));
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:600;font-size:.78rem;
+}
+.topbar-user span{font-size:.85rem;font-weight:500}
+
+/* ========== CONTENT ========== */
+.content{flex:1;padding:2rem 2rem 3rem;max-width:1400px;width:100%}
+
+.page-head{margin-bottom:2rem;display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap}
+.page-head h1{margin-bottom:.35rem}
+.page-head p{color:hsl(var(--text-muted));margin:0;font-size:.9rem}
+
+/* ========== KPI ========== */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+
+.card-flow{
+  background:hsl(var(--surface));
+  border:1px solid hsl(var(--border));
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+  transition:var(--transition);
+}
+.card-flow:hover{box-shadow:var(--shadow-elev);transform:translateY(-2px)}
+
+.kpi{padding:1.25rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;cursor:pointer}
+.kpi-meta{display:flex;flex-direction:column;gap:.25rem}
+.kpi-value{font-size:1.85rem;font-weight:700;color:hsl(var(--duna-navy));letter-spacing:-.02em;line-height:1.1;margin-top:.15rem}
+.kpi-caption{font-size:.72rem;color:hsl(var(--text-muted));margin-top:.15rem}
+.kpi-tile{
+  width:42px;height:42px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;flex-shrink:0;
+}
+.kpi-tile.blue{background:hsl(var(--duna-blue) / .1);color:hsl(var(--duna-blue))}
+.kpi-tile.navy{background:hsl(var(--duna-navy) / .1);color:hsl(var(--duna-navy))}
+.kpi-tile.success{background:hsl(var(--success) / .12);color:hsl(140 70% 32%)}
+.kpi-tile.warning{background:hsl(var(--warning) / .14);color:hsl(35 85% 38%)}
+
+/* ========== CHARTS ROW ========== */
+.dash-row{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.5rem}
+@media(max-width:1100px){.dash-row{grid-template-columns:1fr}}
+
+.card-flow .card-head{padding:1rem 1.25rem;border-bottom:1px solid hsl(var(--border));display:flex;justify-content:space-between;align-items:center;gap:.75rem}
+.card-flow .card-head h2{font-size:.95rem;font-weight:600;display:flex;align-items:center;gap:.5rem}
+.card-flow .card-head h2 i{color:hsl(var(--duna-blue));font-size:.85rem}
+.card-flow .card-head .muted{font-size:.72rem;color:hsl(var(--text-muted))}
+.card-flow .card-body{padding:1.25rem}
+
+/* Mock chart visuals */
+.area-chart{position:relative;height:220px;display:flex;align-items:flex-end;gap:8px;padding:1rem .25rem 0}
+.bar-stack{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:1px;align-items:stretch;height:100%;position:relative}
+.bar-a{background:linear-gradient(to top,hsl(var(--duna-blue) / .15),hsl(var(--duna-blue) / 0));border-radius:4px 4px 0 0}
+.bar-b{background:linear-gradient(to top,hsl(var(--duna-blue) / .8),hsl(var(--duna-blue) / .35));border-radius:4px 4px 0 0;margin-top:1px}
+.bar-stack span{font-size:.65rem;color:hsl(var(--text-soft));text-align:center;padding-top:.4rem}
+.legend{display:flex;gap:1rem;font-size:.75rem;color:hsl(var(--text-muted));padding-top:.75rem}
+.legend i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:.4rem;vertical-align:middle}
+
+/* Donut */
+.donut-wrap{display:flex;align-items:center;gap:1.25rem;padding:.5rem 0}
+.donut{
+  width:140px;height:140px;border-radius:50%;
+  background: conic-gradient(
+    hsl(var(--duna-blue)) 0% 38%,
+    hsl(var(--duna-blue-soft)) 38% 62%,
+    hsl(var(--duna-navy)) 62% 82%,
+    hsl(var(--text-soft)) 82% 100%
+  );
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  position:relative;
+}
+.donut::after{
+  content:"";position:absolute;inset:18px;border-radius:50%;background:hsl(var(--surface));
+}
+.donut-center{position:relative;z-index:1;text-align:center}
+.donut-center .v{font-size:1.4rem;font-weight:700;color:hsl(var(--duna-navy));display:block;line-height:1}
+.donut-center .l{font-size:.62rem;color:hsl(var(--text-muted));text-transform:uppercase;letter-spacing:.1em}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:.5rem;font-size:.78rem}
+.donut-legend > div{display:flex;justify-content:space-between;align-items:center}
+.donut-legend > div span:first-child{display:flex;align-items:center;gap:.5rem;color:hsl(var(--text))}
+.donut-legend > div span:last-child{font-weight:600;color:hsl(var(--text-muted))}
+
+/* Quick actions */
+.qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+@media(max-width:900px){.qa-grid{grid-template-columns:repeat(2,1fr)}}
+.qa{
+  display:flex;flex-direction:column;align-items:flex-start;gap:.5rem;
+  padding:1rem;border-radius:var(--radius-sm);
+  background:hsl(var(--surface-2));border:1px solid hsl(var(--border));
+  text-decoration:none;color:hsl(var(--text));
+  transition:var(--transition);cursor:pointer;
+}
+.qa:hover{border-color:hsl(var(--duna-blue));background:hsl(var(--duna-blue-tint));transform:translateY(-1px)}
+.qa-icon{width:34px;height:34px;border-radius:9px;background:hsl(var(--duna-blue) / .1);color:hsl(var(--duna-blue));display:flex;align-items:center;justify-content:center;font-size:.85rem}
+.qa-title{font-weight:600;font-size:.85rem}
+.qa-desc{font-size:.72rem;color:hsl(var(--text-muted));line-height:1.4}
+
+/* ========== TABLE ========== */
+.table-flow{width:100%;border-collapse:collapse}
+.table-flow thead th{
+  text-align:left;font-size:.66rem;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:hsl(var(--text-soft));
+  padding:.85rem 1rem;border-bottom:1px solid hsl(var(--border));
+}
+.table-flow tbody td{padding:.95rem 1rem;border-bottom:1px solid hsl(var(--border));font-size:.875rem;vertical-align:middle}
+.table-flow tbody tr:last-child td{border-bottom:none}
+.table-flow tbody tr{transition:var(--transition)}
+.table-flow tbody tr:hover{background:hsl(var(--surface-2))}
+.cnj{font-family:'JetBrains Mono','Courier New',monospace;font-size:.82rem;color:hsl(var(--text));font-weight:500}
+.tribunal{display:flex;flex-direction:column}
+.tribunal .nm{font-size:.7rem;color:hsl(var(--text-muted))}
+
+/* ========== CHIP ========== */
+.chip{
+  display:inline-flex;align-items:center;gap:.4rem;
+  font-size:.7rem;font-weight:600;
+  padding:.25rem .65rem;border-radius:999px;line-height:1;
+}
+.chip.info{background:hsl(var(--duna-blue) / .1);color:hsl(var(--duna-blue))}
+.chip.success{background:hsl(var(--success) / .12);color:hsl(140 70% 28%)}
+.chip.warning{background:hsl(var(--warning) / .15);color:hsl(35 90% 32%)}
+.chip.error{background:hsl(var(--error) / .12);color:hsl(0 70% 38%)}
+.chip.neutral{background:hsl(var(--surface-2));color:hsl(var(--text-muted));border:1px solid hsl(var(--border))}
+.chip i{font-size:.6rem}
+
+/* ========== BUTTONS ========== */
+.btn-flow{
+  background:hsl(var(--duna-blue));color:#fff;
+  border:none;border-radius:var(--radius-sm);
+  padding:.55rem 1.1rem;font-weight:600;font-size:.85rem;
+  cursor:pointer;transition:var(--transition);
+  display:inline-flex;align-items:center;gap:.5rem;
+  text-decoration:none;
+}
+.btn-flow:hover{background:hsl(217 100% 50%);transform:translateY(-1px);box-shadow:0 4px 14px hsl(var(--duna-blue) / .35);color:#fff}
+.btn-flow-outline{
+  background:transparent;border:1px solid hsl(var(--border-strong));
+  color:hsl(var(--text));border-radius:var(--radius-sm);
+  padding:.55rem 1.1rem;font-weight:600;font-size:.85rem;
+  cursor:pointer;transition:var(--transition);
+  display:inline-flex;align-items:center;gap:.5rem;
+  text-decoration:none;
+}
+.btn-flow-outline:hover{background:hsl(var(--surface-2));border-color:hsl(var(--duna-blue));color:hsl(var(--duna-blue))}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem}
+
+/* ========== TABS / Toggle pages ========== */
+.demo-tabs{
+  position:fixed;top:1rem;right:1.5rem;z-index:50;
+  display:flex;gap:.35rem;
+  background:hsl(var(--surface));
+  border:1px solid hsl(var(--border));border-radius:999px;
+  padding:.3rem;box-shadow:var(--shadow-elev);
+}
+.demo-tabs button{
+  border:none;background:transparent;color:hsl(var(--text-muted));
+  padding:.4rem .9rem;border-radius:999px;font-size:.78rem;font-weight:600;
+  cursor:pointer;transition:var(--transition);font-family:inherit;
+}
+.demo-tabs button.active{background:hsl(var(--duna-blue));color:#fff}
+
+.page{display:none}
+.page.active{display:block;animation:fade .3s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ========== LOGIN PAGE ========== */
+.login-shell{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:hsl(var(--bg));padding:2rem;z-index:5;
+}
+.login-shell::before{
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(circle at 20% 30%, hsl(var(--duna-blue) / .12), transparent 40%),
+    radial-gradient(circle at 80% 70%, hsl(var(--duna-navy) / .15), transparent 50%);
+  pointer-events:none;
+}
+.login-card{
+  background:hsl(var(--surface));border:1px solid hsl(var(--border));
+  border-radius:var(--radius);box-shadow:var(--shadow-elev);
+  padding:2.5rem 2.25rem;width:100%;max-width:420px;
+  position:relative;z-index:1;
+}
+.login-brand{display:flex;flex-direction:column;align-items:center;gap:.6rem;margin-bottom:1.75rem}
+.login-brand .sb-logo{width:48px;height:48px;font-size:1.1rem;border-radius:12px}
+.login-brand .flow-mark{font-size:2.2rem}
+.login-brand small{font-size:.65rem;letter-spacing:.22em;color:hsl(var(--text-soft));text-transform:uppercase;font-weight:600}
+.login-card h2{text-align:center;margin-bottom:.4rem;font-size:1.3rem}
+.login-card .sub{text-align:center;color:hsl(var(--text-muted));font-size:.85rem;margin-bottom:1.75rem}
+
+.label-flow{font-size:.75rem;font-weight:600;color:hsl(var(--text));display:block;margin-bottom:.4rem}
+.input-flow{
+  width:100%;padding:.65rem .85rem;font-size:.9rem;
+  background:hsl(var(--surface));border:1px solid hsl(var(--border-strong));
+  border-radius:var(--radius-sm);color:hsl(var(--text));
+  font-family:inherit;transition:var(--transition);
+}
+.input-flow:focus{
+  border-color:hsl(var(--duna-blue));outline:none;
+  box-shadow:0 0 0 3px hsl(var(--duna-blue) / .15);
+}
+.field{margin-bottom:1rem}
+.btn-flow.full{width:100%;justify-content:center;padding:.7rem}
+.login-foot{text-align:center;margin-top:1.5rem;font-size:.78rem;color:hsl(var(--text-muted))}
+.login-foot a{color:hsl(var(--duna-blue));text-decoration:none;font-weight:600}
+.login-foot a:hover{text-decoration:underline}
+
+/* ========== CATÁLOGO ========== */
+.catalog-toolbar{
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:.75rem;
+  padding:1.25rem;margin-bottom:1.5rem;
+}
+@media(max-width:900px){.catalog-toolbar{grid-template-columns:1fr 1fr}}
+
+.catalog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+@media(max-width:1100px){.catalog-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.catalog-grid{grid-template-columns:1fr}}
+
+.tpl-card{padding:1.25rem;display:flex;flex-direction:column;gap:.6rem;height:100%}
+.tpl-head{display:flex;justify-content:space-between;align-items:flex-start}
+.tpl-star{background:transparent;border:none;color:hsl(var(--text-soft));cursor:pointer;font-size:1rem;transition:var(--transition)}
+.tpl-star:hover{color:hsl(var(--warning));transform:scale(1.15)}
+.tpl-star.on{color:hsl(var(--warning))}
+.tpl-title{font-weight:600;font-size:1rem;color:hsl(var(--text));line-height:1.3}
+.tpl-meta{display:flex;flex-wrap:wrap;gap:.35rem}
+.tpl-desc{font-size:.82rem;color:hsl(var(--text-muted));line-height:1.5;flex:1;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tpl-foot{display:flex;gap:.5rem;margin-top:.5rem;padding-top:.85rem;border-top:1px solid hsl(var(--border))}
+
+/* ========== Footer ========== */
+.foot{
+  border-top:1px solid hsl(var(--border));
+  margin-top:auto;
+  padding:1.25rem 2rem;font-size:.75rem;color:hsl(var(--text-soft));
+  display:flex;justify-content:space-between;align-items:center;
+  background:hsl(var(--surface) / .5);
+}
+.foot a{color:hsl(var(--duna-blue));text-decoration:none}
+
+/* ========== BANNER ========== */
+.banner{
+  padding:1.5rem;display:flex;justify-content:space-between;
+  align-items:center;gap:1.5rem;flex-wrap:wrap;margin-bottom:1.5rem;
+  background:linear-gradient(135deg, hsl(var(--duna-blue-tint)), hsl(var(--surface)));
+  border-color:hsl(var(--duna-blue) / .2);
+}
+.banner-meta{flex:1;min-width:240px}
+.banner-meta h3{font-size:1.05rem;margin-bottom:.35rem;font-weight:700}
+.banner-meta p{margin:0;font-size:.85rem;color:hsl(var(--text-muted))}
+.banner-tags{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.65rem}
+
+/* ========== Form mockup ========== */
+.form-mockup{max-width:760px;margin:0 auto}
+.form-card{padding:2rem 2rem 1.5rem}
+.form-row{margin-bottom:1.25rem}
+.form-help{font-size:.72rem;color:hsl(var(--text-muted));margin-top:.3rem}
+.form-cond{margin-left:1rem;padding-left:1rem;border-left:3px solid hsl(var(--duna-blue) / .3)}
+.form-cond-tag{font-size:.7rem;color:hsl(var(--duna-blue));margin-bottom:.5rem;display:flex;align-items:center;gap:.3rem;font-weight:600}
+.form-foot{display:flex;justify-content:flex-end;gap:.5rem;padding-top:1rem;border-top:1px solid hsl(var(--border));margin-top:1.5rem}
+
+@media(max-width:992px){
+  .app{grid-template-columns:1fr}
+  .sb{display:none}
+  .content{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- Tabs para alternar páginas -->
+<div class="demo-tabs">
+  <button class="active" data-page="login">Login</button>
+  <button data-page="dashboard">Dashboard</button>
+  <button data-page="catalogo">Catálogo</button>
+  <button data-page="processos">Processos</button>
+  <button data-page="formulario">Formulário</button>
+</div>
+
+<!-- ============ PÁGINA LOGIN ============ -->
+<div class="page active" data-page="login">
+<div class="login-shell">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="sb-logo">D</div>
+      <div style="text-align:center">
+        <div class="flow-mark">Flow</div>
+        <small>by MDR Advocacia</small>
+      </div>
+    </div>
+    <h2>Entrar</h2>
+    <p class="sub">Acesse com seu e-mail corporativo</p>
+    <div class="field">
+      <label class="label-flow">E-mail</label>
+      <input type="email" class="input-flow" placeholder="seu@mdradvocacia.com">
+    </div>
+    <div class="field">
+      <label class="label-flow">Senha</label>
+      <input type="password" class="input-flow" placeholder="••••••••••">
+    </div>
+    <button class="btn-flow full"><i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar</button>
+    <div class="login-foot">
+      Sua conta foi aprovada? <a href="#">Defina sua senha aqui</a><br>
+      <span style="margin-top:.5rem;display:inline-block">Ainda não tem acesso? <a href="#">Solicitar</a></span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sb">
+    <div class="sb-brand">
+      <div class="sb-logo">D</div>
+      <div>
+        <div class="flow-mark">Flow</div>
+        <small>by Duna</small>
+      </div>
+    </div>
+
+    <nav class="sb-nav">
+      <a href="#" class="sb-item active" data-target="dashboard"><i class="fa-solid fa-house"></i>Dashboard</a>
+
+      <div class="sb-section">Geração de documentos</div>
+      <a href="#" class="sb-item" data-target="catalogo"><i class="fa-solid fa-file-pen"></i>Gerador</a>
+      <a href="#" class="sb-item"><i class="fa-solid fa-bookmark"></i>Minha Biblioteca</a>
+      <a href="#" class="sb-item"><i class="fa-solid fa-book"></i>Acervo Geral</a>
+
+      <div class="sb-section">Operação</div>
+      <a href="#" class="sb-item" data-target="processos"><i class="fa-solid fa-folder-tree"></i>Processos</a>
+      <a href="#" class="sb-item"><i class="fa-solid fa-scale-balanced"></i>Cálculo Cível</a>
+
+      <div class="sb-section">Histórico</div>
+      <a href="#" class="sb-item"><i class="fa-solid fa-clock-rotate-left"></i>Documentos gerados</a>
+      <a href="#" class="sb-item"><i class="fa-solid fa-circle-question"></i>FAQ</a>
+
+      <div class="sb-section">Administração</div>
+      <a href="#" class="sb-item"><i class="fa-solid fa-users-gear"></i>Usuários</a>
+      <a href="#" class="sb-item"><i class="fa-solid fa-sitemap"></i>Equipes</a>
+      <a href="#" class="sb-item"><i class="fa-solid fa-paper-plane"></i>Disparo administrativo</a>
+    </nav>
+
+    <div class="sb-foot">© 2026 Duna.Tech<br>MDR Advocacia</div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input placeholder="Buscar modelos, processos, cálculos…">
+      </div>
+      <div class="topbar-actions">
+        <button class="topbar-icon" title="Notificações">
+          <i class="fa-regular fa-bell"></i>
+          <span class="dot"></span>
+        </button>
+        <button class="topbar-icon" title="Ajuda"><i class="fa-regular fa-circle-question"></i></button>
+        <button class="topbar-user">
+          <span class="avatar">JL</span>
+          <span>jonil.lopes</span>
+          <i class="fa-solid fa-chevron-down" style="font-size:.7rem;color:hsl(var(--text-soft))"></i>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <section class="page" data-page="dashboard">
+        <div class="page-head">
+          <div>
+            <h1>Olá, Jonil</h1>
+            <p>Visão geral do escritório — abril de 2026.</p>
+          </div>
+          <button class="btn-flow"><i class="fa-solid fa-plus"></i> Novo documento</button>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+          <div class="card-flow">
+            <div class="kpi">
+              <div class="kpi-meta">
+                <span class="eyebrow">Documentos gerados</span>
+                <span class="kpi-value">1.284</span>
+                <span class="kpi-caption"><i class="fa-solid fa-arrow-trend-up" style="color:hsl(var(--success))"></i> +12% vs. mês anterior</span>
+              </div>
+              <div class="kpi-tile blue"><i class="fa-solid fa-rocket"></i></div>
+            </div>
+          </div>
+          <div class="card-flow">
+            <div class="kpi">
+              <div class="kpi-meta">
+                <span class="eyebrow">Modelos disponíveis</span>
+                <span class="kpi-value">142</span>
+                <span class="kpi-caption">8 setores ativos</span>
+              </div>
+              <div class="kpi-tile navy"><i class="fa-solid fa-book-open"></i></div>
+            </div>
+          </div>
+          <div class="card-flow">
+            <div class="kpi">
+              <div class="kpi-meta">
+                <span class="eyebrow">Processos em captura</span>
+                <span class="kpi-value">37</span>
+                <span class="kpi-caption">5 aguardando</span>
+              </div>
+              <div class="kpi-tile warning"><i class="fa-solid fa-folder-tree"></i></div>
+            </div>
+          </div>
+          <div class="card-flow">
+            <div class="kpi">
+              <div class="kpi-meta">
+                <span class="eyebrow">Cálculos do mês</span>
+                <span class="kpi-value">28</span>
+                <span class="kpi-caption">22 concluídos</span>
+              </div>
+              <div class="kpi-tile success"><i class="fa-solid fa-scale-balanced"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts row -->
+        <div class="dash-row">
+          <div class="card-flow">
+            <div class="card-head">
+              <h2><i class="fa-solid fa-chart-line"></i> Evolução mensal</h2>
+              <span class="muted">Últimos 12 meses</span>
+            </div>
+            <div class="card-body">
+              <div class="area-chart">
+                <div class="bar-stack"><div class="bar-a" style="height:30%"></div><div class="bar-b" style="height:18%"></div><span>Mai</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:45%"></div><div class="bar-b" style="height:28%"></div><span>Jun</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:38%"></div><div class="bar-b" style="height:24%"></div><span>Jul</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:55%"></div><div class="bar-b" style="height:36%"></div><span>Ago</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:62%"></div><div class="bar-b" style="height:42%"></div><span>Set</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:48%"></div><div class="bar-b" style="height:30%"></div><span>Out</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:70%"></div><div class="bar-b" style="height:48%"></div><span>Nov</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:75%"></div><div class="bar-b" style="height:55%"></div><span>Dez</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:60%"></div><div class="bar-b" style="height:42%"></div><span>Jan</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:80%"></div><div class="bar-b" style="height:58%"></div><span>Fev</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:88%"></div><div class="bar-b" style="height:65%"></div><span>Mar</span></div>
+                <div class="bar-stack"><div class="bar-a" style="height:92%"></div><div class="bar-b" style="height:72%"></div><span>Abr</span></div>
+              </div>
+              <div class="legend">
+                <span><i style="background:hsl(var(--duna-blue) / .35)"></i> Total gerado</span>
+                <span><i style="background:hsl(var(--duna-blue))"></i> Concluídos</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-flow">
+            <div class="card-head">
+              <h2><i class="fa-solid fa-chart-pie"></i> Por setor</h2>
+              <span class="muted">Mês atual</span>
+            </div>
+            <div class="card-body">
+              <div class="donut-wrap">
+                <div class="donut">
+                  <div class="donut-center">
+                    <span class="v">128</span>
+                    <span class="l">total</span>
+                  </div>
+                </div>
+                <div class="donut-legend">
+                  <div><span><i style="width:8px;height:8px;display:inline-block;border-radius:50%;background:hsl(var(--duna-blue))"></i> Trabalhista</span><span>49</span></div>
+                  <div><span><i style="width:8px;height:8px;display:inline-block;border-radius:50%;background:hsl(var(--duna-blue-soft))"></i> Cível</span><span>31</span></div>
+                  <div><span><i style="width:8px;height:8px;display:inline-block;border-radius:50%;background:hsl(var(--duna-navy))"></i> Tributário</span><span>26</span></div>
+                  <div><span><i style="width:8px;height:8px;display:inline-block;border-radius:50%;background:hsl(var(--text-soft))"></i> Outros</span><span>22</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banner staff -->
+        <div class="card-flow banner">
+          <div class="banner-meta">
+            <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem">
+              <span class="chip warning"><i class="fa-solid fa-bolt"></i> Administrativo</span>
+            </div>
+            <h3>Disparo administrativo de demandas</h3>
+            <p>Suba uma planilha, gere 1 e-mail por linha, vincule um PDF individual e deixe o roteamento automático decidir o destinatário certo.</p>
+            <div class="banner-tags">
+              <span class="chip neutral">1 e-mail por pedido</span>
+              <span class="chip neutral">Roteamento automático</span>
+              <span class="chip neutral">.xlsx ou .csv</span>
+              <span class="chip neutral">PDF por pedido</span>
+            </div>
+          </div>
+          <button class="btn-flow"><i class="fa-solid fa-paper-plane"></i> Abrir disparador</button>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="card-flow" style="margin-bottom:1.5rem">
+          <div class="card-head"><h2>Ações rápidas</h2></div>
+          <div class="card-body">
+            <div class="qa-grid">
+              <a class="qa">
+                <div class="qa-icon"><i class="fa-solid fa-file-pen"></i></div>
+                <div class="qa-title">Novo documento</div>
+                <div class="qa-desc">Gerar peça a partir do catálogo</div>
+              </a>
+              <a class="qa">
+                <div class="qa-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+                <div class="qa-title">Novo cálculo</div>
+                <div class="qa-desc">Análise de sentença cível</div>
+              </a>
+              <a class="qa">
+                <div class="qa-icon"><i class="fa-solid fa-file-arrow-up"></i></div>
+                <div class="qa-title">Importar processos</div>
+                <div class="qa-desc">Upload de planilha CNJ</div>
+              </a>
+              <a class="qa">
+                <div class="qa-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <div class="qa-title">Histórico</div>
+                <div class="qa-desc">Documentos gerados</div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CATÁLOGO ============ -->
+      <section class="page" data-page="catalogo">
+        <div class="page-head">
+          <div>
+            <h1>Catálogo de modelos</h1>
+            <p>Selecione uma peça para iniciar a automação.</p>
+          </div>
+          <button class="btn-flow"><i class="fa-solid fa-plus"></i> Novo modelo</button>
+        </div>
+
+        <div class="card-flow catalog-toolbar">
+          <div class="topbar-search" style="background:hsl(var(--surface));border-color:hsl(var(--border-strong))">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input placeholder="Nome da peça…">
+          </div>
+          <select class="input-flow">
+            <option>Todos os setores</option>
+            <option>Trabalhista</option>
+            <option>Cível</option>
+          </select>
+          <select class="input-flow">
+            <option>Todas as áreas</option>
+          </select>
+          <select class="input-flow">
+            <option>Todas as categorias</option>
+          </select>
+        </div>
+
+        <div class="catalog-grid">
+
+          <div class="card-flow tpl-card">
+            <div class="tpl-head">
+              <span class="chip info">Trabalhista</span>
+              <button class="tpl-star on"><i class="fa-solid fa-star"></i></button>
+            </div>
+            <div class="tpl-title">Contestação — ADS Responsabilidade Subsidiária</div>
+            <div class="tpl-meta"><span class="chip neutral">Petição</span><span class="chip neutral">8VT</span></div>
+            <div class="tpl-desc">Modelo padrão para contestação em ações declaratórias com pedido de responsabilidade subsidiária do tomador de serviços.</div>
+            <div class="tpl-foot">
+              <button class="btn-flow btn-sm" style="flex:1"><i class="fa-solid fa-pen-to-square"></i> Preencher</button>
+              <button class="btn-flow-outline btn-sm" title="Configurar"><i class="fa-solid fa-gear"></i></button>
+            </div>
+          </div>
+
+          <div class="card-flow tpl-card">
+            <div class="tpl-head">
+              <span class="chip success">Cível</span>
+              <button class="tpl-star"><i class="fa-regular fa-star"></i></button>
+            </div>
+            <div class="tpl-title">Embargos à Execução — Fonoclin</div>
+            <div class="tpl-meta"><span class="chip neutral">Defesa</span></div>
+            <div class="tpl-desc">Embargos à execução com tese de inexigibilidade do título e excesso de execução.</div>
+            <div class="tpl-foot">
+              <button class="btn-flow btn-sm" style="flex:1"><i class="fa-solid fa-pen-to-square"></i> Preencher</button>
+              <button class="btn-flow-outline btn-sm"><i class="fa-solid fa-gear"></i></button>
+            </div>
+          </div>
+
+          <div class="card-flow tpl-card">
+            <div class="tpl-head">
+              <span class="chip warning">Tributário</span>
+              <button class="tpl-star on"><i class="fa-solid fa-star"></i></button>
+            </div>
+            <div class="tpl-title">Petição — Pós-Sentença PASEP</div>
+            <div class="tpl-meta"><span class="chip neutral">Pós-sentença</span><span class="chip neutral">PASEP</span></div>
+            <div class="tpl-desc">Petição padronizada de cumprimento e levantamento dos valores PASEP após sentença favorável.</div>
+            <div class="tpl-foot">
+              <button class="btn-flow btn-sm" style="flex:1"><i class="fa-solid fa-pen-to-square"></i> Preencher</button>
+              <button class="btn-flow-outline btn-sm"><i class="fa-solid fa-gear"></i></button>
+            </div>
+          </div>
+
+          <div class="card-flow tpl-card">
+            <div class="tpl-head">
+              <span class="chip info">Trabalhista</span>
+              <button class="tpl-star"><i class="fa-regular fa-star"></i></button>
+            </div>
+            <div class="tpl-title">RR — ADS Responsabilidade Subsidiária</div>
+            <div class="tpl-meta"><span class="chip neutral">Recurso</span></div>
+            <div class="tpl-desc">Modelo de recurso de revista com prequestionamento de matéria constitucional e dissídio jurisprudencial.</div>
+            <div class="tpl-foot">
+              <button class="btn-flow btn-sm" style="flex:1"><i class="fa-solid fa-pen-to-square"></i> Preencher</button>
+              <button class="btn-flow-outline btn-sm"><i class="fa-solid fa-gear"></i></button>
+            </div>
+          </div>
+
+          <div class="card-flow tpl-card">
+            <div class="tpl-head">
+              <span class="chip info">Trabalhista</span>
+              <button class="tpl-star"><i class="fa-regular fa-star"></i></button>
+            </div>
+            <div class="tpl-title">Embargos de Declaração — ADS Erro de Ementa</div>
+            <div class="tpl-meta"><span class="chip neutral">Embargos</span></div>
+            <div class="tpl-desc">Modelo objetivo de embargos de declaração apontando contradição entre ementa e fundamentação.</div>
+            <div class="tpl-foot">
+              <button class="btn-flow btn-sm" style="flex:1"><i class="fa-solid fa-pen-to-square"></i> Preencher</button>
+              <button class="btn-flow-outline btn-sm"><i class="fa-solid fa-gear"></i></button>
+            </div>
+          </div>
+
+          <div class="card-flow tpl-card">
+            <div class="tpl-head">
+              <span class="chip warning">Tributário</span>
+              <button class="tpl-star"><i class="fa-regular fa-star"></i></button>
+            </div>
+            <div class="tpl-title">Petição — Julgamento Antecipado PASEP</div>
+            <div class="tpl-meta"><span class="chip neutral">Mérito</span><span class="chip neutral">PASEP</span></div>
+            <div class="tpl-desc">Pedido de julgamento antecipado fundamentado em prova documental e ausência de controvérsia fática.</div>
+            <div class="tpl-foot">
+              <button class="btn-flow btn-sm" style="flex:1"><i class="fa-solid fa-pen-to-square"></i> Preencher</button>
+              <button class="btn-flow-outline btn-sm"><i class="fa-solid fa-gear"></i></button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============ PROCESSOS ============ -->
+      <section class="page" data-page="processos">
+        <div class="page-head">
+          <div>
+            <h1>Processos</h1>
+            <p>Acompanhe o status da captura da petição inicial.</p>
+          </div>
+          <button class="btn-flow"><i class="fa-solid fa-file-arrow-up"></i> Importar lote</button>
+        </div>
+
+        <div class="card-flow catalog-toolbar" style="grid-template-columns:2fr 1fr 1fr 1fr">
+          <div class="topbar-search" style="background:hsl(var(--surface));border-color:hsl(var(--border-strong))">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input placeholder="Número CNJ…">
+          </div>
+          <select class="input-flow"><option>Todos os status</option></select>
+          <select class="input-flow"><option>Todos os tribunais</option></select>
+          <button class="btn-flow"><i class="fa-solid fa-filter"></i> Filtrar</button>
+        </div>
+
+        <div class="card-flow" style="overflow:hidden">
+          <table class="table-flow">
+            <thead>
+              <tr>
+                <th>Processo</th>
+                <th>Tribunal</th>
+                <th>Status</th>
+                <th>Atualizado</th>
+                <th style="text-align:right">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="cnj">0001234-56.2024.5.10.0001</div><div style="font-size:.72rem;color:hsl(var(--text-muted))">Ref: PASEP-2024/118</div></td>
+                <td><div class="tribunal"><strong style="font-weight:600">TRT10</strong><span class="nm">Tribunal Regional do Trabalho da 10ª Região</span></div></td>
+                <td><span class="chip success"><i class="fa-solid fa-check"></i> Concluído</span></td>
+                <td><div>14/04/2026 09:32</div><div style="font-size:.72rem;color:hsl(var(--text-muted))">Petição inicial baixada com sucesso</div></td>
+                <td style="text-align:right"><button class="btn-flow-outline btn-sm">Ver detalhe</button></td>
+              </tr>
+              <tr>
+                <td><div class="cnj">5004587-12.2025.4.03.6100</div><div style="font-size:.72rem;color:hsl(var(--text-muted))">Ref: TRIB-058</div></td>
+                <td><div class="tribunal"><strong style="font-weight:600">TRF3</strong><span class="nm">Tribunal Regional Federal da 3ª Região</span></div></td>
+                <td><span class="chip info"><i class="fa-solid fa-spinner"></i> Em processamento</span></td>
+                <td><div>27/04/2026 14:08</div><div style="font-size:.72rem;color:hsl(var(--text-muted))">Worker baixando peça inicial...</div></td>
+                <td style="text-align:right"><button class="btn-flow-outline btn-sm">Ver detalhe</button></td>
+              </tr>
+              <tr>
+                <td><div class="cnj">0007891-23.2024.8.26.0100</div><div style="font-size:.72rem;color:hsl(var(--text-muted))">Ref: CIV-241</div></td>
+                <td><div class="tribunal"><strong style="font-weight:600">TJSP</strong><span class="nm">Tribunal de Justiça de São Paulo</span></div></td>
+                <td><span class="chip warning"><i class="fa-solid fa-clock"></i> Pendente</span></td>
+                <td><div>27/04/2026 12:14</div><div style="font-size:.72rem;color:hsl(var(--text-muted))">Aguardando captura inicial</div></td>
+                <td style="text-align:right"><button class="btn-flow-outline btn-sm">Ver detalhe</button></td>
+              </tr>
+              <tr>
+                <td><div class="cnj">0008765-43.2023.5.10.0010</div><div style="font-size:.72rem;color:hsl(var(--text-muted))">Ref: TRAB-082</div></td>
+                <td><div class="tribunal"><strong style="font-weight:600">TRT10</strong><span class="nm">Tribunal Regional do Trabalho da 10ª Região</span></div></td>
+                <td><span class="chip error"><i class="fa-solid fa-xmark"></i> Erro</span></td>
+                <td><div>26/04/2026 18:02</div><div style="font-size:.72rem;color:hsl(var(--text-muted))">Captcha não resolvido</div></td>
+                <td style="text-align:right"><button class="btn-flow-outline btn-sm">Ver detalhe</button></td>
+              </tr>
+              <tr>
+                <td><div class="cnj">5009876-87.2025.4.03.6109</div><div style="font-size:.72rem;color:hsl(var(--text-muted))">Ref: TRIB-072</div></td>
+                <td><div class="tribunal"><strong style="font-weight:600">TRF3</strong><span class="nm">Tribunal Regional Federal da 3ª Região</span></div></td>
+                <td><span class="chip neutral">Cancelado</span></td>
+                <td><div>20/04/2026 10:45</div></td>
+                <td style="text-align:right"><button class="btn-flow-outline btn-sm">Ver detalhe</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ FORMULÁRIO ============ -->
+      <section class="page" data-page="formulario">
+        <div class="form-mockup">
+          <div class="page-head" style="margin-bottom:1.5rem">
+            <div>
+              <span class="eyebrow">Catálogo › Trabalhista</span>
+              <h1 style="margin-top:.4rem">Contestação — ADS Responsabilidade Subsidiária</h1>
+            </div>
+            <button class="btn-flow-outline btn-sm"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+          </div>
+
+          <div class="card-flow form-card">
+            <div class="form-row">
+              <label class="label-flow">Nome do reclamante <span style="color:hsl(var(--error))">*</span></label>
+              <input class="input-flow" placeholder="Ex: João da Silva">
+            </div>
+            <div class="form-row">
+              <label class="label-flow">CPF</label>
+              <input class="input-flow" placeholder="000.000.000-00">
+              <div class="form-help">Será formatado automaticamente.</div>
+            </div>
+            <div class="form-row">
+              <label class="label-flow">Valor da causa</label>
+              <div style="display:flex;align-items:center;gap:.5rem">
+                <span style="padding:.65rem .85rem;border:1px solid hsl(var(--border));border-radius:var(--radius-sm);background:hsl(var(--surface-2));font-size:.85rem;color:hsl(var(--text-muted));font-weight:600">R$</span>
+                <input class="input-flow" placeholder="0,00" style="flex:1">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="label-flow">Tese principal</label>
+              <select class="input-flow">
+                <option>-- Selecione uma opção --</option>
+                <option>Responsabilidade subsidiária</option>
+                <option>Responsabilidade solidária</option>
+                <option>Inexistência de vínculo</option>
+              </select>
+            </div>
+
+            <div class="form-row" style="background:hsl(var(--surface-2));padding:.85rem 1rem;border-radius:var(--radius-sm);display:flex;align-items:center;gap:.75rem">
+              <label class="form-check form-switch m-0" style="display:flex;align-items:center;gap:.75rem;flex:1;cursor:pointer">
+                <input type="checkbox" checked style="width:34px;height:18px;appearance:none;background:hsl(var(--duna-blue));border-radius:999px;position:relative;cursor:pointer">
+                <span style="font-weight:500">Existe pedido de dano moral?</span>
+              </label>
+            </div>
+
+            <div class="form-row form-cond">
+              <div class="form-cond-tag"><i class="fa-solid fa-arrow-turn-up fa-rotate-90"></i> Condicionado a: dano moral</div>
+              <label class="label-flow">Valor do dano moral pleiteado</label>
+              <div style="display:flex;align-items:center;gap:.5rem">
+                <span style="padding:.65rem .85rem;border:1px solid hsl(var(--border));border-radius:var(--radius-sm);background:hsl(var(--surface-2));font-size:.85rem;color:hsl(var(--text-muted));font-weight:600">R$</span>
+                <input class="input-flow" placeholder="0,00" style="flex:1">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="label-flow">Observações livres</label>
+              <textarea class="input-flow" rows="4" placeholder="Notas que serão incluídas em parágrafo livre..."></textarea>
+            </div>
+
+            <div class="form-foot">
+              <button class="btn-flow-outline">Cancelar</button>
+              <button class="btn-flow"><i class="fa-solid fa-file-word"></i> Gerar documento</button>
+            </div>
+          </div>
+
+          <p style="text-align:center;color:hsl(var(--text-muted));font-size:.75rem;margin-top:1rem">
+            <i class="fa-solid fa-lock"></i> Seus dados são processados de forma segura.
+          </p>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="foot">
+      <span>© 2026 <strong>Duna.Tech</strong> · MDR Advocacia</span>
+      <span><a href="#">Termos</a> · <a href="#">Privacidade</a> · <a href="#">Suporte</a></span>
+    </footer>
+  </div>
+</div>
+
+<script>
+const tabs = document.querySelectorAll('.demo-tabs button');
+const pages = document.querySelectorAll('.page');
+const sbItems = document.querySelectorAll('.sb-item[data-target]');
+const loginShell = document.querySelector('.login-shell');
+const appShell = document.querySelector('.app');
+
+function show(target){
+  pages.forEach(p => p.classList.toggle('active', p.dataset.page === target));
+  tabs.forEach(b => b.classList.toggle('active', b.dataset.page === target));
+  sbItems.forEach(s => s.classList.toggle('active', s.dataset.target === target));
+
+  if(target === 'login'){
+    loginShell.style.display = 'flex';
+    appShell.style.display = 'none';
+  } else {
+    loginShell.style.display = 'none';
+    appShell.style.display = 'grid';
+  }
+}
+
+tabs.forEach(b => b.addEventListener('click', () => show(b.dataset.page)));
+sbItems.forEach(s => s.addEventListener('click', e => {
+  e.preventDefault();
+  if(s.dataset.target) show(s.dataset.target);
+}));
+
+// init: show login first
+show('login');
+</script>
+
+</body>
+</html>

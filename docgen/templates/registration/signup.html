@@ -1,24 +1,32 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Solicitar acesso — DOC{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow border-0 mt-5">
-            <div class="card-body p-5">
-                <h3 class="fw-bold mb-3">Solicitar Acesso</h3>
-                <p class="text-muted small mb-4">Informe seu e-mail institucional para que a supervisão aprove seu cadastro.</p>
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold">E-MAIL</label>
-                        <input type="email" name="email" class="form-control form-control-lg" placeholder="exemplo@mdradvocacia.com" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 fw-bold py-3">ENVIAR SOLICITAÇÃO</button>
-                    <div class="text-center mt-4">
-                        <a href="{% url 'login' %}" class="text-decoration-none small text-muted">Já tem conta? Fazer Login</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+<div class="auth-card">
+<div class="auth-brand">
+<div class="sb-logo" aria-hidden="true">
+<img src="{% static 'img/logo-duna-colorida.png' %}" alt="" onerror="this.parentElement.textContent='D';this.remove();">
+</div>
+<div class="text-center">
+<div class="doc-mark">DOC</div>
+<small>by MDR Advocacia</small>
+</div>
+</div>
+<h2>Solicitar acesso</h2>
+<p class="auth-sub">Informe seu e-mail institucional para que a supervisão aprove seu cadastro.</p>
+<form method="post" novalidate>
+{% csrf_token %}
+<div class="mb-3">
+<label for="id_email" class="form-label">E-mail institucional</label>
+<input type="email" name="email" id="id_email" class="form-control" placeholder="exemplo@mdradvocacia.com" required autocomplete="email" autofocus>
+</div>
+<button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Enviar solicitação</button>
+</form>
+<div class="auth-foot">
+<p class="mb-0">Já tem conta? <a href="{% url 'login' %}" class="fw-semibold">Fazer login</a></p>
+</div>
+<p class="text-center text-soft-apex mt-4 mb-0" style="font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;">© 2026 Duna.Tech</p>
 </div>
 {% endblock %}

@@ -1,0 +1,967 @@
+/* =====================================================================
+   DOC — Apex Design System
+   Redesign visual do projeto DOC (MDR Advocacia), inspirado no padrão
+   visual do projeto irmão DunaFlow/OneTask.
+   Stack-friendly: roda sobre Bootstrap 5 sobrescrevendo apenas o que é
+   preciso. Não toca em utilities (.text-*, .d-*, .p-*, etc).
+   ===================================================================== */
+
+/* ---------- 1. Tokens (variáveis HSL) ---------- */
+:root {
+  /* Marca */
+  --duna-navy: 220 74% 14%;          /* #0A1940 */
+  --duna-blue: 217 100% 56%;         /* #1E7BFF */
+  --duna-blue-soft: 215 95% 72%;
+  --duna-blue-tint: 217 100% 96%;
+
+  /* Superfícies */
+  --apex-bg: 220 15% 97%;
+  --apex-surface: 0 0% 100%;
+  --apex-surface-2: 220 20% 98%;
+  --apex-border: 220 20% 90%;
+  --apex-border-strong: 220 15% 80%;
+
+  /* Texto */
+  --apex-text: 220 74% 14%;
+  --apex-text-muted: 220 15% 45%;
+  --apex-text-soft: 220 15% 60%;
+
+  /* Status semânticos */
+  --apex-success: 140 70% 45%;
+  --apex-warning: 40 90% 50%;
+  --apex-error: 0 75% 55%;
+  --apex-info: 217 100% 56%;
+
+  /* Sistema */
+  --apex-radius: 1rem;
+  --apex-radius-sm: .625rem;
+  --apex-shadow-card: 0 4px 20px hsl(220 25% 15% / .06);
+  --apex-shadow-elev: 0 8px 32px hsl(220 25% 15% / .1);
+  --apex-transition: all .25s cubic-bezier(.4, 0, .2, 1);
+}
+
+/* ---------- 2. Reset e fundação ---------- */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: hsl(var(--apex-bg));
+  color: hsl(var(--apex-text));
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* Marca-d'água sutil */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 12% 18%, hsl(var(--duna-blue) / .06), transparent 38%),
+    radial-gradient(circle at 88% 82%, hsl(var(--duna-navy) / .06), transparent 42%);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: hsl(var(--apex-text));
+  margin: 0 0 .5rem;
+  letter-spacing: -.02em;
+}
+h1 { font-size: 1.5rem; font-weight: 700; }
+h2 { font-size: 1.2rem; font-weight: 600; letter-spacing: -.01em; }
+h3 { font-size: 1.05rem; font-weight: 600; letter-spacing: -.01em; }
+h4 { font-size: .95rem; font-weight: 600; }
+h5 { font-size: .85rem; font-weight: 600; }
+
+a { color: hsl(var(--duna-blue)); text-decoration: none; transition: var(--apex-transition); }
+a:hover { color: hsl(217 100% 48%); }
+
+.eyebrow {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: hsl(var(--apex-text-soft));
+}
+
+/* ---------- 3. Wordmark DOC e logo ---------- */
+.doc-mark {
+  font-family: 'Jura', 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 1.55rem;
+  line-height: 1;
+  background: linear-gradient(90deg, hsl(var(--duna-navy)) 0%, hsl(var(--duna-blue)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 4px hsl(var(--duna-blue) / .35));
+  animation: doc-mark-pulse 2.6s ease-in-out infinite;
+}
+@keyframes doc-mark-pulse {
+  0%, 100% { filter: drop-shadow(0 0 3px hsl(var(--duna-blue) / .35)); }
+  50%      { filter: drop-shadow(0 0 8px hsl(var(--duna-blue) / .6)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .doc-mark { animation: none; }
+}
+
+/* ---------- 4. Shell de aplicação ---------- */
+.apex-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  flex: 1;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 991.98px) {
+  .apex-shell { grid-template-columns: 1fr; }
+}
+
+/* ---------- 5. Sidebar ---------- */
+.sb {
+  background: hsl(var(--apex-surface));
+  border-right: 1px solid hsl(var(--apex-border));
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+@media (max-width: 991.98px) {
+  .sb { display: none; }
+}
+
+.sb-brand {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border-bottom: 1px solid hsl(var(--apex-border));
+  text-decoration: none;
+}
+.sb-brand:hover { color: inherit; }
+
+.sb-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, hsl(var(--duna-navy)), hsl(var(--duna-blue)));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: .9rem;
+  letter-spacing: -.05em;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.sb-logo img { width: 100%; height: 100%; object-fit: contain; }
+
+.sb-brand small {
+  font-size: .58rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: hsl(var(--apex-text-soft));
+  display: block;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+.sb-nav {
+  padding: 1rem .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.sb-section {
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: hsl(var(--apex-text-soft));
+  padding: 1rem .75rem .35rem;
+}
+
+.sb-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .55rem .75rem;
+  border-radius: var(--apex-radius-sm);
+  color: hsl(var(--apex-text-muted));
+  text-decoration: none;
+  font-size: .875rem;
+  font-weight: 500;
+  transition: var(--apex-transition);
+  position: relative;
+}
+.sb-item i, .sb-item svg { width: 16px; text-align: center; font-size: .875rem; opacity: .85; }
+.sb-item:hover { background: hsl(var(--apex-surface-2)); color: hsl(var(--duna-blue)); }
+.sb-item.active {
+  background: hsl(var(--duna-blue-tint));
+  color: hsl(var(--duna-blue));
+  font-weight: 600;
+}
+.sb-item.active::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 25%;
+  bottom: 25%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: hsl(var(--duna-blue));
+}
+
+.sb-foot {
+  padding: .85rem 1.25rem 1rem;
+  border-top: 1px solid hsl(var(--apex-border));
+  font-size: .7rem;
+  color: hsl(var(--apex-text-soft));
+}
+
+/* ---------- 6. Topbar ---------- */
+.main-area { display: flex; flex-direction: column; min-height: 100vh; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 60px;
+  padding: 0 1.5rem;
+  background: hsl(var(--apex-surface) / .92);
+  border-bottom: 1px solid hsl(var(--apex-border));
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+@media (max-width: 991.98px) {
+  .topbar { padding: 0 1rem; }
+}
+
+.topbar-toggle {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: var(--apex-radius-sm);
+  color: hsl(var(--apex-text-muted));
+  cursor: pointer;
+  font-size: 1.05rem;
+  transition: var(--apex-transition);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.topbar-toggle:hover { background: hsl(var(--apex-surface-2)); color: hsl(var(--duna-blue)); }
+@media (max-width: 991.98px) { .topbar-toggle { display: inline-flex; } }
+
+.topbar-search {
+  flex: 1;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  background: hsl(var(--apex-surface-2));
+  border: 1px solid hsl(var(--apex-border));
+  border-radius: var(--apex-radius-sm);
+  padding: .5rem .85rem;
+  transition: var(--apex-transition);
+}
+.topbar-search:focus-within {
+  border-color: hsl(var(--duna-blue));
+  box-shadow: 0 0 0 3px hsl(var(--duna-blue) / .12);
+  background: hsl(var(--apex-surface));
+}
+.topbar-search i { color: hsl(var(--apex-text-soft)); font-size: .85rem; }
+.topbar-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+  font-size: .875rem;
+  color: hsl(var(--apex-text));
+  font-family: inherit;
+}
+.topbar-search input::placeholder { color: hsl(var(--apex-text-soft)); }
+
+.topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.topbar-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--apex-text-muted));
+  cursor: pointer;
+  transition: var(--apex-transition);
+  position: relative;
+}
+.topbar-icon:hover { background: hsl(var(--apex-surface-2)); color: hsl(var(--duna-blue)); }
+.topbar-icon .dot {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--apex-error));
+  border: 2px solid hsl(var(--apex-surface));
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .35rem .9rem .35rem .35rem;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  color: hsl(var(--apex-text));
+  transition: var(--apex-transition);
+  text-decoration: none;
+}
+.topbar-user:hover {
+  background: hsl(var(--apex-surface-2));
+  border-color: hsl(var(--apex-border));
+  color: hsl(var(--apex-text));
+}
+.topbar-user .avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, hsl(var(--duna-navy)), hsl(var(--duna-blue)));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: .75rem;
+}
+.topbar-user .uname { font-size: .85rem; font-weight: 500; }
+.topbar-user .chevron { font-size: .65rem; color: hsl(var(--apex-text-soft)); }
+
+/* Dropdown da topbar (Bootstrap dropdown reaproveitado) */
+.topbar .dropdown-menu {
+  border: 1px solid hsl(var(--apex-border));
+  border-radius: var(--apex-radius-sm);
+  box-shadow: var(--apex-shadow-elev);
+  padding: .5rem;
+  font-size: .85rem;
+  margin-top: .35rem;
+}
+.topbar .dropdown-item {
+  border-radius: 8px;
+  padding: .55rem .75rem;
+  font-size: .85rem;
+  color: hsl(var(--apex-text));
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+}
+.topbar .dropdown-item i { color: hsl(var(--apex-text-muted)); width: 16px; text-align: center; }
+.topbar .dropdown-item:hover, .topbar .dropdown-item:focus {
+  background: hsl(var(--apex-surface-2));
+  color: hsl(var(--duna-blue));
+}
+.topbar .dropdown-item:hover i { color: hsl(var(--duna-blue)); }
+.topbar .dropdown-header {
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: hsl(var(--apex-text-soft));
+  padding: .65rem .75rem .35rem;
+}
+.topbar .dropdown-divider { border-color: hsl(var(--apex-border)); margin: .35rem 0; }
+
+/* ---------- 7. Conteúdo principal ---------- */
+.content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+@media (max-width: 991.98px) { .content { padding: 1.25rem 1rem 2rem; } }
+
+.page-head {
+  margin-bottom: 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.page-head h1 { margin-bottom: .35rem; }
+.page-head .lead { color: hsl(var(--apex-text-muted)); margin: 0; font-size: .9rem; }
+
+/* ---------- 8. Cards ---------- */
+.card,
+.card-flow {
+  background: hsl(var(--apex-surface)) !important;
+  border: 1px solid hsl(var(--apex-border)) !important;
+  border-radius: var(--apex-radius) !important;
+  box-shadow: var(--apex-shadow-card);
+  transition: var(--apex-transition);
+}
+.card:hover,
+.card-flow:hover { box-shadow: var(--apex-shadow-elev); }
+
+.card-header {
+  background: transparent !important;
+  border-bottom: 1px solid hsl(var(--apex-border)) !important;
+  padding: 1rem 1.25rem !important;
+}
+.card-body { padding: 1.25rem !important; }
+.card-footer {
+  background: transparent !important;
+  border-top: 1px solid hsl(var(--apex-border)) !important;
+  padding: 1rem 1.25rem !important;
+}
+
+/* ---------- 9. KPI cards ---------- */
+.kpi {
+  padding: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.kpi-meta { display: flex; flex-direction: column; gap: .25rem; }
+.kpi-value {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: hsl(var(--duna-navy));
+  letter-spacing: -.02em;
+  line-height: 1.1;
+  margin-top: .15rem;
+}
+.kpi-caption { font-size: .72rem; color: hsl(var(--apex-text-muted)); margin-top: .15rem; }
+.kpi-tile {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.kpi-tile.blue    { background: hsl(var(--duna-blue) / .1);     color: hsl(var(--duna-blue)); }
+.kpi-tile.navy    { background: hsl(var(--duna-navy) / .1);     color: hsl(var(--duna-navy)); }
+.kpi-tile.success { background: hsl(var(--apex-success) / .12); color: hsl(140 70% 32%); }
+.kpi-tile.warning { background: hsl(var(--apex-warning) / .14); color: hsl(35 85% 38%); }
+.kpi-tile.error   { background: hsl(var(--apex-error) / .12);   color: hsl(0 70% 38%); }
+
+/* ---------- 10. Botões ---------- */
+.btn {
+  border-radius: var(--apex-radius-sm) !important;
+  font-weight: 500;
+  font-size: .875rem;
+  padding: .55rem 1.1rem;
+  transition: var(--apex-transition);
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+.btn-sm { padding: .4rem .8rem !important; font-size: .78rem !important; }
+.btn-lg { padding: .7rem 1.3rem !important; font-size: 1rem !important; }
+
+.btn-primary,
+.btn-flow {
+  background: hsl(var(--duna-blue)) !important;
+  border: 1px solid hsl(var(--duna-blue)) !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+.btn-primary:hover,
+.btn-flow:hover {
+  background: hsl(217 100% 50%) !important;
+  border-color: hsl(217 100% 50%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px hsl(var(--duna-blue) / .35);
+  color: #fff !important;
+}
+.btn-primary:focus,
+.btn-flow:focus { box-shadow: 0 0 0 3px hsl(var(--duna-blue) / .25) !important; }
+
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-flow-outline {
+  background: transparent !important;
+  border: 1px solid hsl(var(--apex-border-strong)) !important;
+  color: hsl(var(--apex-text)) !important;
+  font-weight: 600;
+}
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-flow-outline:hover {
+  background: hsl(var(--apex-surface-2)) !important;
+  border-color: hsl(var(--duna-blue)) !important;
+  color: hsl(var(--duna-blue)) !important;
+}
+
+.btn-success {
+  background: hsl(var(--apex-success)) !important;
+  border-color: hsl(var(--apex-success)) !important;
+}
+.btn-success:hover {
+  background: hsl(140 70% 38%) !important;
+  border-color: hsl(140 70% 38%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px hsl(var(--apex-success) / .35);
+}
+
+.btn-warning {
+  background: hsl(var(--apex-warning)) !important;
+  border-color: hsl(var(--apex-warning)) !important;
+  color: hsl(35 80% 18%) !important;
+}
+.btn-warning:hover {
+  background: hsl(40 90% 44%) !important;
+  border-color: hsl(40 90% 44%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px hsl(var(--apex-warning) / .35);
+}
+
+.btn-danger {
+  background: hsl(var(--apex-error)) !important;
+  border-color: hsl(var(--apex-error)) !important;
+}
+
+.btn-light {
+  background: hsl(var(--apex-surface-2)) !important;
+  border-color: hsl(var(--apex-border)) !important;
+  color: hsl(var(--apex-text)) !important;
+}
+.btn-light:hover {
+  background: hsl(var(--apex-surface)) !important;
+  border-color: hsl(var(--apex-border-strong)) !important;
+}
+
+.btn-link { color: hsl(var(--duna-blue)) !important; }
+
+/* ---------- 11. Inputs ---------- */
+.form-control,
+.form-select {
+  background: hsl(var(--apex-surface)) !important;
+  border: 1px solid hsl(var(--apex-border-strong)) !important;
+  border-radius: var(--apex-radius-sm) !important;
+  padding: .6rem .85rem !important;
+  font-size: .9rem !important;
+  color: hsl(var(--apex-text)) !important;
+  transition: var(--apex-transition);
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: hsl(var(--duna-blue)) !important;
+  box-shadow: 0 0 0 3px hsl(var(--duna-blue) / .15) !important;
+  outline: none;
+}
+.form-control::placeholder { color: hsl(var(--apex-text-soft)); }
+
+.form-control-lg { padding: .75rem 1rem !important; font-size: 1rem !important; }
+.form-select-lg { padding: .75rem 2.25rem .75rem 1rem !important; font-size: 1rem !important; }
+
+.input-group-text {
+  background: hsl(var(--apex-surface-2)) !important;
+  border: 1px solid hsl(var(--apex-border-strong)) !important;
+  color: hsl(var(--apex-text-muted)) !important;
+  font-size: .85rem !important;
+}
+
+.form-label {
+  font-size: .78rem !important;
+  font-weight: 600 !important;
+  color: hsl(var(--apex-text)) !important;
+  margin-bottom: .4rem !important;
+}
+
+/* Switch */
+.form-check-input {
+  border: 1px solid hsl(var(--apex-border-strong));
+}
+.form-check-input:checked {
+  background-color: hsl(var(--duna-blue));
+  border-color: hsl(var(--duna-blue));
+}
+.form-check-input:focus {
+  border-color: hsl(var(--duna-blue));
+  box-shadow: 0 0 0 3px hsl(var(--duna-blue) / .15);
+}
+
+/* ---------- 12. Tabelas ---------- */
+.table {
+  margin: 0 !important;
+  color: hsl(var(--apex-text));
+}
+.table thead th,
+.table > :not(caption) > * > th {
+  background: transparent !important;
+  border-bottom: 1px solid hsl(var(--apex-border)) !important;
+  border-top: none !important;
+  color: hsl(var(--apex-text-soft)) !important;
+  font-size: .66rem !important;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-weight: 700 !important;
+  padding: .9rem 1rem !important;
+}
+.table tbody td,
+.table > :not(caption) > * > td {
+  padding: .95rem 1rem !important;
+  border-color: hsl(var(--apex-border)) !important;
+  font-size: .9rem;
+  vertical-align: middle;
+  background: transparent !important;
+}
+.table-hover tbody tr,
+.table tbody tr {
+  transition: var(--apex-transition);
+}
+.table-hover tbody tr:hover,
+.table tbody tr:hover {
+  background: hsl(var(--apex-surface-2)) !important;
+  --bs-table-accent-bg: transparent !important;
+}
+.table-light th {
+  background: transparent !important;
+}
+
+/* ---------- 13. Chips / badges ---------- */
+.badge,
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .7rem !important;
+  font-weight: 600 !important;
+  padding: .3rem .65rem !important;
+  border-radius: 999px !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+}
+.badge i, .chip i { font-size: .6rem; }
+
+.badge.bg-primary,
+.chip.info {
+  background: hsl(var(--duna-blue) / .1) !important;
+  color: hsl(var(--duna-blue)) !important;
+}
+.badge.bg-success,
+.badge.bg-success-subtle,
+.chip.success {
+  background: hsl(var(--apex-success) / .12) !important;
+  color: hsl(140 70% 28%) !important;
+}
+.badge.bg-warning,
+.badge.bg-warning-subtle,
+.chip.warning {
+  background: hsl(var(--apex-warning) / .15) !important;
+  color: hsl(35 90% 32%) !important;
+}
+.badge.bg-danger,
+.badge.bg-danger-subtle,
+.chip.error {
+  background: hsl(var(--apex-error) / .12) !important;
+  color: hsl(0 70% 38%) !important;
+}
+.badge.bg-info,
+.badge.bg-info-subtle {
+  background: hsl(var(--duna-blue-soft) / .25) !important;
+  color: hsl(var(--duna-navy)) !important;
+}
+.badge.bg-secondary,
+.badge.bg-secondary-subtle,
+.badge.bg-light,
+.chip.neutral {
+  background: hsl(var(--apex-surface-2)) !important;
+  color: hsl(var(--apex-text-muted)) !important;
+  border: 1px solid hsl(var(--apex-border));
+}
+.badge.bg-dark {
+  background: hsl(var(--duna-navy)) !important;
+  color: #fff !important;
+}
+
+/* ---------- 14. Alerts ---------- */
+.alert {
+  border-radius: var(--apex-radius-sm) !important;
+  border: 1px solid hsl(var(--apex-border)) !important;
+  padding: .85rem 1rem !important;
+  font-size: .87rem;
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+}
+.alert-primary, .alert-info {
+  background: hsl(var(--duna-blue) / .08) !important;
+  color: hsl(var(--duna-navy)) !important;
+  border-color: hsl(var(--duna-blue) / .25) !important;
+}
+.alert-success {
+  background: hsl(var(--apex-success) / .1) !important;
+  color: hsl(140 70% 22%) !important;
+  border-color: hsl(var(--apex-success) / .3) !important;
+}
+.alert-warning {
+  background: hsl(var(--apex-warning) / .12) !important;
+  color: hsl(35 90% 28%) !important;
+  border-color: hsl(var(--apex-warning) / .3) !important;
+}
+.alert-danger {
+  background: hsl(var(--apex-error) / .1) !important;
+  color: hsl(0 70% 32%) !important;
+  border-color: hsl(var(--apex-error) / .3) !important;
+}
+.alert-secondary {
+  background: hsl(var(--apex-surface-2)) !important;
+  color: hsl(var(--apex-text-muted)) !important;
+}
+
+/* ---------- 15. Modais ---------- */
+.modal-content {
+  background: hsl(var(--apex-surface)) !important;
+  border: 1px solid hsl(var(--apex-border)) !important;
+  border-radius: var(--apex-radius) !important;
+  box-shadow: var(--apex-shadow-elev) !important;
+}
+.modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid hsl(var(--apex-border)) !important;
+  padding: 1rem 1.25rem !important;
+}
+.modal-title { font-weight: 600; font-size: 1rem; }
+.modal-body { padding: 1.25rem !important; }
+.modal-footer {
+  background: transparent !important;
+  border-top: 1px solid hsl(var(--apex-border)) !important;
+  padding: 1rem 1.25rem !important;
+}
+
+/* ---------- 16. Lista (catálogo) ---------- */
+.tpl-card { padding: 1.25rem; display: flex; flex-direction: column; gap: .6rem; height: 100%; }
+.tpl-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.tpl-star { background: transparent; border: none; color: hsl(var(--apex-text-soft)); cursor: pointer; font-size: 1rem; transition: var(--apex-transition); padding: 0; }
+.tpl-star:hover { color: hsl(var(--apex-warning)); transform: scale(1.15); }
+.tpl-star.on { color: hsl(var(--apex-warning)); }
+.tpl-title { font-weight: 600; font-size: 1rem; color: hsl(var(--apex-text)); line-height: 1.3; }
+.tpl-meta { display: flex; flex-wrap: wrap; gap: .35rem; }
+.tpl-desc {
+  font-size: .82rem;
+  color: hsl(var(--apex-text-muted));
+  line-height: 1.5;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tpl-foot { display: flex; gap: .5rem; margin-top: .5rem; padding-top: .85rem; border-top: 1px solid hsl(var(--apex-border)); }
+
+/* ---------- 17. Paginação ---------- */
+.pagination .page-link {
+  border: 1px solid hsl(var(--apex-border));
+  color: hsl(var(--apex-text));
+  border-radius: var(--apex-radius-sm) !important;
+  margin: 0 .15rem;
+  font-size: .85rem;
+  font-weight: 500;
+  transition: var(--apex-transition);
+}
+.pagination .page-link:hover {
+  background: hsl(var(--apex-surface-2));
+  border-color: hsl(var(--duna-blue));
+  color: hsl(var(--duna-blue));
+}
+.pagination .page-item.active .page-link {
+  background: hsl(var(--duna-blue));
+  border-color: hsl(var(--duna-blue));
+  color: #fff;
+}
+.pagination .page-item.disabled .page-link {
+  background: transparent;
+  color: hsl(var(--apex-text-soft));
+}
+
+/* ---------- 18. Footer ---------- */
+.foot {
+  border-top: 1px solid hsl(var(--apex-border));
+  padding: 1rem 2rem;
+  font-size: .75rem;
+  color: hsl(var(--apex-text-soft));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: hsl(var(--apex-surface) / .6);
+}
+.foot a { color: hsl(var(--duna-blue)); }
+@media (max-width: 991.98px) {
+  .foot { flex-direction: column; gap: .35rem; padding: 1rem; text-align: center; }
+}
+
+/* ---------- 19. Off-canvas (sidebar mobile) ---------- */
+.offcanvas {
+  background: hsl(var(--apex-surface)) !important;
+  border-right: 1px solid hsl(var(--apex-border));
+}
+.offcanvas-header {
+  border-bottom: 1px solid hsl(var(--apex-border));
+  padding: 1rem 1.25rem;
+}
+
+/* ---------- 20. Login shell ---------- */
+.auth-shell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+}
+.auth-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, hsl(var(--duna-blue) / .12), transparent 40%),
+    radial-gradient(circle at 80% 70%, hsl(var(--duna-navy) / .15), transparent 50%);
+  pointer-events: none;
+}
+.auth-card {
+  background: hsl(var(--apex-surface));
+  border: 1px solid hsl(var(--apex-border));
+  border-radius: var(--apex-radius);
+  box-shadow: var(--apex-shadow-elev);
+  padding: 2.25rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  z-index: 1;
+}
+.auth-brand { display: flex; flex-direction: column; align-items: center; gap: .65rem; margin-bottom: 1.5rem; }
+.auth-brand .sb-logo { width: 52px; height: 52px; font-size: 1.2rem; border-radius: 13px; }
+.auth-brand .doc-mark { font-size: 2.4rem; }
+.auth-brand small {
+  font-size: .65rem;
+  letter-spacing: .22em;
+  color: hsl(var(--apex-text-soft));
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.auth-card h2 { text-align: center; margin-bottom: .35rem; font-size: 1.3rem; font-weight: 700; }
+.auth-card .auth-sub {
+  text-align: center;
+  color: hsl(var(--apex-text-muted));
+  font-size: .85rem;
+  margin-bottom: 1.5rem;
+}
+.auth-card .btn-primary { width: 100%; justify-content: center; padding: .7rem; }
+.auth-foot {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: .78rem;
+  color: hsl(var(--apex-text-muted));
+}
+
+/* ---------- 21. Banner / hero ---------- */
+.apex-banner {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, hsl(var(--duna-blue-tint)), hsl(var(--apex-surface)));
+  border-color: hsl(var(--duna-blue) / .25) !important;
+}
+.apex-banner-meta { flex: 1; min-width: 240px; }
+.apex-banner-meta h3 { font-size: 1.05rem; margin-bottom: .35rem; font-weight: 700; }
+.apex-banner-meta p { margin: 0; font-size: .85rem; color: hsl(var(--apex-text-muted)); }
+.apex-banner-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .65rem; }
+
+/* ---------- 22. Quick actions grid ---------- */
+.qa-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .75rem;
+}
+@media (max-width: 991.98px) { .qa-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.qa {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .5rem;
+  padding: 1rem;
+  border-radius: var(--apex-radius-sm);
+  background: hsl(var(--apex-surface-2));
+  border: 1px solid hsl(var(--apex-border));
+  text-decoration: none;
+  color: hsl(var(--apex-text));
+  transition: var(--apex-transition);
+  cursor: pointer;
+}
+.qa:hover {
+  border-color: hsl(var(--duna-blue));
+  background: hsl(var(--duna-blue-tint));
+  transform: translateY(-1px);
+  color: hsl(var(--apex-text));
+}
+.qa-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: hsl(var(--duna-blue) / .1);
+  color: hsl(var(--duna-blue));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+}
+.qa-title { font-weight: 600; font-size: .85rem; }
+.qa-desc { font-size: .72rem; color: hsl(var(--apex-text-muted)); line-height: 1.4; }
+
+/* ---------- 23. Utilities locais ---------- */
+.text-muted-apex { color: hsl(var(--apex-text-muted)) !important; }
+.text-soft-apex  { color: hsl(var(--apex-text-soft)) !important; }
+.bg-surface-2    { background: hsl(var(--apex-surface-2)) !important; }
+.border-apex     { border-color: hsl(var(--apex-border)) !important; }
+
+/* ---------- 24. Foco acessível ---------- */
+:focus-visible {
+  outline: 2px solid hsl(var(--duna-blue));
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- 25. Scrollbars sutis ---------- */
+.sb::-webkit-scrollbar { width: 6px; }
+.sb::-webkit-scrollbar-track { background: transparent; }
+.sb::-webkit-scrollbar-thumb { background: hsl(var(--apex-border-strong)); border-radius: 3px; }
+.sb::-webkit-scrollbar-thumb:hover { background: hsl(var(--apex-text-soft)); }

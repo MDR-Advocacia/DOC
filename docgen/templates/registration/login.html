@@ -1,171 +1,53 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Entrar - DunaDoc{% endblock %}
-
-{% block extra_css %}
-<style>
-    /* 1. Esconde APENAS menu e rodapé (Seguro) */
-    nav, footer, .navbar, .footer { display: none !important; }
-    
-    /* 2. Trava a rolagem da página de fundo */
-    body { overflow: hidden; }
-
-    /* 3. O Overlay que COBRE TUDO (Z-Index alto) */
-    .login-overlay {
-        position: fixed; /* Flutua sobre tudo */
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: 99999; /* Garante que fique na frente */
-        
-        /* Fundo Gradiente Duna */
-        background: linear-gradient(135deg, #0a0e27 0%, #1a237e 50%, #00d2ff 100%);
-        
-        /* Centralização FLEXBOX */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* 4. O Cartão Central */
-    .card-login {
-        width: 90%;
-        max-width: 400px; /* Largura fixa boa */
-        background: #fff; /* Fallback */
-        background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.5); /* Sombra forte */
-        padding: 40px;
-        text-align: center;
-        animation: fadeIn 0.5s ease-out;
-    }
-
-    /* Logo dentro do card */
-    .logo-img {
-        max-width: 220px;
-        height: auto;
-        margin-bottom: 5px;
-    }
-    
-    .brand-title {
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 800;
-        font-size: 1.8rem;
-        color: #0a0e27;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 30px;
-    }
-
-    /* Inputs */
-    .form-group { margin-bottom: 15px; text-align: left; }
-    
-    .label-duna {
-        font-size: 0.75rem;
-        font-weight: bold;
-        color: #666;
-        margin-bottom: 5px;
-        display: block;
-        letter-spacing: 0.5px;
-    }
-
-    .form-control {
-        background: #f1f3f5;
-        border: 1px solid #dee2e6;
-        padding: 12px;
-        border-radius: 8px;
-    }
-    .form-control:focus {
-        background: #fff;
-        border-color: #00d2ff;
-        box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2);
-    }
-
-    .btn-entrar {
-        width: 100%;
-        background: linear-gradient(90deg, #1a237e 0%, #00d2ff 100%);
-        color: white;
-        font-weight: bold;
-        border: none;
-        padding: 12px;
-        border-radius: 8px;
-        margin-top: 15px;
-        font-family: 'Montserrat', sans-serif;
-        transition: transform 0.2s;
-    }
-    .btn-entrar:hover {
-        transform: scale(1.02);
-        color: white;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>
-{% endblock %}
+{% block title %}Entrar — DOC{% endblock %}
 
 {% block content %}
-
-<div class="login-overlay">
-    
-    <div class="card-login">
-        <img src="{% static 'img/logo-duna-colorida.png' %}" alt="Duna" class="logo-img" onerror="this.style.display='none'">
-        
-        <h1 class="brand-title">DOC</h1>
-
-        <form method="post">
-            {% csrf_token %}
-            
-            {% if form.errors %}
-                <div class="alert alert-danger p-2 small mb-3 rounded">
-                    Usuário ou senha inválidos.
-                </div>
-            {% endif %}
-
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} p-2 small mb-3 rounded">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-
-            <div class="form-group">
-                <label class="label-duna">E-MAIL / USUÁRIO</label>
-                <input type="text" name="username" class="form-control" placeholder="seuemail@mdradvocacia.com" required>
-            </div>
-
-            <div class="form-group">
-                <label class="label-duna">SENHA</label>
-                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
-            </div>
-
-            <button type="submit" class="btn-entrar">ENTRAR</button>
-
-            <div class="text-center mt-3">
-                <p class="small text-muted mb-0">
-                    Sua conta foi aprovada? <br>
-                    <a href="{% url 'definir_primeira_senha' %}" class="fw-bold text-decoration-none" style="color: #1a237e;">
-                        Defina sua senha aqui
-                    </a>
-                </p>
-            </div>
-        </form>
-
-        <div class="mt-4 border-top pt-3">
-            <a href="{% url 'signup' %}" style="text-decoration: none; font-size: 0.9rem; color: #1a237e; font-weight: bold;">
-                Solicitar acesso
-            </a>
+<div class="auth-card">
+    <div class="auth-brand">
+        <div class="sb-logo" aria-hidden="true">
+            <img src="{% static 'img/logo-duna-colorida.png' %}" alt="" onerror="this.parentElement.textContent='D';this.remove();">
         </div>
-        
-        <div style="margin-top: 20px; font-size: 0.75rem; color: #999;">
-            © 2026 Duna.Tech
+        <div class="text-center">
+            <div class="doc-mark">DOC</div>
+            <small>by MDR Advocacia</small>
         </div>
     </div>
 
-</div>
+    <h2>Entrar</h2>
+    <p class="auth-sub">Acesse com seu e-mail corporativo</p>
 
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.errors %}
+            <div class="alert alert-danger" role="alert">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <div class="flex-grow-1">Usuário ou senha inválidos.</div>
+            </div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label for="id_username" class="form-label">E-mail / usuário</label>
+            <input type="text" name="username" id="id_username" class="form-control" placeholder="seu@mdradvocacia.com" required autocomplete="username" autofocus>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_password" class="form-label">Senha</label>
+            <input type="password" name="password" id="id_password" class="form-control" placeholder="••••••••••" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar
+        </button>
+    </form>
+
+    <div class="auth-foot">
+        <p class="mb-2">Sua conta foi aprovada? <a href="{% url 'definir_primeira_senha' %}" class="fw-semibold">Defina sua senha aqui</a></p>
+        <p class="mb-0">Ainda não tem acesso? <a href="{% url 'signup' %}" class="fw-semibold">Solicitar acesso</a></p>
+    </div>
+
+    <p class="text-center text-soft-apex mt-4 mb-0" style="font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;">© 2026 Duna.Tech</p>
+</div>
 {% endblock %}

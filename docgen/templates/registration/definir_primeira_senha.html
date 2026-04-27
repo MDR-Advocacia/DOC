@@ -1,43 +1,40 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Primeiro acesso — DOC{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow border-0 mt-5 rounded-4">
-            <div class="card-body p-5">
-                <div class="text-center mb-4">
-                    <i class="fa-solid fa-key fa-3x text-primary mb-3"></i>
-                    <h3 class="fw-bold">Primeiro Acesso</h3>
-                    <p class="text-muted">Defina sua senha de acesso ao DunaDoc.</p>
-                </div>
-
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">SEU E-MAIL CADASTRADO</label>
-                        <input type="email" name="email" class="form-control" placeholder="email@mdradvocacia.com" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">NOVA SENHA</label>
-                        <input type="password" name="password" class="form-control" placeholder="Mínimo 6 caracteres" required>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold">CONFIRME A SENHA</label>
-                        <input type="password" name="password_confirm" class="form-control" placeholder="Repita a senha" required>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
-                        DEFINIR SENHA E ENTRAR
-                    </button>
-                    
-                    <div class="text-center mt-4">
-                        <a href="{% url 'login' %}" class="text-decoration-none small text-muted">Voltar para Login</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+<div class="auth-card">
+<div class="auth-brand">
+<div class="sb-logo" aria-hidden="true">
+<img src="{% static 'img/logo-duna-colorida.png' %}" alt="" onerror="this.parentElement.textContent='D';this.remove();">
+</div>
+<div class="text-center">
+<div class="doc-mark">DOC</div>
+<small>by MDR Advocacia</small>
+</div>
+</div>
+<h2>Primeiro acesso</h2>
+<p class="auth-sub">Defina sua senha de acesso ao DOC.</p>
+<form method="post" novalidate>
+{% csrf_token %}
+<div class="mb-3">
+<label for="id_email" class="form-label">E-mail cadastrado</label>
+<input type="email" name="email" id="id_email" class="form-control" placeholder="email@mdradvocacia.com" required autocomplete="email" autofocus>
+</div>
+<div class="mb-3">
+<label for="id_password" class="form-label">Nova senha</label>
+<input type="password" name="password" id="id_password" class="form-control" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
+</div>
+<div class="mb-3">
+<label for="id_password_confirm" class="form-label">Confirme a senha</label>
+<input type="password" name="password_confirm" id="id_password_confirm" class="form-control" placeholder="Repita a senha" required autocomplete="new-password">
+</div>
+<button type="submit" class="btn btn-primary"><i class="fa-solid fa-key"></i> Definir senha e entrar</button>
+</form>
+<div class="auth-foot">
+<p class="mb-0"><a href="{% url 'login' %}" class="fw-semibold">Voltar para login</a></p>
+</div>
+<p class="text-center text-soft-apex mt-4 mb-0" style="font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;">© 2026 Duna.Tech</p>
 </div>
 {% endblock %}
