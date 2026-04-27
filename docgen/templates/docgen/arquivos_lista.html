@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Arquivos — DOC{% endblock %}
+
+{% block content %}
+<div class="page-head">
+<div>
+<h1>Arquivos</h1>
+<p class="lead">Repositório livre para guardar PDFs, planilhas e documentos diversos. Não usados na geração de peças.</p>
+</div>
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUpload">
+<i class="fa-solid fa-cloud-arrow-up"></i> Enviar arquivo
+</button>
+</div>
+
+<div class="card mb-4">
+<div class="card-body">
+<form method="get" class="row g-3 align-items-end">
+<div class="col-lg-7">
+<label class="form-label eyebrow">Buscar</label>
+<div class="input-group">
+<span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+<input type="text" name="q" value="{{ filtros_atuais.q }}" class="form-control" placeholder="Nome do arquivo ou descrição...">
+</div>
+</div>
+<div class="col-lg-3">
+<label class="form-label eyebrow">Tipo</label>
+<select name="tipo" class="form-select">
+<option value="">Todos</option>
+{% for value, label in tipo_choices %}
+<option value="{{ value }}" {% if filtros_atuais.tipo == value %}selected{% endif %}>{{ label }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-lg-2 d-flex gap-2">
+<button type="submit" class="btn btn-primary flex-grow-1"><i class="fa-solid fa-filter"></i> Filtrar</button>
+<a href="{% url 'arquivos_lista' %}" class="btn btn-light" title="Limpar"><i class="fa-solid fa-xmark"></i></a>
+</div>
+</form>
+</div>
+</div>
+
+<div class="card">
+<div class="card-body p-0">
+<div class="table-responsive">
+<table class="table align-middle mb-0">
+<thead>
+<tr>
+<th style="padding-left: 1.25rem; width: 40%;">Arquivo</th>
+<th>Tipo</th>
+<th>Tamanho</th>
+{% if request.user.is_staff %}<th>Usuário</th>{% endif %}
+<th>Enviado em</th>
+<th class="text-end" style="padding-right: 1.25rem;">Ações</th>
+</tr>
+</thead>
+<tbody>
+{% for arq in arquivos %}
+<tr>
+<td style="padding-left: 1.25rem;">
+<div class="d-flex align-items-center gap-3">
+<div class="kpi-tile {% if arq.tipo == 'pdf' %}error{% elif arq.tipo == 'xlsx' %}success{% elif arq.tipo == 'csv' %}warning{% else %}blue{% endif %}" style="width: 36px; height: 36px; font-size: .85rem;">
+<i class="fa-solid {% if arq.tipo == 'pdf' %}fa-file-pdf{% elif arq.tipo == 'xlsx' %}fa-file-excel{% elif arq.tipo == 'csv' %}fa-file-csv{% else %}fa-file{% endif %}"></i>
+</div>
+<div style="min-width: 0;">
+<div style="font-weight: 600;" title="{{ arq.nome_original }}">{{ arq.nome_original|truncatechars:55 }}</div>
+{% if arq.descricao %}<div class="text-muted-apex" style="font-size: .76rem;">{{ arq.descricao|truncatechars:80 }}</div>{% endif %}
+</div>
+</div>
+</td>
+<td><span class="chip {% if arq.tipo == 'pdf' %}error{% elif arq.tipo == 'xlsx' %}success{% elif arq.tipo == 'csv' %}warning{% else %}info{% endif %}">{{ arq.get_tipo_display }}</span></td>
+<td class="text-muted-apex" style="font-size: .82rem;">{{ arq.tamanho_humano }}</td>
+{% if request.user.is_staff %}<td class="text-muted-apex">{{ arq.usuario.username }}</td>{% endif %}
+<td class="text-muted-apex" style="font-size: .82rem;">{{ arq.criado_em|date:"d/m/Y H:i" }}</td>
+<td class="text-end" style="padding-right: 1.25rem;">
+<div class="d-flex gap-1 justify-content-end">
+<a href="{% url 'arquivo_download' arq.id %}" class="btn btn-outline-primary btn-sm" title="Baixar"><i class="fa-solid fa-download"></i></a>
+{% if request.user.is_staff or arq.usuario == request.user %}
+<form action="{% url 'arquivo_excluir' arq.id %}" method="post" class="m-0" onsubmit="return confirm('Excluir o arquivo &quot;{{ arq.nome_original|escapejs }}&quot;? Esta ação não pode ser desfeita.');">
+{% csrf_token %}
+<button type="submit" class="btn btn-light btn-sm" title="Excluir" style="color: hsl(var(--apex-error));"><i class="fa-solid fa-trash-can"></i></button>
+</form>
+{% endif %}
+</div>
+</td>
+</tr>
+{% empty %}
+<tr><td colspan="{% if request.user.is_staff %}6{% else %}5{% endif %}" class="text-center py-5 text-muted-apex">
+<i class="fa-regular fa-folder-open fa-2x mb-2 d-block opacity-50"></i>
+{% if filtros_atuais.q or filtros_atuais.tipo %}
+Nenhum arquivo encontrado com esses filtros.
+{% else %}
+Nenhum arquivo enviado ainda. Clique em "Enviar arquivo" para começar.
+{% endif %}
+</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div class="mt-4">{% include 'includes/pagination.html' %}</div>
+
+<div class="modal fade" id="modalUpload" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title"><i class="fa-solid fa-cloud-arrow-up" style="color: hsl(var(--duna-blue));"></i> Enviar arquivo</h5>
+<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<form action="{% url 'arquivos_lista' %}" method="post" enctype="multipart/form-data">
+{% csrf_token %}
+<div class="modal-body">
+<div class="mb-3 p-4 text-center" style="background: hsl(var(--apex-surface-2)); border: 2px dashed hsl(var(--apex-border-strong)); border-radius: var(--apex-radius);">
+<label for="id_arquivo" class="form-label d-block mb-2">
+<i class="fa-solid fa-file-arrow-up fa-2x mb-2" style="color: hsl(var(--duna-blue));"></i><br>
+<strong>Selecione o arquivo</strong>
+</label>
+<input type="file" name="arquivo" id="id_arquivo" class="form-control" style="max-width: 380px; margin: 0 auto;" accept=".pdf,.xlsx,.csv,.xls,.docx,.doc" required>
+<div class="form-text mt-2">
+Aceitas: <strong>{{ extensoes_permitidas|join:", " }}</strong> · Máximo {{ tamanho_maximo_mb }} MB
+</div>
+</div>
+
+<div class="mb-2">
+<label for="id_descricao" class="form-label">Descrição (opcional)</label>
+<textarea name="descricao" id="id_descricao" class="form-control" rows="3" placeholder="Ex: Planilha de migração PI, Acórdão TRT3 caso XYZ, Contrato de honorários..."></textarea>
+<div class="form-text">Ajuda a localizar o arquivo depois pela busca.</div>
+</div>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+<button type="submit" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Enviar</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+{% endblock %}

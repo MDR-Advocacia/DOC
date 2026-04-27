@@ -1,57 +1,55 @@
-from django.urls import path, include
-from . import views
-from . import api_views
-from django.conf import settings
-from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
+from django.urls import path
+
+from . import api_views, arquivos_views, processos_views, views
+
 
 urlpatterns = [
-    # 1. Dashboard e Home
     path('', views.home_dashboard, name='home'),
-    path('meus-documentos/', views.dashboard, name='dashboard'), # Histórico do Usuário
+    path('meus-documentos/', views.dashboard, name='dashboard'),
     path('guia-modelos/', views.guia_modelos, name='guia_modelos'),
-
-    # 2. Catálogo e Gerador
     path('catalogo/', views.lista_templates, name='lista_templates'),
     path('gerar/<int:template_id>/', views.gerar_documento, name='gerar_documento'),
-
-    # 3. Biblioteca Pessoal (Minha Biblioteca) e Pastas
     path('minha-biblioteca/', views.minha_biblioteca, name='minha_biblioteca'),
     path('minha-biblioteca/nova-pasta/', views.criar_pasta, name='criar_pasta'),
     path('minha-biblioteca/excluir-pasta/<int:pasta_id>/', views.excluir_pasta, name='excluir_pasta'),
     path('minha-biblioteca/mover/<int:template_id>/', views.mover_para_pasta, name='mover_para_pasta'),
-    
-    # 4. Acervo Geral (Biblioteca do Escritório)
+    path('minha-biblioteca/compartilhar/', views.compartilhar_pasta, name='compartilhar_pasta'),
+    path('minha-biblioteca/parar-compartilhamento/<int:pasta_id>/', views.parar_compartilhamento, name='parar_compartilhamento'),
     path('biblioteca/', views.biblioteca_modelos, name='biblioteca'),
-
-    # 5. Funcionalidades de Favoritos (AJAX)
+    path('arquivos/', arquivos_views.arquivos_lista, name='arquivos_lista'),
+    path('arquivos/<int:arquivo_id>/download/', arquivos_views.arquivo_download, name='arquivo_download'),
+    path('arquivos/<int:arquivo_id>/excluir/', arquivos_views.arquivo_excluir, name='arquivo_excluir'),
+    path('processos/', processos_views.processos_lista, name='processos_lista'),
+    path('processos/<int:processo_id>/', processos_views.processo_detalhe, name='processo_detalhe'),
+    path('processos/arquivos/<int:arquivo_id>/download/', processos_views.download_arquivo_processo, name='download_arquivo_processo'),
+    path('processos/lotes/novo/', processos_views.processos_importar_lote, name='processos_importar_lote'),
+    path('processos/admin/monitoramento/', processos_views.processos_monitoramento, name='processos_monitoramento'),
+    path('processos/<int:processo_id>/reprocessar/', processos_views.reprocessar_processo_view, name='reprocessar_processo'),
     path('favoritar/<int:template_id>/', views.toggle_favorito, name='toggle_favorito'),
-
-    # --- AUTENTICAÇÃO ---
-    path('accounts/', include('django.contrib.auth.urls')), 
+    path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('accounts/password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),
+    path('accounts/password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),
+    path('accounts/password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
+    path('accounts/password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('accounts/reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
     path('accounts/signup/', views.SignUpView.as_view(), name='signup'),
-
-    # --- ÁREA ADMINISTRATIVA / GESTÃO (Supervisores) ---
     path('painel-usuarios/', views.gerenciar_usuarios, name='gerenciar_usuarios'),
+    path('disparo-obrigacao-fazer/', views.disparar_obrigacao_fazer, name='disparar_obrigacao_fazer'),
     path('novo-modelo/', views.criar_template, name='criar_template'),
     path('configurar/<int:template_id>/', views.configurar_template, name='configurar_template'),
-    
-    # GESTÃO DE EQUIPES E NÚCLEOS
     path('gestao-equipes/', views.gerenciar_equipes, name='gerenciar_equipes'),
     path('gestao-equipes/<int:equipe_id>/membros/', views.gerenciar_membros_equipe, name='gerenciar_membros_equipe'),
-
-    # --- ROTAS DE API (Endpoints) ---
-    path('api/v1/biblioteca/', api_views.BibliotecaAPIView.as_view(), name='api_biblioteca'),
-    path('api/v1/gerar/', api_views.GerarDocumentoAPIView.as_view(), name='api_gerar'),
-
-    path('minha-biblioteca/compartilhar/', views.compartilhar_pasta, name='compartilhar_pasta'),
-
     path('equipes/editar/<int:equipe_id>/', views.editar_equipe, name='editar_equipe'),
     path('equipes/excluir/<int:equipe_id>/', views.excluir_equipe, name='excluir_equipe'),
-
     path('equipes/<int:equipe_pai_id>/criar-nucleo/', views.criar_nucleo_vinculado, name='criar_nucleo_vinculado'),
-
     path('definir-senha/', views.definir_senha_primeiro_acesso, name='definir_primeira_senha'),
+    path('api/v1/biblioteca/', api_views.BibliotecaAPIView.as_view(), name='api_biblioteca'),
+    path('api/v1/gerar/', api_views.GerarDocumentoAPIView.as_view(), name='api_gerar'),
+    path('api/v1/processos/worker/claim/', api_views.WorkerClaimAPIView.as_view(), name='api_processos_worker_claim'),
+    path('api/v1/processos/worker/<int:execucao_id>/heartbeat/', api_views.WorkerHeartbeatAPIView.as_view(), name='api_processos_worker_heartbeat'),
+    path('api/v1/processos/worker/<int:execucao_id>/complete/', api_views.WorkerCompleteAPIView.as_view(), name='api_processos_worker_complete'),
+    path('api/v1/processos/worker/<int:execucao_id>/fail/', api_views.WorkerFailAPIView.as_view(), name='api_processos_worker_fail'),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

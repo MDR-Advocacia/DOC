@@ -17,12 +17,12 @@
 </head>
 <body>
 {% if user.is_authenticated %}
-{# URLs opcionais: resolvidas com 'as' para não quebrar se o app não estiver instalado #}
 {% url 'processos_lista' as url_processos_lista %}
 {% url 'calculadora_lista' as url_calculadora_lista %}
 {% url 'disparar_obrigacao_fazer' as url_disparar %}
 {% url 'processos_monitoramento' as url_monitoramento %}
 {% url 'processos_importar_lote' as url_importar_lote %}
+{% url 'arquivos_lista' as url_arquivos_lista %}
 <div class="apex-shell">
 <aside class="sb">
 <a href="{% url 'home' %}" class="sb-brand">
@@ -35,6 +35,7 @@
 <a href="{% url 'lista_templates' %}" class="sb-item {% if request.resolver_match.url_name == 'lista_templates' %}active{% endif %}"><i class="fa-solid fa-file-pen"></i>Gerador</a>
 <a href="{% url 'minha_biblioteca' %}" class="sb-item {% if request.resolver_match.url_name == 'minha_biblioteca' %}active{% endif %}"><i class="fa-solid fa-bookmark"></i>Minha Biblioteca</a>
 <a href="{% url 'biblioteca' %}" class="sb-item {% if request.resolver_match.url_name == 'biblioteca' %}active{% endif %}"><i class="fa-solid fa-book"></i>Acervo Geral</a>
+{% if url_arquivos_lista %}<a href="{{ url_arquivos_lista }}" class="sb-item {% if request.resolver_match.url_name == 'arquivos_lista' %}active{% endif %}"><i class="fa-solid fa-folder-open"></i>Arquivos</a>{% endif %}
 {% if url_processos_lista or url_calculadora_lista %}
 <div class="sb-section">Operação</div>
 {% if url_processos_lista %}<a href="{{ url_processos_lista }}" class="sb-item {% if request.resolver_match.url_name == 'processos_lista' %}active{% endif %}"><i class="fa-solid fa-folder-tree"></i>Processos</a>{% endif %}
@@ -72,6 +73,7 @@
 <a href="{% url 'lista_templates' %}" class="sb-item"><i class="fa-solid fa-file-pen"></i>Gerador</a>
 <a href="{% url 'minha_biblioteca' %}" class="sb-item"><i class="fa-solid fa-bookmark"></i>Minha Biblioteca</a>
 <a href="{% url 'biblioteca' %}" class="sb-item"><i class="fa-solid fa-book"></i>Acervo Geral</a>
+{% if url_arquivos_lista %}<a href="{{ url_arquivos_lista }}" class="sb-item"><i class="fa-solid fa-folder-open"></i>Arquivos</a>{% endif %}
 {% if url_processos_lista or url_calculadora_lista %}
 <div class="sb-section">Operação</div>
 {% if url_processos_lista %}<a href="{{ url_processos_lista }}" class="sb-item"><i class="fa-solid fa-folder-tree"></i>Processos</a>{% endif %}
@@ -115,6 +117,7 @@
 <li><a class="dropdown-item" href="{% url 'home' %}"><i class="fa-solid fa-house"></i>Dashboard</a></li>
 <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="fa-solid fa-clock-rotate-left"></i>Meus documentos</a></li>
 <li><a class="dropdown-item" href="{% url 'minha_biblioteca' %}"><i class="fa-solid fa-bookmark"></i>Minha Biblioteca</a></li>
+{% if url_arquivos_lista %}<li><a class="dropdown-item" href="{{ url_arquivos_lista }}"><i class="fa-solid fa-folder-open"></i>Arquivos</a></li>{% endif %}
 {% if user.is_staff %}
 <li><hr class="dropdown-divider"></li>
 <li class="dropdown-header">Gestão</li>
