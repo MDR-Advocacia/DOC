@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Disparo administrativo — DOC{% endblock %}
+
+{% block content %}
+<div class="page-head">
+<div>
+<h1>Disparo administrativo de demandas</h1>
+<p class="lead">Ferramenta administrativa para enviar 1 e-mail por pedido com roteamento automático conforme o direcionamento recebido da empresa.</p>
+</div>
+<a href="{% url 'home' %}" class="btn btn-outline-primary"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+</div>
+
+<div class="row g-3">
+<div class="col-lg-7">
+<div class="card">
+<div class="card-body">
+<div class="d-flex align-items-center gap-3 mb-4">
+<div class="kpi-tile warning"><i class="fa-solid fa-paper-plane"></i></div>
+<div>
+<h2 class="mb-1">Enviar lote</h2>
+<p class="text-muted-apex mb-0" style="font-size: .85rem;">Cada linha válida gera um e-mail individual, com destinatário definido pelo tipo de demanda e pela carteira.</p>
+</div>
+</div>
+
+{% if form.non_field_errors %}
+<div class="alert alert-danger">
+<i class="fa-solid fa-circle-exclamation"></i>
+<div>{% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" novalidate>
+{% csrf_token %}
+<div class="mb-4">
+<label for="{{ form.planilha.id_for_label }}" class="form-label">Planilha do lote</label>
+{{ form.planilha }}
+<div class="form-text">Aceita arquivos <code>.xlsx</code> e <code>.csv</code>. O sistema usa as colunas para montar assunto, corpo e destinatário.</div>
+{% for error in form.planilha.errors %}<div class="text-danger small mt-2">{{ error }}</div>{% endfor %}
+</div>
+
+<div class="mb-4">
+<label for="{{ form.anexos_pdf.id_for_label }}" class="form-label">PDFs do lote</label>
+{{ form.anexos_pdf }}
+<div class="form-text">Envie vários PDFs de uma vez. Para vincular, use a coluna <strong>anexo_pdf</strong> na planilha ou nomeie o arquivo como <strong>pedido_id.pdf</strong>.</div>
+{% for error in form.anexos_pdf.errors %}<div class="text-danger small mt-2">{{ error }}</div>{% endfor %}
+</div>
+
+<div class="form-check mb-4">
+{{ form.confirmar_envio }}
+<label for="{{ form.confirmar_envio.id_for_label }}" class="form-check-label">{{ form.confirmar_envio.label }}</label>
+{% for error in form.confirmar_envio.errors %}<div class="text-danger small mt-2">{{ error }}</div>{% endfor %}
+</div>
+
+<div class="d-flex flex-wrap gap-2 align-items-center">
+<button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Processar e enviar</button>
+<span class="text-muted-apex" style="font-size: .8rem;">O disparo usa a configuração de SMTP do ambiente.</span>
+</div>
+</form>
+</div>
+</div>
+</div>
+
+<div class="col-lg-5">
+<div class="card mb-3">
+<div class="card-header"><h2>Colunas obrigatórias</h2></div>
+<div class="card-body">
+<div class="d-grid gap-2">
+{% for coluna in colunas_obrigatorias %}
+<div class="p-3 rounded" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border));">
+<div class="fw-bold">{{ coluna.nome }}</div>
+<div class="text-muted-apex" style="font-size: .8rem;">{{ coluna.descricao }}</div>
+</div>
+{% endfor %}
+</div>
+</div>
+</div>
+
+<div class="card mb-3">
+<div class="card-header"><h2>Campos adicionais por tipo</h2></div>
+<div class="card-body">
+<div class="d-grid gap-2">
+{% for grupo in colunas_obrigatorias_por_tipo %}
+<div class="p-3 rounded" style="border: 1px solid hsl(var(--apex-border));">
+<div class="fw-bold mb-2">{{ grupo.titulo }}</div>
+{% for campo in grupo.campos %}
+<div style="font-size: .82rem;"><strong>{{ campo.nome }}</strong>: <span class="text-muted-apex">{{ campo.descricao }}</span></div>
+{% endfor %}
+</div>
+{% endfor %}
+</div>
+</div>
+</div>
+
+<div class="card mb-3">
+<div class="card-header"><h2>Roteamento automático</h2></div>
+<div class="card-body">
+<div class="d-grid gap-2">
+{% for rota in rotas_email %}
+<div class="p-3 rounded" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border));">
+<div class="fw-bold">{{ rota.tipo_label }}</div>
+<div class="text-muted-apex" style="font-size: .78rem;">{{ rota.carteira_label }}</div>
+<div class="mt-2" style="font-size: .82rem;"><strong>{{ rota.destinatario }}</strong></div>
+</div>
+{% endfor %}
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><h2>Colunas opcionais</h2></div>
+<div class="card-body">
+<div class="d-grid gap-2 mb-3">
+{% for coluna in colunas_opcionais %}
+<div class="p-3 rounded" style="border: 1px solid hsl(var(--apex-border));">
+<div class="fw-bold">{{ coluna.nome }}</div>
+<div class="text-muted-apex" style="font-size: .8rem;">{{ coluna.descricao }}</div>
+</div>
+{% endfor %}
+</div>
+
+<hr style="border-color: hsl(var(--apex-border)); margin: 1.25rem 0;">
+
+<h5 class="mb-2">Atenção operacional</h5>
+<div class="text-muted-apex mb-3" style="font-size: .8rem; line-height: 1.6;">
+<div>Demandas que alterem parcela, prazo, taxa, margem ou readequações/conversões contratuais não devem ser disparadas por este fluxo.</div>
+<div>Nesses casos, a orientação recebida foi requerer em juízo ordem direcionada ao órgão consignante.</div>
+</div>
+
+<h5 class="mb-2">Fluxo do disparo</h5>
+<div class="text-muted-apex" style="font-size: .8rem; line-height: 1.7;">
+<div>1. O sistema valida a planilha e identifica as colunas por nome.</div>
+<div>2. O destinatário é definido automaticamente pelas regras de tipo de demanda e carteira.</div>
+<div>3. Cada linha válida gera um e-mail individual com texto padronizado e dados do pedido.</div>
+<div>4. O PDF de cada pedido é localizado pela coluna <strong>anexo_pdf</strong> ou por <strong>pedido_id.pdf</strong>.</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

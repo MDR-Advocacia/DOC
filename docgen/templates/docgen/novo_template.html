@@ -1,81 +1,71 @@
 {% extends 'base.html' %}
 
-{% block title %}Novo Modelo{% endblock %}
+{% block title %}Novo modelo — DOC{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        
-        <div class="d-flex align-items-center mb-4 mt-2">
-            <a href="{% url 'lista_templates' %}" class="btn btn-outline-secondary me-3">
-                <i class="fa-solid fa-arrow-left"></i>
-            </a>
-            <h2 class="fw-bold mb-0">Adicionar Novo Modelo</h2>
-        </div>
+<div style="max-width: 720px; margin: 0 auto;">
 
-        <div class="card shadow border-0">
-            <div class="card-body p-5">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
+<div class="page-head">
+<div>
+<span class="eyebrow">Catálogo</span>
+<h1 style="margin-top:.4rem">Adicionar novo modelo</h1>
+</div>
+<a href="{% url 'lista_templates' %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
+</div>
 
-                    <div class="mb-4 p-4 border rounded bg-light text-center dashed-border">
-                        <label for="arquivo" class="form-label fw-bold d-block mb-3">
-                            <i class="fa-solid fa-cloud-arrow-up fa-2x text-primary mb-2"></i><br>
-                            Selecione o arquivo .docx
-                        </label>
-                        <input type="file" name="arquivo" id="arquivo" class="form-control w-75 mx-auto" accept=".docx" required>
-                        <div class="form-text mt-2">Certifique-se que o arquivo contém as tags <code>{% verbatim %}{{ exemplo }}{% endverbatim %}</code></div>
-                    </div>
+<div class="card">
+<div class="card-body" style="padding: 2rem;">
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Título da Peça <span class="text-danger">*</span></label>
-                        <input type="text" name="titulo" class="form-control" placeholder="Ex: Contestação Cível Padrão" required>
-                    </div>
+<div class="mb-4 p-4 text-center" style="background: hsl(var(--apex-surface-2)); border: 2px dashed hsl(var(--apex-border-strong)); border-radius: var(--apex-radius);">
+<label for="arquivo" class="form-label d-block mb-3">
+<i class="fa-solid fa-cloud-arrow-up fa-2x mb-2" style="color: hsl(var(--duna-blue));"></i><br>
+<strong>Selecione o arquivo .docx</strong>
+</label>
+<input type="file" name="arquivo" id="arquivo" class="form-control" style="max-width: 420px; margin: 0 auto;" accept=".docx" required>
+<div class="form-text mt-2">Certifique-se que o arquivo contém as tags <code>{% verbatim %}{{ exemplo }}{% endverbatim %}</code></div>
+</div>
 
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Setor <span class="text-danger">*</span></label>
-                            <select name="setor" class="form-select" required>
-                                <option value="">Selecione...</option>
-                                {% for s in setores %}
-                                    <option value="{{ s.id }}">{{ s.nome }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Área</label>
-                            <select name="area" class="form-select">
-                                <option value="">Geral</option>
-                                {% for a in areas %}
-                                    <option value="{{ a.id }}">{{ a.nome }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Categoria</label>
-                            <select name="categoria" class="form-select">
-                                <option value="">Geral</option>
-                                {% for c in categorias %}
-                                    <option value="{{ c.id }}">{{ c.nome }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
+<div class="mb-3">
+<label class="form-label">Título da peça <span style="color: hsl(var(--apex-error));">*</span></label>
+<input type="text" name="titulo" class="form-control" placeholder="Ex: Contestação Cível Padrão" required>
+</div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Descrição / Instruções</label>
-                        <textarea name="descricao" class="form-control" rows="3" placeholder="Explique brevemente quando usar este modelo..."></textarea>
-                    </div>
+<div class="row g-3 mb-3">
+<div class="col-md-4">
+<label class="form-label">Setor <span style="color: hsl(var(--apex-error));">*</span></label>
+<select name="setor" class="form-select" required>
+<option value="">Selecione...</option>
+{% for s in setores %}<option value="{{ s.id }}">{{ s.nome }}</option>{% endfor %}
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label">Área</label>
+<select name="area" class="form-select">
+<option value="">Geral</option>
+{% for a in areas %}<option value="{{ a.id }}">{{ a.nome }}</option>{% endfor %}
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label">Categoria</label>
+<select name="categoria" class="form-select">
+<option value="">Geral</option>
+{% for c in categorias %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+</select>
+</div>
+</div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg fw-bold">
-                            Continuar para Configuração <i class="fa-solid fa-arrow-right ms-2"></i>
-                        </button>
-                    </div>
+<div class="mb-4">
+<label class="form-label">Descrição / instruções</label>
+<textarea name="descricao" class="form-control" rows="3" placeholder="Explique brevemente quando usar este modelo..."></textarea>
+</div>
 
-                </form>
-            </div>
-        </div>
-    </div>
+<div class="d-grid">
+<button type="submit" class="btn btn-primary btn-lg">Continuar para configuração <i class="fa-solid fa-arrow-right"></i></button>
+</div>
+</form>
+</div>
+</div>
 </div>
 {% endblock %}

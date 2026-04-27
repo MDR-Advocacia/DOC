@@ -1,218 +1,178 @@
 {% extends 'base.html' %}
 
-{% block title %}Membros - {{ equipe.nome }}{% endblock %}
+{% block title %}Membros — {{ equipe.nome }}{% endblock %}
 
 {% block content %}
-<div class="row mb-4 align-items-center">
-    <div class="col-md-7">
-        <a href="{% url 'gerenciar_equipes' %}" class="text-decoration-none text-muted small mb-2 d-block">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar para Organograma
-        </a>
-        <h2 class="fw-bold text-dark mb-1">
-            <i class="fa-solid fa-users text-primary me-2"></i>{{ equipe.nome }}
-        </h2>
-        <p class="text-muted mb-0">Gestão de acesso, supervisão e criação de núcleos vinculados.</p>
-    </div>
-    
-    {% if not equipe.equipe_pai %}
-    <div class="col-md-5 text-md-end mt-3 mt-md-0">
-        <button class="btn btn-outline-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCriarNucleo">
-            <i class="fa-solid fa-folder-tree me-2"></i> Criar Núcleo Derivado
-        </button>
-    </div>
-    {% endif %}
+<div class="page-head">
+<div>
+<a href="{% url 'gerenciar_equipes' %}" class="btn btn-link p-0 mb-2" style="font-size: .82rem;"><i class="fa-solid fa-arrow-left"></i> Voltar para organograma</a>
+<h1><i class="fa-solid fa-users" style="color: hsl(var(--duna-blue));"></i> {{ equipe.nome }}</h1>
+<p class="lead">Gestão de acesso, supervisão e criação de núcleos vinculados.</p>
+</div>
+{% if not equipe.equipe_pai %}
+<button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCriarNucleo"><i class="fa-solid fa-folder-tree"></i> Criar núcleo derivado</button>
+{% endif %}
 </div>
 
-<div class="row g-4">
-    <div class="col-lg-8">
-        
-        <div class="card shadow-sm border-0 mb-4 border-top border-warning border-3">
-            <div class="card-header bg-white fw-bold py-3 border-bottom d-flex justify-content-between align-items-center">
-                <span><i class="fa-solid fa-crown text-warning me-2"></i> Supervisores do Setor</span>
-                <span class="badge bg-light text-dark border fw-normal">{{ equipe.supervisores.count }}</span>
-            </div>
-            <ul class="list-group list-group-flush">
-                {% for sup in equipe.supervisores.all %}
-                <li class="list-group-item py-3 d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar-circle me-3 bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px;">
-                            <i class="fa-solid fa-user-shield"></i>
-                        </div>
-                        <div>
-                            <span class="fw-bold text-dark">{{ sup.get_full_name|default:sup.username }}</span>
-                            <small class="text-muted d-block">{{ sup.email }}</small>
-                        </div>
-                    </div>
-                    {% if sup != request.user %}
-                    <form action="{% url 'gerenciar_membros_equipe' equipe.id %}" method="post" class="m-0">
-                        {% csrf_token %}
-                        <input type="hidden" name="acao" value="remover_supervisor">
-                        <input type="hidden" name="usuario_id" value="{{ sup.id }}">
-                        <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Remover da Supervisão">
-                            <i class="fa-solid fa-user-minus"></i>
-                        </button>
-                    </form>
-                    {% else %}
-                        <span class="badge bg-light text-secondary border">Você</span>
-                    {% endif %}
-                </li>
-                {% empty %}
-                <li class="list-group-item py-4 text-center text-muted italic">Nenhum supervisor atribuído.</li>
-                {% endfor %}
-            </ul>
-        </div>
+<div class="row g-3">
+<div class="col-lg-8">
+<div class="card mb-3" style="border-top: 3px solid hsl(var(--apex-warning)) !important;">
+<div class="card-header d-flex justify-content-between align-items-center">
+<h2><i class="fa-solid fa-crown" style="color: hsl(var(--apex-warning));"></i> Supervisores do setor</h2>
+<span class="chip neutral">{{ equipe.supervisores.count }}</span>
+</div>
+<ul class="list-group list-group-flush">
+{% for sup in equipe.supervisores.all %}
+<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; padding: 1rem 1.25rem; border-color: hsl(var(--apex-border));">
+<div class="d-flex align-items-center">
+<div class="me-3 d-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px; background: hsl(var(--apex-warning) / .12); color: hsl(35 85% 38%);"><i class="fa-solid fa-user-shield"></i></div>
+<div>
+<span class="fw-bold">{{ sup.get_full_name|default:sup.username }}</span>
+<small class="text-muted-apex d-block">{{ sup.email }}</small>
+</div>
+</div>
+{% if sup != request.user %}
+<form action="{% url 'gerenciar_membros_equipe' equipe.id %}" method="post" class="m-0">
+{% csrf_token %}
+<input type="hidden" name="acao" value="remover_supervisor">
+<input type="hidden" name="usuario_id" value="{{ sup.id }}">
+<button type="submit" class="btn btn-light btn-sm" style="color: hsl(var(--apex-error));" title="Remover"><i class="fa-solid fa-user-minus"></i></button>
+</form>
+{% else %}
+<span class="chip neutral">Você</span>
+{% endif %}
+</li>
+{% empty %}
+<li class="list-group-item text-center text-muted-apex" style="background: transparent; padding: 1.5rem;">Nenhum supervisor atribuído.</li>
+{% endfor %}
+</ul>
+</div>
 
-        <div class="card shadow-sm border-0 border-top border-success border-3">
-            <div class="card-header bg-white fw-bold py-3 border-bottom d-flex justify-content-between align-items-center">
-                <span><i class="fa-solid fa-user-tie text-success me-2"></i> Advogados e Membros</span>
-                <span class="badge bg-light text-dark border fw-normal">{{ equipe.membros.count }}</span>
-            </div>
-            <ul class="list-group list-group-flush">
-                {% for membro in equipe.membros.all %}
-                <li class="list-group-item py-3 d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar-circle me-3 bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px;">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
-                        <div>
-                            <span class="fw-bold text-dark">{{ membro.get_full_name|default:membro.username }}</span>
-                            <small class="text-muted d-block">{{ membro.email }}</small>
-                        </div>
-                    </div>
-                    <form action="{% url 'gerenciar_membros_equipe' equipe.id %}" method="post" class="m-0">
-                        {% csrf_token %}
-                        <input type="hidden" name="acao" value="remover_membro">
-                        <input type="hidden" name="usuario_id" value="{{ membro.id }}">
-                        <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Remover Membro">
-                            <i class="fa-solid fa-xmark fs-5"></i>
-                        </button>
-                    </form>
-                </li>
-                {% empty %}
-                <li class="list-group-item py-5 text-center text-muted">
-                    <i class="fa-solid fa-user-group opacity-25 fa-2x mb-2 d-block"></i>
-                    Nenhum membro comum vinculado a esta estrutura.
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
+<div class="card" style="border-top: 3px solid hsl(var(--apex-success)) !important;">
+<div class="card-header d-flex justify-content-between align-items-center">
+<h2><i class="fa-solid fa-user-tie" style="color: hsl(var(--apex-success));"></i> Advogados e membros</h2>
+<span class="chip neutral">{{ equipe.membros.count }}</span>
+</div>
+<ul class="list-group list-group-flush">
+{% for membro in equipe.membros.all %}
+<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; padding: 1rem 1.25rem; border-color: hsl(var(--apex-border));">
+<div class="d-flex align-items-center">
+<div class="me-3 d-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px; background: hsl(var(--apex-success) / .12); color: hsl(140 70% 32%);"><i class="fa-solid fa-user"></i></div>
+<div>
+<span class="fw-bold">{{ membro.get_full_name|default:membro.username }}</span>
+<small class="text-muted-apex d-block">{{ membro.email }}</small>
+</div>
+</div>
+<form action="{% url 'gerenciar_membros_equipe' equipe.id %}" method="post" class="m-0">
+{% csrf_token %}
+<input type="hidden" name="acao" value="remover_membro">
+<input type="hidden" name="usuario_id" value="{{ membro.id }}">
+<button type="submit" class="btn btn-light btn-sm" style="color: hsl(var(--apex-error));" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+</form>
+</li>
+{% empty %}
+<li class="list-group-item text-center text-muted-apex" style="background: transparent; padding: 2rem;">
+<i class="fa-solid fa-user-group fa-2x mb-2 d-block opacity-25"></i>
+Nenhum membro comum vinculado a esta estrutura.
+</li>
+{% endfor %}
+</ul>
+</div>
+</div>
 
-    <div class="col-lg-4">
-        <div class="card shadow-sm border-0 bg-white sticky-top" style="top: 20px;">
-            <div class="card-body p-4">
-                <h5 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-user-plus me-2"></i>Novo Vínculo</h5>
-                
-                <form action="{% url 'gerenciar_membros_equipe' equipe.id %}" method="post">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">BUSCAR COLABORADOR</label>
-                        <select name="usuario_id" class="form-select border-primary bg-light" required>
-                            <option value="">-- Selecione na lista --</option>
-                            {% for u in usuarios_disponiveis %}
-                                <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }} ({{ u.email }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">NÍVEL DE PERMISSÃOn</label>
-                        <div class="p-3 border rounded bg-light bg-opacity-50">
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="acao" id="radioMembro" value="adicionar_membro" checked>
-                                <label class="form-check-label text-dark" for="radioMembro">
-                                    <strong>Membro Comum</strong> <br>
-                                    <small class="text-muted">Utiliza modelos e pastas do setor.</small>
-                                </label>
-                            </div>
-                            <hr class="my-2 opacity-25">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="acao" id="radioSupervisor" value="adicionar_supervisor">
-                                <label class="form-check-label text-dark" for="radioSupervisor">
-                                    <strong>Supervisor</strong> <br>
-                                    <small class="text-muted">Pode gerenciar esta lista e organizar pastas.</small>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary fw-bold w-100 shadow-sm">
-                        <i class="fa-solid fa-check me-2"></i> Confirmar Adição
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
+<div class="col-lg-4">
+<div class="card sticky-top" style="top: 80px;">
+<div class="card-body">
+<h2 class="mb-3" style="color: hsl(var(--duna-blue));"><i class="fa-solid fa-user-plus"></i> Novo vínculo</h2>
+<form action="{% url 'gerenciar_membros_equipe' equipe.id %}" method="post">
+{% csrf_token %}
+<div class="mb-3">
+<label class="form-label">Buscar colaborador</label>
+<select name="usuario_id" class="form-select" required>
+<option value="">— Selecione na lista —</option>
+{% for u in usuarios_disponiveis %}<option value="{{ u.id }}">{{ u.get_full_name|default:u.username }} ({{ u.email }})</option>{% endfor %}
+</select>
+</div>
+<div class="mb-4">
+<label class="form-label">Nível de permissão</label>
+<div class="p-3 rounded" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border));">
+<div class="form-check mb-2">
+<input class="form-check-input" type="radio" name="acao" id="radioMembro" value="adicionar_membro" checked>
+<label class="form-check-label" for="radioMembro">
+<strong>Membro comum</strong>
+<small class="text-muted-apex d-block">Utiliza modelos e pastas do setor.</small>
+</label>
+</div>
+<hr style="margin: .5rem 0; border-color: hsl(var(--apex-border));">
+<div class="form-check">
+<input class="form-check-input" type="radio" name="acao" id="radioSupervisor" value="adicionar_supervisor">
+<label class="form-check-label" for="radioSupervisor">
+<strong>Supervisor</strong>
+<small class="text-muted-apex d-block">Pode gerenciar esta equipe e seus acessos.</small>
+</label>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-check"></i> Confirmar adição</button>
+</form>
+</div>
+</div>
+</div>
 </div>
 
 {% if not equipe.equipe_pai %}
-<div class="modal fade" id="modalCriarNucleo" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white border-0 py-3">
-                <h5 class="modal-title fw-bold"><i class="fa-solid fa-share-nodes me-2"></i>Derivar Núcleo de {{ equipe.nome }}</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            
-            <form action="{% url 'criar_nucleo_vinculado' equipe.id %}" method="post">
-                {% csrf_token %}
-                <div class="modal-body p-4">
-                    
-                    <div class="mb-4">
-                        <label class="form-label fw-bold small text-muted">NOME DO NOVO NÚCLEO</label>
-                        <div class="input-group input-group-lg">
-                            <span class="input-group-text bg-light text-muted border-end-0">{{ equipe.nome }} - </span>
-                            <input type="text" name="nome" class="form-control border-start-0 ps-0 fw-bold" placeholder="Ex: Advogados, Estagiários, Célula X..." required>
-                        </div>
-                    </div>
-
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between align-items-end mb-2">
-                            <label class="form-label fw-bold small text-muted mb-0">
-                                <i class="fa-solid fa-people-arrows me-1 text-primary"></i> SELECIONE OS MEMBROS PARA VINCULAR
-                            </label>
-                            <span class="text-muted small italic">Serão copiados de {{ equipe.nome }}</span>
-                        </div>
-                        
-                        <div class="alert alert-warning py-2 small border-0 shadow-sm d-flex align-items-center">
-                            <i class="fa-solid fa-circle-info fs-5 me-2"></i>
-                            <div>Os <strong>Supervisores</strong> da equipe pai serão inseridos no núcleo automaticamente.</div>
-                        </div>
-                        
-                        <div class="card bg-light border-0" style="max-height: 300px; overflow-y: auto;">
-                            <div class="card-body p-3">
-                                <div class="row g-2">
-                                    {% for m in equipe.membros.all %}
-                                        <div class="col-md-6">
-                                            <div class="form-check bg-white p-2 border rounded shadow-sm d-flex align-items-center">
-                                                <input class="form-check-input ms-1" type="checkbox" name="membros_selecionados" value="{{ m.id }}" id="m_{{ m.id }}">
-                                                <label class="form-check-label ms-2 w-100 pointer text-truncate" for="m_{{ m.id }}">
-                                                    <span class="fw-bold d-block" style="font-size: 0.9em;">{{ m.get_full_name|default:m.username }}</span>
-                                                    <small class="text-muted" style="font-size: 0.8em;">{{ m.email }}</small>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    {% empty %}
-                                        <div class="col-12 text-center py-3 text-muted">
-                                            Nenhum membro comum disponível para migrar.
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-                <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-link text-decoration-none text-muted" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-bold px-4 shadow">
-                        <i class="fa-solid fa-plus-circle me-2"></i> Criar e Vincular Membros
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+<div class="modal fade" id="modalCriarNucleo" tabindex="-1">
+<div class="modal-dialog modal-lg modal-dialog-centered">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title"><i class="fa-solid fa-share-nodes" style="color: hsl(var(--duna-blue));"></i> Derivar núcleo de {{ equipe.nome }}</h5>
+<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<form action="{% url 'criar_nucleo_vinculado' equipe.id %}" method="post">
+{% csrf_token %}
+<div class="modal-body">
+<div class="mb-4">
+<label class="form-label">Nome do novo núcleo</label>
+<div class="input-group">
+<span class="input-group-text">{{ equipe.nome }} —</span>
+<input type="text" name="nome" class="form-control" placeholder="Ex: Advogados, Estagiários, Célula X..." required>
+</div>
+</div>
+<div class="mb-2">
+<div class="d-flex justify-content-between align-items-end mb-2">
+<label class="form-label mb-0"><i class="fa-solid fa-people-arrows" style="color: hsl(var(--duna-blue));"></i> Selecione os membros para vincular</label>
+<small class="text-muted-apex">Serão copiados de {{ equipe.nome }}</small>
+</div>
+<div class="alert alert-warning">
+<i class="fa-solid fa-circle-info"></i>
+<div>Os <strong>supervisores</strong> da equipe pai serão inseridos no núcleo automaticamente.</div>
+</div>
+<div class="rounded p-3" style="background: hsl(var(--apex-surface-2)); max-height: 300px; overflow-y: auto;">
+<div class="row g-2">
+{% for m in equipe.membros.all %}
+<div class="col-md-6">
+<div class="form-check p-2 rounded" style="background: hsl(var(--apex-surface)); border: 1px solid hsl(var(--apex-border));">
+<input class="form-check-input" type="checkbox" name="membros_selecionados" value="{{ m.id }}" id="m_{{ m.id }}">
+<label class="form-check-label w-100" for="m_{{ m.id }}" style="cursor: pointer;">
+<span class="fw-bold d-block" style="font-size: .88rem;">{{ m.get_full_name|default:m.username }}</span>
+<small class="text-muted-apex" style="font-size: .76rem;">{{ m.email }}</small>
+</label>
+</div>
+</div>
+{% empty %}
+<div class="col-12 text-center py-3 text-muted-apex">Nenhum membro comum disponível para migrar.</div>
+{% endfor %}
+</div>
+</div>
+</div>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+<button type="submit" class="btn btn-success"><i class="fa-solid fa-circle-plus"></i> Criar e vincular membros</button>
+</div>
+</form>
+</div>
+</div>
 </div>
 {% endif %}
 {% endblock %}

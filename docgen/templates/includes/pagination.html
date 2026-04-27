@@ -1,43 +1,27 @@
 {% load docgen_extras %}
-
 {% if page_obj.has_other_pages %}
 <nav aria-label="Navegação" class="mt-4">
-  <ul class="pagination justify-content-center">
-    
-    {% if page_obj.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?{% param_replace page=page_obj.previous_page_number %}" aria-label="Anterior">
-          <span aria-hidden="true">&laquo;</span>
-        </a>
-      </li>
-    {% else %}
-      <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
-    {% endif %}
+<ul class="pagination justify-content-center">
+{% if page_obj.has_previous %}
+<li class="page-item"><a class="page-link" href="?{% param_replace page=page_obj.previous_page_number %}" aria-label="Anterior"><i class="fa-solid fa-chevron-left"></i></a></li>
+{% else %}
+<li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-chevron-left"></i></span></li>
+{% endif %}
 
-    {% for i in page_obj.paginator.page_range %}
-      {% if page_obj.number == i %}
-        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-      {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
-        <li class="page-item">
-            <a class="page-link" href="?{% param_replace page=i %}">{{ i }}</a>
-        </li>
-      {% endif %}
-    {% endfor %}
+{% for i in page_obj.paginator.page_range %}
+{% if page_obj.number == i %}
+<li class="page-item active"><span class="page-link">{{ i }}</span></li>
+{% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+<li class="page-item"><a class="page-link" href="?{% param_replace page=i %}">{{ i }}</a></li>
+{% endif %}
+{% endfor %}
 
-    {% if page_obj.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="?{% param_replace page=page_obj.next_page_number %}" aria-label="Próximo">
-          <span aria-hidden="true">&raquo;</span>
-        </a>
-      </li>
-    {% else %}
-      <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
-    {% endif %}
-    
-  </ul>
-  
-  <div class="text-center text-muted small mt-2">
-      Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-  </div>
+{% if page_obj.has_next %}
+<li class="page-item"><a class="page-link" href="?{% param_replace page=page_obj.next_page_number %}" aria-label="Próximo"><i class="fa-solid fa-chevron-right"></i></a></li>
+{% else %}
+<li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-chevron-right"></i></span></li>
+{% endif %}
+</ul>
+<div class="text-center text-soft-apex mt-2" style="font-size: .76rem;">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
 </nav>
 {% endif %}

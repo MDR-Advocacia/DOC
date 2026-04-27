@@ -1,119 +1,101 @@
 {% extends 'base.html' %}
 
-{% block title %}Acervo - DunaDoc{% endblock %}
+{% block title %}Acervo Geral — DOC{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2 class="fw-bold text-dark">Acervo Geral de Modelos</h2>
-        <p class="text-muted">Baixe os arquivos originais (.docx) para edição manual ou consulta.</p>
-    </div>
+<div class="page-head">
+<div>
+<h1>Acervo geral de modelos</h1>
+<p class="lead">Baixe os arquivos originais (.docx) para edição manual ou consulta.</p>
+</div>
 </div>
 
-<div class="card shadow-sm border-0 mb-4 bg-white">
-    <div class="card-body p-4">
-        <form method="get" action=".">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label fw-bold small text-secondary text-uppercase">Buscar</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                        <input type="text" name="q" class="form-control border-start-0 ps-0 bg-light" 
-                               placeholder="Nome..." value="{{ filtros_atuais.q|default:'' }}">
-                        <button class="btn btn-primary" type="submit">Ok</button>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label fw-bold small text-secondary text-uppercase">Setor</label>
-                    <select name="setor" class="form-select" onchange="this.form.submit()">
-                        <option value="todos">Todos</option>
-                        {% for s in setores %}
-                            <option value="{{ s.id }}" {% if filtros_atuais.setor == s.id|stringformat:"s" %}selected{% endif %}>
-                                {{ s.nome }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label fw-bold small text-secondary text-uppercase">Área</label>
-                    <select name="area" class="form-select" onchange="this.form.submit()">
-                        <option value="todos">Todas</option>
-                        {% for a in areas %}
-                            <option value="{{ a.id }}" {% if filtros_atuais.area == a.id|stringformat:"s" %}selected{% endif %}>
-                                {{ a.nome }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label fw-bold small text-secondary text-uppercase">Categoria</label>
-                    <select name="categoria" class="form-select" onchange="this.form.submit()">
-                        <option value="todos">Todas</option>
-                        {% for c in categorias %}
-                            <option value="{{ c.id }}" {% if filtros_atuais.categoria == c.id|stringformat:"s" %}selected{% endif %}>
-                                {{ c.nome }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-        </form>
-    </div>
+<div class="card mb-4">
+<div class="card-body">
+<form method="get" action=".">
+<div class="row g-3">
+<div class="col-md-3">
+<label class="form-label eyebrow">Buscar</label>
+<div class="input-group">
+<span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+<input type="text" name="q" class="form-control" placeholder="Nome..." value="{{ filtros_atuais.q|default:'' }}">
+<button class="btn btn-primary" type="submit">Ok</button>
+</div>
+</div>
+<div class="col-md-3">
+<label class="form-label eyebrow">Setor</label>
+<select name="setor" class="form-select" onchange="this.form.submit()">
+<option value="todos">Todos</option>
+{% for s in setores %}
+<option value="{{ s.id }}" {% if filtros_atuais.setor == s.id|stringformat:"s" %}selected{% endif %}>{{ s.nome }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-3">
+<label class="form-label eyebrow">Área</label>
+<select name="area" class="form-select" onchange="this.form.submit()">
+<option value="todos">Todas</option>
+{% for a in areas %}
+<option value="{{ a.id }}" {% if filtros_atuais.area == a.id|stringformat:"s" %}selected{% endif %}>{{ a.nome }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-3">
+<label class="form-label eyebrow">Categoria</label>
+<select name="categoria" class="form-select" onchange="this.form.submit()">
+<option value="todos">Todas</option>
+{% for c in categorias %}
+<option value="{{ c.id }}" {% if filtros_atuais.categoria == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+{% endfor %}
+</select>
+</div>
+</div>
+</form>
+</div>
 </div>
 
-<div class="card shadow-sm border-0">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-4" style="width: 40%">Título</th>
-                        <th style="width: 30%">Setor / Área</th>
-                        <th style="width: 15%">Data</th>
-                        <th class="text-end pe-4" style="width: 15%">Ação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for doc in templates %}
-                    <tr>
-                        <td class="ps-4">
-                            <div class="fw-bold text-dark">{{ doc.titulo }}</div>
-                            <small class="text-muted">{{ doc.descricao|truncatechars:50 }}</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary">{{ doc.setor.nome }}</span>
-                            {% if doc.area %}<span class="badge bg-light text-dark border">{{ doc.area.nome }}</span>{% endif %}
-                        </td>
-                        <td class="text-muted small">
-                            {{ doc.data_criacao|date:"d/m/Y" }}
-                        </td>
-                        <td class="text-end pe-4">
-                            {% if doc.arquivo_template %}
-                                <a href="{{ doc.arquivo_template.url }}" download class="btn btn-outline-success btn-sm fw-bold">
-                                    <i class="fa-solid fa-download me-1"></i> Baixar
-                                </a>
-                            {% else %}
-                                <button disabled class="btn btn-sm btn-light border">Indisponível</button>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-magnifying-glass mb-2"></i><br>
-                            Nenhum arquivo encontrado.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+<div class="card">
+<div class="card-body p-0">
+<div class="table-responsive">
+<table class="table align-middle mb-0">
+<thead>
+<tr>
+<th style="width: 42%; padding-left: 1.25rem;">Título</th>
+<th style="width: 28%">Setor / Área</th>
+<th style="width: 15%">Data</th>
+<th class="text-end" style="width: 15%; padding-right: 1.25rem;">Ação</th>
+</tr>
+</thead>
+<tbody>
+{% for doc in templates %}
+<tr>
+<td style="padding-left: 1.25rem;">
+<div style="font-weight:600; color: hsl(var(--apex-text));">{{ doc.titulo }}</div>
+<div class="text-muted-apex" style="font-size:.78rem; margin-top:2px">{{ doc.descricao|truncatechars:60 }}</div>
+</td>
+<td>
+<span class="chip info">{{ doc.setor.nome }}</span>
+{% if doc.area %}<span class="chip neutral">{{ doc.area.nome }}</span>{% endif %}
+</td>
+<td class="text-muted-apex" style="font-size:.82rem">{{ doc.data_criacao|date:"d/m/Y" }}</td>
+<td class="text-end" style="padding-right: 1.25rem;">
+{% if doc.arquivo_template %}
+<a href="{{ doc.arquivo_template.url }}" download class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-download"></i> Baixar</a>
+{% else %}
+<button disabled class="btn btn-light btn-sm">Indisponível</button>
+{% endif %}
+</td>
+</tr>
+{% empty %}
+<tr><td colspan="4" class="text-center py-5 text-muted-apex">
+<i class="fa-solid fa-magnifying-glass mb-2"></i><br>Nenhum arquivo encontrado.
+</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
 </div>
 
 {% include 'includes/pagination.html' %}
-
 {% endblock %}

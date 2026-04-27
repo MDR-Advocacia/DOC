@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Importar lote de processos — DOC{% endblock %}
+
+{% block content %}
+<div class="page-head">
+<div>
+<h1>Importar lote de processos</h1>
+<p class="lead">Suba uma planilha para vincular processos aos usuários do DOC e enfileirar a captura da petição inicial.</p>
+</div>
+<a href="{% url 'processos_monitoramento' %}" class="btn btn-outline-primary"><i class="fa-solid fa-chart-line"></i> Monitoramento</a>
+</div>
+
+<div class="row g-3">
+<div class="col-lg-7">
+<div class="card">
+<div class="card-body">
+<form method="post" enctype="multipart/form-data" novalidate>
+{% csrf_token %}
+<div class="mb-4">
+<label class="form-label">Planilha do lote</label>
+{{ form.planilha }}
+<div class="form-text">Aceita arquivos <code>.xlsx</code> e <code>.csv</code>.</div>
+{% for error in form.planilha.errors %}<div class="text-danger small mt-2">{{ error }}</div>{% endfor %}
+</div>
+<div class="form-check mb-4">
+{{ form.confirmar_importacao }}
+<label class="form-check-label" for="{{ form.confirmar_importacao.id_for_label }}">{{ form.confirmar_importacao.label }}</label>
+{% for error in form.confirmar_importacao.errors %}<div class="text-danger small mt-2">{{ error }}</div>{% endfor %}
+</div>
+<button type="submit" class="btn btn-primary"><i class="fa-solid fa-file-arrow-up"></i> Importar e enfileirar</button>
+</form>
+</div>
+</div>
+</div>
+
+<div class="col-lg-5">
+<div class="card mb-3">
+<div class="card-header"><h2>Colunas obrigatórias</h2></div>
+<div class="card-body">
+<div class="d-grid gap-2">
+{% for coluna in colunas_obrigatorias %}
+<div class="p-3 rounded" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border));">
+<div class="fw-bold">{{ coluna.nome }}</div>
+<div class="text-muted-apex" style="font-size: .8rem;">{{ coluna.descricao }}</div>
+</div>
+{% endfor %}
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><h2>Colunas opcionais</h2></div>
+<div class="card-body">
+<div class="d-grid gap-2">
+{% for coluna in colunas_opcionais %}
+<div class="p-3 rounded border-apex" style="border: 1px solid hsl(var(--apex-border));">
+<div class="fw-bold">{{ coluna.nome }}</div>
+<div class="text-muted-apex" style="font-size: .8rem;">{{ coluna.descricao }}</div>
+</div>
+{% endfor %}
+</div>
+<hr style="border-color: hsl(var(--apex-border)); margin: 1.25rem 0;">
+<div class="text-muted-apex" style="font-size: .78rem; line-height: 1.7;">
+<div>1. Cada linha deve apontar para um usuário ativo do DOC.</div>
+<div>2. O número do processo precisa estar em formato CNJ válido.</div>
+<div>3. O sistema identifica o tribunal pelo trecho <code>8.XX</code> do número.</div>
+<div>4. Processos válidos entram na fila do worker para captura da petição inicial.</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Cálculo cível — DOC{% endblock %}
+
+{% block content %}
+<div class="page-head">
+<div>
+<h1>Cálculo de condenação cível</h1>
+<p class="lead">Analise sentenças, revise parâmetros e gere uma memória de cálculo auditável.</p>
+</div>
+<a href="{% url 'calculadora_novo' %}" class="btn btn-primary"><i class="fa-solid fa-scale-balanced"></i> Nova análise</a>
+</div>
+
+<div class="card">
+<div class="card-body p-0">
+<div class="table-responsive">
+<table class="table align-middle mb-0">
+<thead>
+<tr>
+<th style="padding-left: 1.25rem;">Caso</th>
+<th>Status</th>
+<th>Extração</th>
+<th>Atualizado em</th>
+<th class="text-end" style="padding-right: 1.25rem;">Ação</th>
+</tr>
+</thead>
+<tbody>
+{% for calculo in calculos %}
+<tr>
+<td style="padding-left: 1.25rem;">
+<div style="font-weight: 600;">{{ calculo.titulo|default:"Sem título" }}</div>
+<div class="text-muted-apex" style="font-size: .76rem;">{{ calculo.texto_sentenca|truncatechars:90 }}</div>
+</td>
+<td>
+{% if calculo.status == 'calculado' %}<span class="chip success"><i class="fa-solid fa-check"></i> Calculado</span>
+{% elif calculo.status == 'extraido' %}<span class="chip warning"><i class="fa-solid fa-clock"></i> Extraído</span>
+{% elif calculo.status == 'erro' %}<span class="chip error"><i class="fa-solid fa-xmark"></i> Erro</span>
+{% else %}<span class="chip neutral">Rascunho</span>{% endif %}
+</td>
+<td>
+<div class="text-muted-apex" style="font-size: .82rem;">{{ calculo.provedor_extracao|default:"Não informado" }}</div>
+{% if calculo.modelo_extracao %}<div class="text-muted-apex" style="font-size: .72rem;">{{ calculo.modelo_extracao }}</div>{% endif %}
+{% if calculo.arquivo_sentenca_pdf %}<div class="text-muted-apex" style="font-size: .72rem;">Origem: PDF</div>{% endif %}
+</td>
+<td>{{ calculo.atualizado_em|date:"d/m/Y H:i" }}</td>
+<td class="text-end" style="padding-right: 1.25rem;">
+<a href="{% url 'calculadora_detalhe' calculo.id %}" class="btn btn-outline-primary btn-sm">Abrir</a>
+</td>
+</tr>
+{% empty %}
+<tr><td colspan="5" class="text-center p-5 text-muted-apex">Nenhum cálculo criado ainda.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+{% include 'includes/pagination.html' with page_obj=page_obj %}
+{% endblock %}

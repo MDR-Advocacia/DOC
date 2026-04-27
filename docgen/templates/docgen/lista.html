@@ -1,189 +1,127 @@
 {% extends 'base.html' %}
 
-{% block title %}Catálogo - DunaDoc{% endblock %}
-
-{% block extra_css %}
-<style>
-    .card-template { height: 100%; transition: all 0.3s ease; cursor: default; }
-    .card-template:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important; }
-    .badge-setor { font-size: 0.75em; letter-spacing: 0.5px; text-transform: uppercase; }
-    .btn-config { color: #6c757d; border-color: #dee2e6; }
-    .btn-config:hover { background-color: #e9ecef; color: #495057; }
-</style>
-{% endblock %}
+{% block title %}Catálogo — DOC{% endblock %}
 
 {% block content %}
-<div class="row mb-4 align-items-center">
-    <div class="col-md-8">
-        <h2 class="fw-bold text-dark mb-1">Catálogo de Modelos</h2>
-        <p class="text-muted mb-0">Selecione uma peça para iniciar a automação.</p>
-    </div>
-    <div class="col-md-4 text-md-end">
-        {% if user.is_staff %}
-            <a href="{% url 'criar_template' %}" class="btn btn-success shadow-sm fw-bold px-4">
-                <i class="fa-solid fa-plus me-2"></i> Novo Modelo
-            </a>
-        {% endif %}
-    </div>
+<div class="page-head">
+<div>
+<h1>Catálogo de modelos</h1>
+<p class="lead">Selecione uma peça para iniciar a automação.</p>
+</div>
+{% if user.is_staff %}
+<a href="{% url 'criar_template' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Novo modelo</a>
+{% endif %}
 </div>
 
-<div class="card shadow-sm border-0 mb-5 bg-white">
-    <div class="card-body p-4">
-        <form method="get" action=".">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label fw-bold small text-secondary text-uppercase">Buscar</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                        <input type="text" name="q" class="form-control border-start-0 ps-0 bg-light" 
-                               placeholder="Nome da peça..." 
-                               value="{{ filtros_atuais.q|default:'' }}">
-                        <button type="submit" class="btn btn-primary">Buscar</button>
-                    </div>
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label fw-bold small text-secondary text-uppercase">Setor</label>
-                    <select name="setor" class="form-select" onchange="this.form.submit()">
-                        <option value="todos">Todos</option>
-                        {% for item in setores %}
-                            <option value="{{ item.id }}" {% if filtros_atuais.setor == item.id|stringformat:"s" %}selected{% endif %}>
-                                {{ item.nome }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label fw-bold small text-secondary text-uppercase">Área</label>
-                    <select name="area" class="form-select" onchange="this.form.submit()">
-                        <option value="todos">Todas</option>
-                        {% for item in areas %}
-                            <option value="{{ item.id }}" {% if filtros_atuais.area == item.id|stringformat:"s" %}selected{% endif %}>
-                                {{ item.nome }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label fw-bold small text-secondary text-uppercase">Categoria</label>
-                    <select name="categoria" class="form-select" onchange="this.form.submit()">
-                        <option value="todos">Todas</option>
-                        {% for item in categorias %}
-                            <option value="{{ item.id }}" {% if filtros_atuais.categoria == item.id|stringformat:"s" %}selected{% endif %}>
-                                {{ item.nome }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-        </form>
-    </div>
+<div class="card mb-4">
+<div class="card-body">
+<form method="get" action=".">
+<div class="row g-3">
+<div class="col-md-4">
+<label class="form-label eyebrow">Buscar</label>
+<div class="input-group">
+<span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+<input type="text" name="q" class="form-control" placeholder="Nome da peça..." value="{{ filtros_atuais.q|default:'' }}">
+<button type="submit" class="btn btn-primary">Buscar</button>
+</div>
+</div>
+<div class="col-md-2">
+<label class="form-label eyebrow">Setor</label>
+<select name="setor" class="form-select" onchange="this.form.submit()">
+<option value="todos">Todos</option>
+{% for item in setores %}
+<option value="{{ item.id }}" {% if filtros_atuais.setor == item.id|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-3">
+<label class="form-label eyebrow">Área</label>
+<select name="area" class="form-select" onchange="this.form.submit()">
+<option value="todos">Todas</option>
+{% for item in areas %}
+<option value="{{ item.id }}" {% if filtros_atuais.area == item.id|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-3">
+<label class="form-label eyebrow">Categoria</label>
+<select name="categoria" class="form-select" onchange="this.form.submit()">
+<option value="todos">Todas</option>
+{% for item in categorias %}
+<option value="{{ item.id }}" {% if filtros_atuais.categoria == item.id|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>
+{% endfor %}
+</select>
+</div>
+</div>
+</form>
+</div>
 </div>
 
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-    {% for doc in templates %}
-    <div class="col">
-        <div class="card card-template border-0 shadow-sm h-100">
-            <div class="card-body d-flex flex-column">
-                
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="badge bg-primary badge-setor">{{ doc.setor.nome }}</span>
-                    <div class="d-flex align-items-center gap-2">
-                        {% if doc.categoria %}
-                            <small class="text-muted fw-bold" style="font-size: 0.75rem;">{{ doc.categoria.nome }}</small>
-                        {% endif %}
-                        
-                        <button class="btn btn-link p-0 text-decoration-none btn-favoritar" 
-                                data-id="{{ doc.id }}" title="Favoritar modelo">
-                            <i class="{% if doc.id in favoritos_ids %}fa-solid text-warning{% else %}fa-regular text-muted{% endif %} fa-star fs-5 star-icon" style="transition: all 0.2s;"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <h5 class="card-title fw-bold text-dark mt-2 mb-1">{{ doc.titulo }}</h5>
-                
-                {% if doc.area %}
-                    <p class="mb-2"><span class="badge bg-light text-secondary border">{{ doc.area.nome }}</span></p>
-                {% endif %}
-
-                <p class="card-text text-muted small mt-3 flex-grow-1">
-                    {{ doc.descricao|default:"Sem descrição."|truncatechars:85 }}
-                </p>
-            </div>
-            
-            <div class="card-footer bg-white border-0 pt-0 pb-3">
-                <div class="d-flex gap-2">
-                    <a href="{% url 'gerar_documento' doc.id %}" class="btn btn-primary flex-grow-1 fw-bold">
-                        <i class="fa-solid fa-pen-to-square me-1"></i> Preencher
-                    </a>
-
-                    {% if user.is_staff %}
-                    <a href="{% url 'configurar_template' doc.id %}" class="btn btn-config" title="Configurar Campos">
-                        <i class="fa-solid fa-gear"></i>
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% empty %}
-    <div class="col-12 text-center py-5">
-        <div class="text-muted">
-            <i class="fa-solid fa-magnifying-glass fa-3x mb-3 opacity-50"></i>
-            <h4 class="mt-3">Nenhum modelo encontrado.</h4>
-            <p>Tente ajustar os filtros ou limpar a busca.</p>
-            <a href="{% url 'lista_templates' %}" class="btn btn-outline-primary btn-sm mt-2">Limpar Filtros</a>
-        </div>
-    </div>
-    {% endfor %}
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+{% for doc in templates %}
+<div class="col">
+<div class="card tpl-card h-100">
+<div class="tpl-head">
+<span class="chip info">{{ doc.setor.nome }}</span>
+<button class="tpl-star {% if doc.id in favoritos_ids %}on{% endif %} btn-favoritar" data-id="{{ doc.id }}" title="Favoritar">
+<i class="{% if doc.id in favoritos_ids %}fa-solid{% else %}fa-regular{% endif %} fa-star star-icon"></i>
+</button>
+</div>
+<div class="tpl-title">{{ doc.titulo }}</div>
+<div class="tpl-meta">
+{% if doc.categoria %}<span class="chip neutral">{{ doc.categoria.nome }}</span>{% endif %}
+{% if doc.area %}<span class="chip neutral">{{ doc.area.nome }}</span>{% endif %}
+</div>
+<div class="tpl-desc">{{ doc.descricao|default:"Sem descrição." }}</div>
+<div class="tpl-foot">
+<a href="{% url 'gerar_documento' doc.id %}" class="btn btn-primary flex-grow-1"><i class="fa-solid fa-pen-to-square"></i> Preencher</a>
+{% if user.is_staff %}
+<a href="{% url 'configurar_template' doc.id %}" class="btn btn-outline-primary" title="Configurar"><i class="fa-solid fa-gear"></i></a>
+{% endif %}
+</div>
+</div>
+</div>
+{% empty %}
+<div class="col-12 text-center py-5">
+<div class="text-muted-apex">
+<i class="fa-solid fa-magnifying-glass fa-3x mb-3 opacity-50"></i>
+<h4 class="mt-3">Nenhum modelo encontrado.</h4>
+<p>Tente ajustar os filtros ou limpar a busca.</p>
+<a href="{% url 'lista_templates' %}" class="btn btn-outline-primary btn-sm mt-2">Limpar filtros</a>
+</div>
+</div>
+{% endfor %}
 </div>
 
 {% include 'includes/pagination.html' %}
-
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    document.querySelectorAll('.btn-favoritar').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const templateId = this.getAttribute('data-id');
-            const icon = this.querySelector('.star-icon');
-            
-            // Efeito imediato na tela (finge que já salvou para ser rápido pro usuário)
-            const isSolid = icon.classList.contains('fa-solid');
-            if (isSolid) {
-                icon.classList.replace('fa-solid', 'fa-regular');
-                icon.classList.replace('text-warning', 'text-muted');
-            } else {
-                icon.classList.replace('fa-regular', 'fa-solid');
-                icon.classList.replace('text-muted', 'text-warning');
-                // Efeito de "pulo" ao favoritar
-                icon.style.transform = 'scale(1.3)';
-                setTimeout(() => icon.style.transform = 'scale(1)', 200);
-            }
-            
-            // Manda o aviso silencioso pro servidor (não recarrega a página)
-            fetch(`/favoritar/${templateId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json'
-                }
-            }).catch(err => {
-                console.error("Erro na rede. Revertendo estrela.");
-                // Se der erro de internet, ele desfaz a pintura da estrela
-                if (isSolid) {
-                    icon.classList.replace('fa-regular', 'fa-solid');
-                    icon.classList.replace('text-muted', 'text-warning');
-                } else {
-                    icon.classList.replace('fa-solid', 'fa-regular');
-                    icon.classList.replace('text-warning', 'text-muted');
-                }
-            });
-        });
+document.querySelectorAll('.btn-favoritar').forEach(button => {
+  button.addEventListener('click', function(e) {
+    e.preventDefault();
+    const templateId = this.getAttribute('data-id');
+    const icon = this.querySelector('.star-icon');
+    const wasOn = this.classList.contains('on');
+    if (wasOn) {
+      icon.classList.replace('fa-solid', 'fa-regular');
+      this.classList.remove('on');
+    } else {
+      icon.classList.replace('fa-regular', 'fa-solid');
+      this.classList.add('on');
+      icon.style.transform = 'scale(1.3)';
+      setTimeout(() => icon.style.transform = 'scale(1)', 200);
+    }
+    fetch(`/favoritar/${templateId}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' }
+    }).catch(err => {
+      console.error("Revertendo estrela.");
+      if (wasOn) { icon.classList.replace('fa-regular', 'fa-solid'); this.classList.add('on'); }
+      else { icon.classList.replace('fa-solid', 'fa-regular'); this.classList.remove('on'); }
     });
+  });
+});
 </script>
 {% endblock %}

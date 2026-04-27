@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ calculo.titulo|default:"Cálculo" }} — DOC{% endblock %}
+
+{% block content %}
+<div class="page-head">
+<div>
+<a href="{% url 'calculadora_lista' %}" class="btn btn-link p-0 mb-2" style="font-size: .82rem;"><i class="fa-solid fa-arrow-left"></i> Voltar para cálculos</a>
+<h1>{{ calculo.titulo|default:"Cálculo sem título" }}</h1>
+<p class="lead">Revise os parâmetros extraídos antes de consolidar o cálculo.</p>
+</div>
+<span class="chip neutral" style="padding: .5rem 1rem;">Extração: {{ calculo.provedor_extracao|default:"heurístico" }}{% if calculo.modelo_extracao %} / {{ calculo.modelo_extracao }}{% endif %}</span>
+</div>
+
+{% if calculo.observacoes_extracao %}
+<div class="alert alert-warning mb-3">
+<i class="fa-solid fa-triangle-exclamation"></i>
+<div><strong>Atenção:</strong> {{ calculo.observacoes_extracao }}</div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+<div class="col-lg-5">
+<div class="card h-100">
+<div class="card-header"><h2>Leitura da sentença</h2></div>
+<div class="card-body">
+<p class="text-muted-apex" style="font-size: .85rem;">{{ resumo_extracao|default:"Sem resumo disponível." }}</p>
+{% if calculo.arquivo_sentenca_pdf %}
+<div class="mb-3">
+<a href="{{ calculo.arquivo_sentenca_pdf.url }}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-file-pdf"></i> Abrir PDF original</a>
+</div>
+{% endif %}
+<label class="eyebrow">Texto original</label>
+<div class="rounded p-3 mt-1" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border)); font-size: .82rem; max-height: 360px; overflow-y: auto; white-space: pre-wrap;">{{ calculo.texto_sentenca }}</div>
+
+<div class="mt-4">
+<label class="eyebrow">Itens reconhecidos</label>
+<ul class="ps-3 mt-1" style="font-size: .85rem;">
+{% for item in itens_reconhecidos %}<li>{{ item }}</li>
+{% empty %}<li class="text-muted-apex">Nenhum item identificado automaticamente.</li>
+{% endfor %}
+</ul>
+</div>
+
+<div class="mt-3">
+<label class="eyebrow">Pendências para revisão</label>
+<ul class="ps-3 mt-1 mb-0" style="font-size: .85rem;">
+{% for item in campos_pendentes %}<li>{{ item }}</li>
+{% empty %}<li class="text-muted-apex">Sem pendências automáticas.</li>
+{% endfor %}
+</ul>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col-lg-7">
+<div class="card">
+<div class="card-header"><h2>Parâmetros confirmados</h2></div>
+<div class="card-body">
+<form method="post">
+{% csrf_token %}
+<div class="row g-3">
+<div class="col-md-6"><label class="form-label">{{ form.valor_principal.label }}</label>{{ form.valor_principal }}</div>
+<div class="col-md-6"><label class="form-label">{{ form.correcao_percentual.label }}</label>{{ form.correcao_percentual }}</div>
+<div class="col-md-6"><label class="form-label">{{ form.indice_correcao.label }}</label>{{ form.indice_correcao }}</div>
+<div class="col-md-6"><label class="form-label">{{ form.data_termo_inicial_correcao.label }}</label>{{ form.data_termo_inicial_correcao }}</div>
+<div class="col-md-6"><label class="form-label">{{ form.juros_mensais_percentual.label }}</label>{{ form.juros_mensais_percentual }}</div>
+<div class="col-md-6"><label class="form-label">{{ form.data_termo_inicial_juros.label }}</label>{{ form.data_termo_inicial_juros }}</div>
+<div class="col-md-6"><label class="form-label">{{ form.honorarios_percentual.label }}</label>{{ form.honorarios_percentual }}</div>
+<div class="col-md-6"><label class="form-label">{{ form.multa_percentual.label }}</label>{{ form.multa_percentual }}</div>
+<div class="col-md-6"><label class="form-label">{{ form.outros_acrescimos.label }}</label>{{ form.outros_acrescimos }}</div>
+<div class="col-md-6"><label class="form-label">{{ form.descontos.label }}</label>{{ form.descontos }}</div>
+<div class="col-md-6"><label class="form-label">{{ form.data_base_calculo.label }}</label>{{ form.data_base_calculo }}</div>
+<div class="col-12"><label class="form-label">{{ form.observacoes_calculo.label }}</label>{{ form.observacoes_calculo }}</div>
+</div>
+<div class="d-flex justify-content-end mt-4">
+<button type="submit" class="btn btn-primary"><i class="fa-solid fa-calculator"></i> Calcular condenação</button>
+</div>
+</form>
+</div>
+</div>
+
+{% if resultado.total_geral %}
+<div class="card mt-3">
+<div class="card-header"><h2>Resultado do cálculo</h2></div>
+<div class="card-body">
+<div class="row g-3 mb-3">
+<div class="col-md-4">
+<div class="p-3 rounded h-100" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border));">
+<div class="eyebrow">Principal corrigido</div>
+<div class="fw-bold mt-1" style="font-size: 1.2rem; color: hsl(var(--duna-navy));">R$ {{ resultado.principal_corrigido }}</div>
+</div>
+</div>
+<div class="col-md-4">
+<div class="p-3 rounded h-100" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border));">
+<div class="eyebrow">Juros</div>
+<div class="fw-bold mt-1" style="font-size: 1.2rem; color: hsl(var(--duna-navy));">R$ {{ resultado.valor_juros }}</div>
+</div>
+</div>
+<div class="col-md-4">
+<div class="p-3 rounded h-100" style="background: linear-gradient(135deg, hsl(var(--duna-navy)), hsl(var(--duna-blue))); color: #fff;">
+<div style="font-size: .68rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; opacity: .85;">Total geral</div>
+<div class="fw-bold mt-1" style="font-size: 1.4rem;">R$ {{ resultado.total_geral }}</div>
+</div>
+</div>
+</div>
+
+<label class="eyebrow">Memória de cálculo</label>
+<div class="rounded p-3 mt-1" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border));">
+<ol class="mb-0" style="font-size: .85rem;">
+{% for linha in resultado.memoria_linhas %}<li>{{ linha }}</li>{% endfor %}
+</ol>
+</div>
+</div>
+</div>
+{% endif %}
+</div>
+</div>
+{% endblock %}

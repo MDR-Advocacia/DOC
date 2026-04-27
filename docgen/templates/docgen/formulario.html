@@ -1,148 +1,120 @@
 {% extends 'base.html' %}
-{% load docgen_extras %} {% block title %}Preencher {{ template.titulo }}{% endblock %}
+{% load docgen_extras %}
+
+{% block title %}Preencher: {{ template.titulo }} — DOC{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        
-        <div class="d-flex align-items-center mb-4 mt-3">
-            <a href="{% url 'lista_templates' %}" class="btn btn-outline-secondary me-3 shadow-sm" title="Voltar para o catálogo">
-                <i class="fa-solid fa-arrow-left"></i>
-            </a>
-            <div>
-                <h3 class="fw-bold mb-0 text-dark">{{ template.titulo }}</h3>
-                <span class="badge bg-primary mt-1">{{ template.setor.nome }}</span>
-            </div>
-        </div>
+<div style="max-width: 760px; margin: 0 auto;">
 
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-4 p-md-5">
-                
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    {% for campo in campos %}
-                        <div class="mb-4 field-wrapper" 
-                             id="div_{{ campo.tag }}" 
-                             data-tag="{{ campo.tag }}" 
-                             data-dependencia="{{ campo.dependencia|default:'' }}"
-                             style="transition: all 0.3s ease; {% if campo.dependencia %}display:none;{% endif %}">
-                            
-                            {% if campo.dependencia %}
-                                <div class="d-flex align-items-center text-muted small mb-2 ms-3">
-                                    <i class="fa-solid fa-level-up-alt fa-rotate-90 me-2"></i> 
-                                    <span>Condicionado a: <strong>{{ campo.dependencia }}</strong></span>
-                                </div>
-                                <div class="ps-4 border-start border-3 border-light ms-2">
-                            {% endif %}
+<div class="page-head">
+<div>
+<span class="eyebrow">Catálogo › {{ template.setor.nome }}</span>
+<h1 style="margin-top:.4rem">{{ template.titulo }}</h1>
+</div>
+<a href="{% url 'lista_templates' %}" class="btn btn-outline-primary btn-sm" title="Voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
+</div>
 
+<div class="card">
+<div class="card-body" style="padding: 2rem;">
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+{% for campo in campos %}
+<div class="mb-4 field-wrapper" id="div_{{ campo.tag }}" data-tag="{{ campo.tag }}" data-dependencia="{{ campo.dependencia|default:'' }}" style="transition: all .3s ease;{% if campo.dependencia %}display:none;{% endif %}">
+{% if campo.dependencia %}
+<div class="d-flex align-items-center mb-2 ms-2" style="color: hsl(var(--duna-blue)); font-size: .72rem; font-weight: 600;">
+<i class="fa-solid fa-arrow-turn-up fa-rotate-90 me-2"></i>
+<span>Condicionado a: <strong>{{ campo.dependencia }}</strong></span>
+</div>
+<div style="padding-left: 1rem; border-left: 3px solid hsl(var(--duna-blue) / .3); margin-left: .5rem;">
+{% endif %}
 
-                            {% if campo.tipo == 'textarea' %}
-                                <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <textarea name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light" rows="5" placeholder="Digite os parágrafos aqui..."></textarea>
+{% if campo.tipo == 'textarea' %}
+<label class="form-label">{{ campo.label }}</label>
+<textarea name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control" rows="5" placeholder="Digite os parágrafos aqui..."></textarea>
 
-                            {% elif campo.tipo == 'date' %}
-                                <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <input type="date" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light" required>
+{% elif campo.tipo == 'date' %}
+<label class="form-label">{{ campo.label }}</label>
+<input type="date" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control" required>
 
-                            {% elif campo.tipo == 'currency' %}
-                                <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white text-muted">R$</span>
-                                    <input type="text" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light" placeholder="0,00">
-                                </div>
+{% elif campo.tipo == 'currency' %}
+<label class="form-label">{{ campo.label }}</label>
+<div class="input-group">
+<span class="input-group-text">R$</span>
+<input type="text" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control" placeholder="0,00">
+</div>
 
-                            {% elif campo.tipo == 'cpf' %}
-                                <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <input type="text" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light" placeholder="000.000.000-00">
+{% elif campo.tipo == 'cpf' %}
+<label class="form-label">{{ campo.label }}</label>
+<input type="text" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control" placeholder="000.000.000-00">
 
-                            {% elif campo.tipo == 'checkbox' %}
-                                <div class="form-check form-switch p-3 border rounded bg-light d-flex align-items-center">
-                                    <input class="form-check-input me-3" type="checkbox" role="switch" 
-                                           name="{{ campo.tag }}" id="{{ campo.tag }}" 
-                                           style="width: 3em; height: 1.5em;"
-                                           onchange="verificarDependencias()">
-                                    <label class="form-check-label fw-bold mb-0 pointer" for="{{ campo.tag }}">
-                                        {{ campo.label }}
-                                    </label>
-                                </div>
+{% elif campo.tipo == 'checkbox' %}
+<div class="form-check form-switch p-3 rounded d-flex align-items-center" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border));">
+<input class="form-check-input me-3" type="checkbox" role="switch" name="{{ campo.tag }}" id="{{ campo.tag }}" style="width: 3em; height: 1.5em;" onchange="verificarDependencias()">
+<label class="form-check-label fw-medium mb-0" for="{{ campo.tag }}" style="cursor:pointer">{{ campo.label }}</label>
+</div>
 
-                            {% elif campo.tipo == 'image' %}
-                                <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <input type="file" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control" accept="image/png, image/jpeg, image/jpg">
-                                <div class="form-text"><i class="fa-regular fa-image"></i> Apenas JPG ou PNG (será ajustado para 16cm).</div>
+{% elif campo.tipo == 'image' %}
+<label class="form-label">{{ campo.label }}</label>
+<input type="file" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control" accept="image/png, image/jpeg, image/jpg">
+<div class="form-text"><i class="fa-regular fa-image"></i> Apenas JPG ou PNG (será ajustado para 16cm).</div>
 
-                            {% elif campo.tipo == 'dropdown' %}
-                                <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <select name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-select form-select-lg bg-light" required>
-                                    <option value="">-- Selecione uma opção --</option>
-                                    {% for opcao in campo.opcoes|split:"," %}
-                                        {% with opt_limpa=opcao|strip %}
-                                            {% if opt_limpa %}
-                                            <option value="{{ opt_limpa }}">{{ opt_limpa }}</option>
-                                            {% endif %}
-                                        {% endwith %}
-                                    {% endfor %}
-                                </select>
+{% elif campo.tipo == 'dropdown' %}
+<label class="form-label">{{ campo.label }}</label>
+<select name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-select" required>
+<option value="">-- Selecione uma opção --</option>
+{% for opcao in campo.opcoes|split:"," %}
+{% with opt_limpa=opcao|strip %}
+{% if opt_limpa %}<option value="{{ opt_limpa }}">{{ opt_limpa }}</option>{% endif %}
+{% endwith %}
+{% endfor %}
+</select>
 
-                            {% else %}
-                                <label class="form-label fw-bold">{{ campo.label }}</label>
-                                <input type="text" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control bg-light">
-                            
-                            {% endif %}
+{% else %}
+<label class="form-label">{{ campo.label }}</label>
+<input type="text" name="{{ campo.tag }}" id="{{ campo.tag }}" class="form-control">
+{% endif %}
 
-                            {% if campo.dependencia %}
-                                </div> 
-                            {% endif %}
-                        </div>
-                    {% endfor %}
+{% if campo.dependencia %}
+</div>
+{% endif %}
+</div>
+{% endfor %}
 
-                    <hr class="my-4">
+<hr class="my-4" style="border-color: hsl(var(--apex-border));">
 
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="{% url 'lista_templates' %}" class="btn btn-light border px-4">Cancelar</a>
-                        <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm">
-                            <i class="fa-solid fa-file-word me-2"></i> GERAR DOCUMENTO
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        
-        <p class="text-center text-muted small mt-4 mb-5">
-            <i class="fa-solid fa-lock me-1"></i> Seus dados são processados de forma segura e não são compartilhados.
-        </p>
-    </div>
+<div class="d-flex justify-content-end gap-2">
+<a href="{% url 'lista_templates' %}" class="btn btn-light">Cancelar</a>
+<button type="submit" class="btn btn-primary"><i class="fa-solid fa-file-word"></i> Gerar documento</button>
+</div>
+</form>
+</div>
+</div>
+
+<p class="text-center text-soft-apex mt-3 mb-4" style="font-size: .75rem;">
+<i class="fa-solid fa-lock"></i> Seus dados são processados de forma segura e não são compartilhados.
+</p>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function verificarDependencias() {
-        const wrappers = document.querySelectorAll('.field-wrapper');
-        wrappers.forEach(div => {
-            const dependencia = div.getAttribute('data-dependencia');
-            if (dependencia && dependencia !== "") {
-                const paiInput = document.getElementById(dependencia);
-                
-                // Verifica se o pai existe e é um checkbox
-                if (paiInput && paiInput.type === 'checkbox') {
-                    if (paiInput.checked) {
-                        div.style.display = 'block';
-                        // Pequeno delay para animação suave
-                        setTimeout(() => { div.style.opacity = '1'; }, 50);
-                    } else {
-                        div.style.display = 'none';
-                        div.style.opacity = '0';
-                    }
-                }
-            }
-        });
+function verificarDependencias() {
+  document.querySelectorAll('.field-wrapper').forEach(div => {
+    const dependencia = div.getAttribute('data-dependencia');
+    if (dependencia && dependencia !== "") {
+      const paiInput = document.getElementById(dependencia);
+      if (paiInput && paiInput.type === 'checkbox') {
+        if (paiInput.checked) {
+          div.style.display = 'block';
+          setTimeout(() => { div.style.opacity = '1'; }, 50);
+        } else {
+          div.style.display = 'none';
+          div.style.opacity = '0';
+        }
+      }
     }
-
-    // Roda ao carregar a página para ajustar o estado inicial
-    document.addEventListener('DOMContentLoaded', function() {
-        verificarDependencias();
-    });
+  });
+}
+document.addEventListener('DOMContentLoaded', verificarDependencias);
 </script>
 {% endblock %}

@@ -1,86 +1,77 @@
 {% extends 'base.html' %}
 
-{% block title %}Gestão de Usuários - DunaDoc{% endblock %}
+{% block title %}Gestão de Usuários — DOC{% endblock %}
+
+{% block extra_css %}
+<style>
+.nav-tabs { border-bottom: 1px solid hsl(var(--apex-border)) !important; }
+.nav-tabs .nav-link { border: none !important; color: hsl(var(--apex-text-muted)); font-weight: 600; padding: .75rem 1rem; border-radius: 0 !important; border-bottom: 2px solid transparent !important; }
+.nav-tabs .nav-link:hover { color: hsl(var(--duna-blue)); border-color: transparent !important; }
+.nav-tabs .nav-link.active { color: hsl(var(--duna-blue)) !important; background: transparent !important; border-bottom-color: hsl(var(--duna-blue)) !important; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row mb-4 align-items-center">
-    <div class="col-12">
-        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-users-gear me-2 text-primary"></i>Gestão de Usuários</h2>
-        <p class="text-muted mb-0">Aprove novos cadastros e gerencie as permissões globais do sistema.</p>
-    </div>
+<div class="page-head">
+<div>
+<h1><i class="fa-solid fa-users-gear" style="color: hsl(var(--duna-blue));"></i> Gestão de usuários</h1>
+<p class="lead">Aprove novos cadastros e gerencie as permissões globais do sistema.</p>
+</div>
 </div>
 
-<div class="card shadow-sm border-0 bg-white">
-    <div class="card-header bg-white pt-3 pb-0 border-bottom">
-        <ul class="nav nav-tabs border-0" id="userTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active fw-bold" id="pendentes-tab" data-bs-toggle="tab" data-bs-target="#pendentes" type="button" role="tab">
-                    <i class="fa-solid fa-user-clock me-1"></i> Novos Cadastros 
-                    {% if usuarios_pendentes.count > 0 %}
-                        <span class="badge bg-danger ms-1">{{ usuarios_pendentes.count }}</span>
-                    {% endif %}
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold text-muted" id="ativos-tab" data-bs-toggle="tab" data-bs-target="#ativos" type="button" role="tab">
-                    <i class="fa-solid fa-user-check me-1"></i> Equipe Ativa ({{ usuarios_ativos.count }})
-                </button>
-            </li>
-        </ul>
-    </div>
+<div class="card">
+<div class="card-header" style="padding-bottom: 0; padding-top: .5rem;">
+<ul class="nav nav-tabs" id="userTabs" role="tablist">
+<li class="nav-item" role="presentation">
+<button class="nav-link active" id="pendentes-tab" data-bs-toggle="tab" data-bs-target="#pendentes" type="button" role="tab">
+<i class="fa-solid fa-user-clock"></i> Novos cadastros
+{% if usuarios_pendentes.count > 0 %}<span class="chip error ms-1">{{ usuarios_pendentes.count }}</span>{% endif %}
+</button>
+</li>
+<li class="nav-item" role="presentation">
+<button class="nav-link" id="ativos-tab" data-bs-toggle="tab" data-bs-target="#ativos" type="button" role="tab">
+<i class="fa-solid fa-user-check"></i> Equipe ativa ({{ usuarios_ativos.count }})
+</button>
+</li>
+</ul>
+</div>
 
-    <div class="card-body p-0">
-        <form method="post" id="form-usuarios">
-            {% csrf_token %}
-            <input type="hidden" name="acao" id="acao-input" value="">
+<div class="card-body p-0">
+<form method="post" id="form-usuarios">
+{% csrf_token %}
+<input type="hidden" name="acao" id="acao-input" value="">
 
-            <div class="tab-content" id="userTabsContent">
-                
-                <div class="tab-pane fade show active" id="pendentes" role="tabpanel">
-                    <div class="p-3 bg-white d-flex gap-2 border-bottom">
-                        <button type="button" class="btn btn-success btn-sm fw-bold shadow-sm" onclick="submeterAcao('aprovar')">
-                            <i class="fa-solid fa-check me-1"></i> Aprovar Selecionados
-                        </button>
-                        <button type="button" class="btn btn-outline-danger btn-sm fw-bold" onclick="if(confirm('Tem certeza que deseja excluir os cadastros recusados?')) submeterAcao('excluir')">
-                            <i class="fa-solid fa-trash me-1"></i> Excluir Recusados
-                        </button>
-                    </div>
-                    {% include 'includes/tabela_usuarios.html' with usuarios=usuarios_pendentes prefix="p" %}
-                </div>
+<div class="tab-content" id="userTabsContent">
+<div class="tab-pane fade show active" id="pendentes" role="tabpanel">
+<div class="p-3 d-flex gap-2" style="border-bottom: 1px solid hsl(var(--apex-border));">
+<button type="button" class="btn btn-success btn-sm" onclick="submeterAcao('aprovar')"><i class="fa-solid fa-check"></i> Aprovar selecionados</button>
+<button type="button" class="btn btn-outline-primary btn-sm" onclick="if(confirm('Tem certeza que deseja excluir os cadastros recusados?')) submeterAcao('excluir')" style="color: hsl(var(--apex-error)); border-color: hsl(var(--apex-error));"><i class="fa-solid fa-trash"></i> Excluir recusados</button>
+</div>
+{% include 'includes/tabela_usuarios.html' with usuarios=usuarios_pendentes prefix="p" %}
+</div>
 
-                <div class="tab-pane fade" id="ativos" role="tabpanel">
-                    <div class="p-3 bg-white d-flex gap-2 border-bottom">
-                        <button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="if(confirm('Deseja realmente revogar o acesso?')) submeterAcao('remover_acesso')">
-                            <i class="fa-solid fa-ban me-1"></i> Revogar Acesso
-                        </button>
-                        <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="submeterAcao('promover_admin')">
-                            <i class="fa-solid fa-star me-1"></i> Promover a Admin Global
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm fw-bold" onclick="submeterAcao('rebaixar_admin')">
-                            <i class="fa-solid fa-arrow-down me-1"></i> Rebaixar Admin
-                        </button>
-                    </div>
-                    {% include 'includes/tabela_usuarios.html' with usuarios=usuarios_ativos prefix="a" %}
-                </div>
-
-            </div>
-        </form>
-    </div>
+<div class="tab-pane fade" id="ativos" role="tabpanel">
+<div class="p-3 d-flex gap-2 flex-wrap" style="border-bottom: 1px solid hsl(var(--apex-border));">
+<button type="button" class="btn btn-warning btn-sm" onclick="if(confirm('Deseja realmente revogar o acesso?')) submeterAcao('remover_acesso')"><i class="fa-solid fa-ban"></i> Revogar acesso</button>
+<button type="button" class="btn btn-outline-primary btn-sm" onclick="submeterAcao('promover_admin')"><i class="fa-solid fa-star"></i> Promover a admin global</button>
+<button type="button" class="btn btn-outline-primary btn-sm" onclick="submeterAcao('rebaixar_admin')"><i class="fa-solid fa-arrow-down"></i> Rebaixar admin</button>
+</div>
+{% include 'includes/tabela_usuarios.html' with usuarios=usuarios_ativos prefix="a" %}
+</div>
+</div>
+</form>
+</div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function toggleAll(source, prefix) {
-        let checkboxes = document.querySelectorAll('.' + prefix + '-chk');
-        for(let i=0; i<checkboxes.length; i++) {
-            checkboxes[i].checked = source.checked;
-        }
-    }
-
-    function submeterAcao(acao) {
-        document.getElementById('acao-input').value = acao;
-        document.getElementById('form-usuarios').submit();
-    }
+function toggleAll(source, prefix) {
+  document.querySelectorAll('.' + prefix + '-chk').forEach(cb => cb.checked = source.checked);
+}
+function submeterAcao(acao) {
+  document.getElementById('acao-input').value = acao;
+  document.getElementById('form-usuarios').submit();
+}
 </script>
 {% endblock %}

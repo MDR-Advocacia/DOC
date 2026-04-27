@@ -1,45 +1,49 @@
 {% extends 'base.html' %}
 
-{% block title %}Meus Documentos{% endblock %}
+{% block title %}Documentos gerados — DOC{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2 class="fw-bold">Meus Documentos Gerados</h2>
-    </div>
+<div class="page-head">
+<div>
+<h1>Meus documentos gerados</h1>
+<p class="lead">Histórico de peças produzidas no sistema.</p>
+</div>
 </div>
 
-<div class="card shadow-sm border-0">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-4">Documento</th>
-                        <th>Gerado em</th>
-                        <th>Usuário</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for doc in historico %}
-                    <tr>
-                        <td class="ps-4 fw-bold">{{ doc.template.titulo }}</td>
-                        <td>{{ doc.data_geracao|date:"d/m/Y H:i" }}</td>
-                        <td>{{ doc.usuario.username }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center p-5 text-muted">
-                            Nenhum documento gerado ainda.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+<div class="card">
+<div class="card-body p-0">
+<div class="table-responsive">
+<table class="table align-middle mb-0">
+<thead>
+<tr>
+<th style="padding-left: 1.25rem;">Documento</th>
+<th>Gerado em</th>
+<th>Usuário</th>
+<th class="text-end" style="padding-right: 1.25rem;">Arquivo</th>
+</tr>
+</thead>
+<tbody>
+{% for doc in historico %}
+<tr>
+<td style="padding-left: 1.25rem; font-weight: 600;">{{ doc.template.titulo }}</td>
+<td class="text-muted-apex">{{ doc.data_geracao|date:"d/m/Y H:i" }}</td>
+<td>{{ doc.usuario.username }}</td>
+<td class="text-end" style="padding-right: 1.25rem;">
+{% if doc.arquivo_final %}
+<a href="{{ doc.arquivo_final.url }}" class="btn btn-outline-primary btn-sm" download><i class="fa-solid fa-download"></i> Baixar</a>
+{% else %}
+<span class="chip neutral">Indisponível</span>
+{% endif %}
+</td>
+</tr>
+{% empty %}
+<tr><td colspan="4" class="text-center p-5 text-muted-apex">Nenhum documento gerado ainda.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
 </div>
 
 {% include 'includes/pagination.html' with page_obj=historico %}
-
 {% endblock %}

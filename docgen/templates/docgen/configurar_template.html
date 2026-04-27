@@ -1,136 +1,103 @@
 {% extends 'base.html' %}
 
-{% block title %}Configurar: {{ template.titulo }}{% endblock %}
+{% block title %}Configurar: {{ template.titulo }} — DOC{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-10">
-        
-        <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
-            <div>
-                <h3 class="fw-bold mb-1">Mapeamento de Campos</h3>
-                <p class="text-muted mb-0">O sistema encontrou as seguintes variáveis no seu arquivo.</p>
-            </div>
-            <a href="{% url 'lista_templates' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="fa-solid fa-times me-2"></i> Cancelar
-            </a>
-        </div>
+<div style="max-width: 1100px; margin: 0 auto;">
 
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
-                <span class="fw-bold text-primary">
-                    <i class="fa-solid fa-file-word me-2"></i> {{ template.titulo }}
-                </span>
-                <span class="badge bg-secondary">{{ campos|length }} variáveis detectadas</span>
-            </div>
-            
-            <div class="card-body p-4">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    {% if not campos %}
-                        <div class="text-center py-5 text-muted">
-                            <i class="fa-regular fa-file-code fa-3x mb-3 opacity-50"></i>
-                            <h5>Nenhuma variável encontrada!</h5>
-                            <p>O robô leu o arquivo e não achou nada entre <code>&#123;&#123; chaves &#125;&#125;</code>.</p>
-                            <a href="{% url 'lista_templates' %}" class="btn btn-primary mt-2">Voltar</a>
-                        </div>
-                    {% else %}
-                        
-                        <div class="table-responsive">
-                            <table class="table align-middle table-hover">
-                                <thead class="table-light">
-                                    <tr class="text-uppercase small text-muted">
-                                        <th style="width: 20%">Variável (Word)</th>
-                                        <th style="width: 25%">Nome da Pergunta (Label)</th>
-                                        <th style="width: 30%">Tipo de Resposta</th>
-                                        <th style="width: 25%">Condição (Aparece se...)</th> 
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for campo in campos %}
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <code class="fw-bold text-dark fs-6 bg-light border px-2 py-1 rounded">
-                                                    {{ campo.tag }}
-                                                </code>
-                                            </div>
-                                        </td>
+<div class="page-head">
+<div>
+<h1>Mapeamento de campos</h1>
+<p class="lead">O sistema encontrou as seguintes variáveis no seu arquivo.</p>
+</div>
+<a href="{% url 'lista_templates' %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-xmark"></i> Cancelar</a>
+</div>
 
-                                        <td>
-                                            <input type="text" name="label_{{ campo.tag }}" class="form-control" value="{{ campo.label }}" placeholder="Ex: Nome do Cliente" required>
-                                        </td>
+<div class="card">
+<div class="card-header d-flex justify-content-between align-items-center">
+<h2><i class="fa-solid fa-file-word" style="color: hsl(var(--duna-blue));"></i> {{ template.titulo }}</h2>
+<span class="chip neutral">{{ campos|length }} variáveis detectadas</span>
+</div>
+<div class="card-body">
+<form method="post">
+{% csrf_token %}
+{% if not campos %}
+<div class="text-center py-5 text-muted-apex">
+<i class="fa-regular fa-file-code fa-3x mb-3 opacity-50"></i>
+<h5>Nenhuma variável encontrada!</h5>
+<p>O robô leu o arquivo e não achou nada entre <code>&#123;&#123; chaves &#125;&#125;</code>.</p>
+<a href="{% url 'lista_templates' %}" class="btn btn-primary mt-2">Voltar</a>
+</div>
+{% else %}
+<div class="table-responsive">
+<table class="table align-middle">
+<thead>
+<tr>
+<th style="width: 20%">Variável (Word)</th>
+<th style="width: 25%">Nome da pergunta</th>
+<th style="width: 30%">Tipo de resposta</th>
+<th style="width: 25%">Condição</th>
+</tr>
+</thead>
+<tbody>
+{% for campo in campos %}
+<tr>
+<td>
+<code style="font-weight:600; background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border)); padding: .25rem .55rem; border-radius: 6px; color: hsl(var(--duna-navy)); font-size: .82rem;">{{ campo.tag }}</code>
+</td>
+<td><input type="text" name="label_{{ campo.tag }}" class="form-control" value="{{ campo.label }}" placeholder="Ex: Nome do Cliente" required></td>
+<td>
+<select name="tipo_{{ campo.tag }}" id="tipo_{{ campo.tag }}" class="form-select mb-2" onchange="toggleOpcoes('{{ campo.tag }}')">
+<option value="text" {% if campo.tipo == 'text' %}selected{% endif %}>Texto curto</option>
+<option value="textarea" {% if campo.tipo == 'textarea' %}selected{% endif %}>Texto longo</option>
+<option value="date" {% if campo.tipo == 'date' %}selected{% endif %}>Data</option>
+<option value="currency" {% if campo.tipo == 'currency' %}selected{% endif %}>Dinheiro (R$)</option>
+<option value="cpf" {% if campo.tipo == 'cpf' %}selected{% endif %}>CPF/CNPJ</option>
+<option value="checkbox" {% if campo.tipo == 'checkbox' %}selected{% endif %}>Checkbox (Sim/Não)</option>
+<option value="image" {% if campo.tipo == 'image' %}selected{% endif %}>Imagem/Print</option>
+<option value="dropdown" {% if campo.tipo == 'dropdown' %}selected{% endif %}>Lista suspensa</option>
+</select>
+<div id="div_opcoes_{{ campo.tag }}" style="{% if campo.tipo != 'dropdown' %}display:none;{% endif %}">
+<input type="text" name="opcoes_{{ campo.tag }}" value="{{ campo.opcoes }}" class="form-control form-control-sm" placeholder="Opção 1, Opção 2, Opção 3">
+<div class="form-text">Separe por vírgulas.</div>
+</div>
+</td>
+<td>
+<select name="dependencia_{{ campo.tag }}" class="form-select form-select-sm">
+<option value="">— Sempre visível —</option>
+{% for tag_pai in todas_tags %}
+{% if tag_pai != campo.tag %}
+<option value="{{ tag_pai }}" {% if campo.dependencia == tag_pai %}selected{% endif %}>Se "{{ tag_pai }}" for SIM</option>
+{% endif %}
+{% endfor %}
+</select>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<div class="d-flex justify-content-end mt-4 pt-3" style="border-top: 1px solid hsl(var(--apex-border));">
+<button type="submit" class="btn btn-success btn-lg"><i class="fa-solid fa-circle-check"></i> Salvar e finalizar</button>
+</div>
+{% endif %}
+</form>
+</div>
+</div>
 
-                                        <td>
-                                            <select name="tipo_{{ campo.tag }}" id="tipo_{{ campo.tag }}" class="form-select border-0 bg-light fw-bold text-secondary mb-1" onchange="toggleOpcoes('{{ campo.tag }}')">
-                                                <option value="text" {% if campo.tipo == 'text' %}selected{% endif %}>🔤 Texto Curto</option>
-                                                <option value="textarea" {% if campo.tipo == 'textarea' %}selected{% endif %}>📝 Texto Longo</option>
-                                                <option value="date" {% if campo.tipo == 'date' %}selected{% endif %}>📅 Data</option>
-                                                <option value="currency" {% if campo.tipo == 'currency' %}selected{% endif %}>💲 Dinheiro (R$)</option>
-                                                <option value="cpf" {% if campo.tipo == 'cpf' %}selected{% endif %}>🆔 CPF/CNPJ</option>
-                                                <option value="checkbox" {% if campo.tipo == 'checkbox' %}selected{% endif %}>✅ Check (Sim/Não)</option>
-                                                <option value="image" {% if campo.tipo == 'image' %}selected{% endif %}>🖼️ Imagem/Print</option>
-                                                <option value="dropdown" {% if campo.tipo == 'dropdown' %}selected{% endif %}>🔽 Lista Suspensa</option>
-                                            </select>
-
-                                            <div id="div_opcoes_{{ campo.tag }}" style="{% if campo.tipo != 'dropdown' %}display:none;{% endif %}">
-                                                <input type="text" name="opcoes_{{ campo.tag }}" value="{{ campo.opcoes }}" class="form-control form-control-sm border-primary" placeholder="Opção 1, Opção 2, Opção 3">
-                                                <div class="form-text small" style="font-size: 0.7em;">Separe por vírgulas.</div>
-                                            </div>
-                                        </td>
-
-                                        <td>
-                                            <select name="dependencia_{{ campo.tag }}" class="form-select form-select-sm text-muted">
-                                                <option value="">-- Sempre visível --</option>
-                                                {% for tag_pai in todas_tags %}
-                                                    {% if tag_pai != campo.tag %}
-                                                        <option value="{{ tag_pai }}" {% if campo.dependencia == tag_pai %}selected{% endif %}>
-                                                            Se "{{ tag_pai }}" for SIM
-                                                        </option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4 pt-3 border-top">
-                            <button type="submit" class="btn btn-success btn-lg px-5 fw-bold shadow-sm">
-                                <i class="fa-solid fa-check-circle me-2"></i> SALVAR E FINALIZAR
-                            </button>
-                        </div>
-
-                    {% endif %}
-                </form>
-            </div>
-        </div>
-        
-        <div class="alert alert-info mt-3 border-0 shadow-sm d-flex align-items-center">
-            <i class="fa-solid fa-circle-info me-3 fs-4"></i>
-            <div class="small">
-                <strong>Dica:</strong> Para criar uma Lista Suspensa, selecione a opção "🔽 Lista Suspensa" e digite as opções separadas por vírgula logo abaixo.
-            </div>
-        </div>
-
-    </div>
+<div class="alert alert-info mt-3">
+<i class="fa-solid fa-circle-info"></i>
+<div><strong>Dica:</strong> para criar uma lista suspensa, selecione "Lista suspensa" e digite as opções separadas por vírgula logo abaixo.</div>
+</div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function toggleOpcoes(tag) {
-        const selectTipo = document.getElementById('tipo_' + tag);
-        const divOpcoes = document.getElementById('div_opcoes_' + tag);
-        
-        if (selectTipo.value === 'dropdown') {
-            divOpcoes.style.display = 'block';
-        } else {
-            divOpcoes.style.display = 'none';
-        }
-    }
+function toggleOpcoes(tag) {
+  const sel = document.getElementById('tipo_' + tag);
+  const div = document.getElementById('div_opcoes_' + tag);
+  div.style.display = sel.value === 'dropdown' ? 'block' : 'none';
+}
 </script>
 {% endblock %}

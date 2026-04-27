@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load docgen_extras %}
+
+{% block title %}Monitoramento de processos — DOC{% endblock %}
+
+{% block content %}
+<div class="page-head">
+<div>
+<h1>Monitoramento de processos</h1>
+<p class="lead">Acompanhe a fila do worker, as tentativas de captura e as falhas de homologação.</p>
+</div>
+<a href="{% url 'processos_importar_lote' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Novo lote</a>
+</div>
+
+{% if lotes_recentes %}
+<div class="card mb-4">
+<div class="card-header"><h2>Lotes recentes</h2></div>
+<div class="card-body">
+<div class="row g-3">
+{% for lote in lotes_recentes %}
+<div class="col-lg-4">
+<div class="p-3 h-100 rounded" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border));">
+<div class="fw-bold">Lote #{{ lote.id }}</div>
+<div class="text-muted-apex mb-2" style="font-size: .72rem;">{{ lote.criado_em|date:"d/m/Y H:i" }}</div>
+<div style="font-size: .82rem;">Linhas: <strong>{{ lote.total_linhas }}</strong></div>
+<div style="font-size: .82rem;">Criados: <strong>{{ lote.total_processos_criados }}</strong></div>
+<div style="font-size: .82rem;">Atualizados: <strong>{{ lote.total_processos_atualizados }}</strong></div>
+</div>
+</div>
+{% endfor %}
+</div>
+</div>
+</div>
+{% endif %}
+
+<div class="card mb-4">
+<div class="card-body">
+<form method="get" class="row g-3 align-items-end">
+<div class="col-lg-4">
+<label class="form-label eyebrow">Busca</label>
+<input type="text" name="q" value="{{ filtros_atuais.q }}" class="form-control" placeholder="Número CNJ">
+</div>
+<div class="col-lg-3">
+<label class="form-label eyebrow">Status</label>
+<select name="status" class="form-select">
+<option value="">Todos</option>
+{% for value, label in status_choices %}
+<option value="{{ value }}" {% if filtros_atuais.status == value %}selected{% endif %}>{{ label }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-lg-3">
+<label class="form-label eyebrow">Tribunal</label>
+<select name="tribunal" class="form-select">
+<option value="">Todos</option>
+{% for codigo, nome in tribunais %}
+<option value="{{ codigo }}" {% if filtros_atuais.tribunal == codigo %}selected{% endif %}>{{ codigo }} — {{ nome }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-lg-2">
+<label class="form-label eyebrow">Lote</label>
+<input type="text" name="lote" value="{{ filtros_atuais.lote }}" class="form-control" placeholder="#id">
+</div>
+<div class="col-12 d-flex flex-wrap gap-2">
+<button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter"></i> Filtrar</button>
+<a href="{% url 'processos_monitoramento' %}" class="btn btn-outline-primary">Limpar</a>
+</div>
+</form>
+</div>
+</div>
+
+<div class="card">
+<div class="card-body p-0">
+<div class="table-responsive">
+<table class="table align-middle mb-0">
+<thead>
+<tr>
+<th style="padding-left: 1.25rem;">Processo</th>
+<th>Usuário</th>
+<th>Status</th>
+<th>Tentativa</th>
+<th>Worker</th>
+<th>Lote</th>
+<th>Atualizado</th>
+<th class="text-end" style="padding-right: 1.25rem;">Ação</th>
+</tr>
+</thead>
+<tbody>
+{% for execucao in execucoes %}
+<tr>
+<td style="padding-left: 1.25rem;">
+<div style="font-weight: 600; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: .82rem;">{{ execucao.processo.numero_cnj }}</div>
+<div class="text-muted-apex" style="font-size: .72rem;">{{ execucao.processo.tribunal_codigo }} — {{ execucao.processo.tribunal_nome }}</div>
+</td>
+<td>{{ execucao.processo.usuario.username }}</td>
+<td><span class="chip {{ status_badges|get_item:execucao.status|default:'neutral' }}">{{ execucao.get_status_display }}</span></td>
+<td>{{ execucao.tentativa }}</td>
+<td>{{ execucao.worker_id|default:"—" }}</td>
+<td>{% if execucao.lote %}#{{ execucao.lote.id }}{% else %}—{% endif %}</td>
+<td>
+<div>{{ execucao.atualizado_em|date:"d/m/Y H:i" }}</div>
+<div class="text-muted-apex" style="font-size: .72rem;">{{ execucao.mensagem|truncatechars:80 }}</div>
+</td>
+<td class="text-end" style="padding-right: 1.25rem;">
+<a href="{% url 'processo_detalhe' execucao.processo.id %}" class="btn btn-outline-primary btn-sm">Ver processo</a>
+</td>
+</tr>
+{% empty %}
+<tr><td colspan="8" class="text-center py-5 text-muted-apex">Nenhuma execução encontrada.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div class="mt-4">{% include 'includes/pagination.html' with page_obj=page_obj %}</div>
+{% endblock %}

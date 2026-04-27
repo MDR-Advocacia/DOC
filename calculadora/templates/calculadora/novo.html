@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova análise — DOC{% endblock %}
+
+{% block content %}
+<div style="max-width: 960px; margin: 0 auto;">
+<div class="page-head">
+<div>
+<span class="eyebrow">Cálculo cível</span>
+<h1 style="margin-top: .4rem">Nova análise de sentença</h1>
+<p class="lead">Cole a sentença ou envie um PDF para extrair os parâmetros relevantes da condenação.</p>
+</div>
+<a href="{% url 'calculadora_lista' %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
+</div>
+
+<div class="alert alert-info mb-3">
+<i class="fa-solid fa-circle-info"></i>
+<div>
+<strong>Fluxo recomendado:</strong> 1. Cole a sentença ou suba o PDF. 2. Revise os parâmetros extraídos. 3. Confirme percentuais e datas. 4. Gere a memória de cálculo.
+</div>
+</div>
+
+<div class="card">
+<div class="card-body" style="padding: 2rem;">
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+<div class="mb-4">
+<label class="form-label">{{ form.titulo.label }}</label>
+{{ form.titulo }}
+</div>
+
+<div class="mb-3">
+<label class="form-label">{{ form.arquivo_sentenca_pdf.label }}</label>
+{{ form.arquivo_sentenca_pdf }}
+{% if form.arquivo_sentenca_pdf.errors %}<div class="text-danger small mt-2">{{ form.arquivo_sentenca_pdf.errors|join:", " }}</div>{% endif %}
+<div class="form-text">Envie a sentença em PDF se preferir não colar o texto manualmente.</div>
+</div>
+
+<div class="text-center text-muted-apex my-3" style="font-size: .85rem; letter-spacing: .15em; text-transform: uppercase; font-weight: 600;">— ou —</div>
+
+<div class="mb-4">
+<label class="form-label">{{ form.texto_sentenca.label }}</label>
+{{ form.texto_sentenca }}
+{% if form.texto_sentenca.errors %}<div class="text-danger small mt-2">{{ form.texto_sentenca.errors|join:", " }}</div>{% endif %}
+<div class="form-text">Quanto melhor o texto da sentença, melhor a extração inicial dos parâmetros.</div>
+</div>
+
+{% if form.non_field_errors %}<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><div>{{ form.non_field_errors|join:", " }}</div></div>{% endif %}
+
+<div class="d-flex justify-content-end">
+<button type="submit" class="btn btn-primary btn-lg"><i class="fa-solid fa-wand-magic-sparkles"></i> Extrair parâmetros</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+{% endblock %}
