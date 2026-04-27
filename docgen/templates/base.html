@@ -17,6 +17,12 @@
 </head>
 <body>
 {% if user.is_authenticated %}
+{# URLs opcionais: resolvidas com 'as' para não quebrar se o app não estiver instalado #}
+{% url 'processos_lista' as url_processos_lista %}
+{% url 'calculadora_lista' as url_calculadora_lista %}
+{% url 'disparar_obrigacao_fazer' as url_disparar %}
+{% url 'processos_monitoramento' as url_monitoramento %}
+{% url 'processos_importar_lote' as url_importar_lote %}
 <div class="apex-shell">
 <aside class="sb">
 <a href="{% url 'home' %}" class="sb-brand">
@@ -29,9 +35,11 @@
 <a href="{% url 'lista_templates' %}" class="sb-item {% if request.resolver_match.url_name == 'lista_templates' %}active{% endif %}"><i class="fa-solid fa-file-pen"></i>Gerador</a>
 <a href="{% url 'minha_biblioteca' %}" class="sb-item {% if request.resolver_match.url_name == 'minha_biblioteca' %}active{% endif %}"><i class="fa-solid fa-bookmark"></i>Minha Biblioteca</a>
 <a href="{% url 'biblioteca' %}" class="sb-item {% if request.resolver_match.url_name == 'biblioteca' %}active{% endif %}"><i class="fa-solid fa-book"></i>Acervo Geral</a>
+{% if url_processos_lista or url_calculadora_lista %}
 <div class="sb-section">Operação</div>
-<a href="{% url 'processos_lista' %}" class="sb-item {% if request.resolver_match.url_name == 'processos_lista' %}active{% endif %}"><i class="fa-solid fa-folder-tree"></i>Processos</a>
-<a href="{% url 'calculadora_lista' %}" class="sb-item {% if 'calculadora' in request.resolver_match.url_name|default:'' %}active{% endif %}"><i class="fa-solid fa-scale-balanced"></i>Cálculo Cível</a>
+{% if url_processos_lista %}<a href="{{ url_processos_lista }}" class="sb-item {% if request.resolver_match.url_name == 'processos_lista' %}active{% endif %}"><i class="fa-solid fa-folder-tree"></i>Processos</a>{% endif %}
+{% if url_calculadora_lista %}<a href="{{ url_calculadora_lista }}" class="sb-item {% if 'calculadora' in request.resolver_match.url_name|default:'' %}active{% endif %}"><i class="fa-solid fa-scale-balanced"></i>Cálculo Cível</a>{% endif %}
+{% endif %}
 <div class="sb-section">Histórico</div>
 <a href="{% url 'dashboard' %}" class="sb-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-clock-rotate-left"></i>Documentos gerados</a>
 <a href="{% url 'guia_modelos' %}" class="sb-item {% if request.resolver_match.url_name == 'guia_modelos' %}active{% endif %}"><i class="fa-solid fa-circle-question"></i>FAQ</a>
@@ -40,9 +48,9 @@
 {% if user.is_staff %}<a href="{% url 'gerenciar_usuarios' %}" class="sb-item {% if request.resolver_match.url_name == 'gerenciar_usuarios' %}active{% endif %}"><i class="fa-solid fa-users-gear"></i>Usuários</a>{% endif %}
 <a href="{% url 'gerenciar_equipes' %}" class="sb-item {% if 'equipe' in request.resolver_match.url_name|default:'' %}active{% endif %}"><i class="fa-solid fa-sitemap"></i>Equipes</a>
 {% if user.is_staff %}
-<a href="{% url 'disparar_obrigacao_fazer' %}" class="sb-item {% if request.resolver_match.url_name == 'disparar_obrigacao_fazer' %}active{% endif %}"><i class="fa-solid fa-paper-plane"></i>Disparo administrativo</a>
-<a href="{% url 'processos_monitoramento' %}" class="sb-item {% if request.resolver_match.url_name == 'processos_monitoramento' %}active{% endif %}"><i class="fa-solid fa-chart-line"></i>Monitorar processos</a>
-<a href="{% url 'processos_importar_lote' %}" class="sb-item {% if request.resolver_match.url_name == 'processos_importar_lote' %}active{% endif %}"><i class="fa-solid fa-file-arrow-up"></i>Importar lote</a>
+{% if url_disparar %}<a href="{{ url_disparar }}" class="sb-item {% if request.resolver_match.url_name == 'disparar_obrigacao_fazer' %}active{% endif %}"><i class="fa-solid fa-paper-plane"></i>Disparo administrativo</a>{% endif %}
+{% if url_monitoramento %}<a href="{{ url_monitoramento }}" class="sb-item {% if request.resolver_match.url_name == 'processos_monitoramento' %}active{% endif %}"><i class="fa-solid fa-chart-line"></i>Monitorar processos</a>{% endif %}
+{% if url_importar_lote %}<a href="{{ url_importar_lote }}" class="sb-item {% if request.resolver_match.url_name == 'processos_importar_lote' %}active{% endif %}"><i class="fa-solid fa-file-arrow-up"></i>Importar lote</a>{% endif %}
 {% endif %}
 {% endif %}
 </nav>
@@ -64,9 +72,11 @@
 <a href="{% url 'lista_templates' %}" class="sb-item"><i class="fa-solid fa-file-pen"></i>Gerador</a>
 <a href="{% url 'minha_biblioteca' %}" class="sb-item"><i class="fa-solid fa-bookmark"></i>Minha Biblioteca</a>
 <a href="{% url 'biblioteca' %}" class="sb-item"><i class="fa-solid fa-book"></i>Acervo Geral</a>
+{% if url_processos_lista or url_calculadora_lista %}
 <div class="sb-section">Operação</div>
-<a href="{% url 'processos_lista' %}" class="sb-item"><i class="fa-solid fa-folder-tree"></i>Processos</a>
-<a href="{% url 'calculadora_lista' %}" class="sb-item"><i class="fa-solid fa-scale-balanced"></i>Cálculo Cível</a>
+{% if url_processos_lista %}<a href="{{ url_processos_lista }}" class="sb-item"><i class="fa-solid fa-folder-tree"></i>Processos</a>{% endif %}
+{% if url_calculadora_lista %}<a href="{{ url_calculadora_lista }}" class="sb-item"><i class="fa-solid fa-scale-balanced"></i>Cálculo Cível</a>{% endif %}
+{% endif %}
 <div class="sb-section">Histórico</div>
 <a href="{% url 'dashboard' %}" class="sb-item"><i class="fa-solid fa-clock-rotate-left"></i>Documentos gerados</a>
 <a href="{% url 'guia_modelos' %}" class="sb-item"><i class="fa-solid fa-circle-question"></i>FAQ</a>
@@ -75,9 +85,9 @@
 {% if user.is_staff %}<a href="{% url 'gerenciar_usuarios' %}" class="sb-item"><i class="fa-solid fa-users-gear"></i>Usuários</a>{% endif %}
 <a href="{% url 'gerenciar_equipes' %}" class="sb-item"><i class="fa-solid fa-sitemap"></i>Equipes</a>
 {% if user.is_staff %}
-<a href="{% url 'disparar_obrigacao_fazer' %}" class="sb-item"><i class="fa-solid fa-paper-plane"></i>Disparo administrativo</a>
-<a href="{% url 'processos_monitoramento' %}" class="sb-item"><i class="fa-solid fa-chart-line"></i>Monitorar processos</a>
-<a href="{% url 'processos_importar_lote' %}" class="sb-item"><i class="fa-solid fa-file-arrow-up"></i>Importar lote</a>
+{% if url_disparar %}<a href="{{ url_disparar }}" class="sb-item"><i class="fa-solid fa-paper-plane"></i>Disparo administrativo</a>{% endif %}
+{% if url_monitoramento %}<a href="{{ url_monitoramento }}" class="sb-item"><i class="fa-solid fa-chart-line"></i>Monitorar processos</a>{% endif %}
+{% if url_importar_lote %}<a href="{{ url_importar_lote }}" class="sb-item"><i class="fa-solid fa-file-arrow-up"></i>Importar lote</a>{% endif %}
 {% endif %}
 {% endif %}
 </nav>
