@@ -70,6 +70,12 @@ ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', [
     "192.168.0.31",
     "doc.mdr.local",
 ])
+# Hosts internos da rede Docker do Coolify — sempre incluídos para que o
+# processos-worker (que chama http://web:8000/...) não bata em DisallowedHost.
+# Esses nomes só resolvem dentro da rede do compose, não são acessíveis externamente.
+for _internal_host in ('web', 'processos-worker'):
+    if _internal_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_internal_host)
 
 CSRF_TRUSTED_ORIGINS = _csv_env('CSRF_TRUSTED_ORIGINS', [
     "http://localhost:8000",
@@ -265,6 +271,15 @@ REST_FRAMEWORK = {
     # --- NOVO: LIMITAÇÃO DE TAXA (Throttling) ---
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle', # Para não logados
+        'rest_framework.throttling.UserRateThrottle'  # Para logados
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '10/minute',   # Desconhecidos: max 10 req/min
+        'user': '100/minute',  # Usuários logados: max 100 req/min
+        'doc_gen': '20/minute', # Específico para gerar documentos (pesado)
+    }
+}
+_framework.throttling.AnonRateThrottle', # Para não logados
         'rest_framework.throttling.UserRateThrottle'  # Para logados
     ],
     'DEFAULT_THROTTLE_RATES': {
