@@ -33,7 +33,7 @@ class ProcessosWorker:
     @classmethod
     def from_env(cls):
         base_url = (os.environ.get('PROCESSOS_WORKER_API_BASE_URL') or 'http://web:8000').strip()
-        token = (os.environ.get('PROCESSOS_WORKER_TOKEN') or '').strip()
+        token = (os.environ.get('PROCESSOS_WORKER_TOKEN') or 'processos-worker-dev-token').strip()
         if not token:
             raise RuntimeError('PROCESSOS_WORKER_TOKEN nao configurado.')
 

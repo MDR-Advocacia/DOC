@@ -30,6 +30,7 @@ services:
     env_file:
       - .env
     environment:
+      PROCESSOS_WORKER_TOKEN: ${PROCESSOS_WORKER_TOKEN:-processos-worker-dev-token}
       PROCESSOS_WORKER_API_BASE_URL: http://web:8000
       PROCESSOS_WORKER_BROWSER_PROFILE: /app/.processos-browser-profile
     depends_on:
