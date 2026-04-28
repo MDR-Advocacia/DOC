@@ -23,6 +23,8 @@ services:
     restart: always
 
   processos-worker:
+    profiles:
+      - processos-worker
     build:
       context: .
       dockerfile: Dockerfile.processos-worker
