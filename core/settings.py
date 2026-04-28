@@ -16,9 +16,21 @@ def _env_as_bool(name, default=False):
         return default
     return value.strip().lower() in {'1', 'true', 'yes', 'on'}
 
+
+def _csv_env(name, default):
+    """Lê uma variável de ambiente como lista separada por vírgula."""
+    raw = os.environ.get(name, '')
+    items = [x.strip() for x in raw.split(',') if x.strip()]
+    return items or list(default)
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+
+# Carrega .env só em dev/local. Em produção (Coolify), env vars vêm do painel
+# e o .env nem chega na imagem (está no .dockerignore). Mantemos a chamada
+# para que devs locais não precisem exportar manualmente.
+if (BASE_DIR / ".env").exists():
+    load_dotenv(BASE_DIR / ".env")
 
 RUNNING_TESTS = "test" in sys.argv
 USE_SQLITE = os.environ.get('USE_SQLITE') == 'True' or RUNNING_TESTS
@@ -36,22 +48,58 @@ LOGIN_URL = '/accounts/login/'
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'doc-dev-secret-key')
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG') == 'True'
+DEBUG = _env_as_bool('DEBUG', False)
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.0.31", "doc.mdr.local", "doc.mdradvocacia.com", "doc-lab.mdradvocacia.com"]
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG or RUNNING_TESTS:
+        SECRET_KEY = 'doc-dev-secret-key-NOT-FOR-PRODUCTION'
+    else:
+        raise RuntimeError(
+            "SECRET_KEY não definida. Configure a variável de ambiente "
+            "SECRET_KEY no painel do Coolify (gere com "
+            "`python -c \"from django.core.management.utils import "
+            "get_random_secret_key; print(get_random_secret_key())\"`)."
+        )
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8000", 
-    "http://127.0.0.1:8000", 
+ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', [
+    "localhost",
+    "127.0.0.1",
+    "192.168.0.31",
+    "doc.mdr.local",
+])
+
+CSRF_TRUSTED_ORIGINS = _csv_env('CSRF_TRUSTED_ORIGINS', [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
     "http://192.168.0.31:8000",
     "http://doc.mdr.local",
-    "https://doc.mdradvocacia.com",
-    "https://doc-lab.mdradvocacia.com"
-]
+])
+
+# --- Proxy reverso (Traefik no Coolify) ---
+# Liga quando o Django está atrás de um proxy que termina TLS.
+# Sem isso, request.is_secure() = False, cookies seguros não funcionam,
+# e Django gera URLs http:// em ambiente https://.
+SECURE_PROXY = _env_as_bool('DJANGO_SECURE_PROXY', False)
+if SECURE_PROXY:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+# --- Hardening adicional (P3) ---
+# Ligar SOMENTE depois de validar que tudo passa por HTTPS no Coolify.
+# HSTS é "via única" — começa baixo (3600 = 1h) e sobe gradualmente.
+SECURE_HARDENING = _env_as_bool('DJANGO_HARDENING', False)
+if SECURE_HARDENING and not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS') or 3600)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_as_bool('DJANGO_HSTS_INCLUDE_SUBDOMAINS', False)
+    SECURE_HSTS_PRELOAD = _env_as_bool('DJANGO_HSTS_PRELOAD', False)
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -169,22 +217,24 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # --- CONFIGURAÇÕES DE TIMEOUT DA SESSÃO ---
-
-# 1. Tempo de vida da sessão em segundos
-# 1800 segundos = 30 minutos
-# 3600 segundos = 1 hora
-SESSION_COOKIE_AGE = 1800  
-
-# 2. Timeout por Inatividade (Sliding Expiration)
-# Se True: O tempo reseta a cada clique/página carregada (ex: banco).
-# Se False: O tempo é absoluto e desloga mesmo se estiver usando.
+# Opção A (escolhida): janela de 30 min com sliding expiration.
+# A cada request o cookie é renovado por mais 30 min — o usuário só é
+# deslogado por inatividade. EXPIRE_AT_BROWSER_CLOSE precisa ser False,
+# senão o cookie vira "session cookie" e o COOKIE_AGE é ignorado.
+SESSION_COOKIE_AGE = 1800  # 30 minutos
 SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
-# 3. Segurança Extra: Fechar navegador encerra sessão?
-# Se True: Se o usuário fechar o Chrome/Edge, ele é deslogado na hora.
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-
-EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+# Backend de email: SMTP só faz sentido se houver host configurado.
+# Em dev/local sem SMTP, mostramos no console. Em prod sem SMTP, dummy
+# (engole sem erro) para não travar reset-de-senha em background.
+_default_email_backend = (
+    'django.core.mail.backends.smtp.EmailBackend'
+    if os.environ.get('EMAIL_HOST')
+    else ('django.core.mail.backends.console.EmailBackend' if DEBUG
+          else 'django.core.mail.backends.dummy.EmailBackend')
+)
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', _default_email_backend)
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT') or 25)
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
@@ -197,7 +247,7 @@ SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
 
 PROCESSOS_WORKER_TOKEN = os.environ.get('PROCESSOS_WORKER_TOKEN', 'processos-worker-dev-token')
 PROCESSOS_WORKER_POLL_SECONDS = int(os.environ.get('PROCESSOS_WORKER_POLL_SECONDS') or 15)
-PROCESSOS_WORKER_HEADLESS = _env_as_bool('PROCESSOS_WORKER_HEADLESS', False)
+PROCESSOS_WORKER_HEADLESS = _env_as_bool('PROCESSOS_WORKER_HEADLESS', True)
 PROCESSOS_WORKER_BROWSER_PROFILE = os.environ.get(
     'PROCESSOS_WORKER_BROWSER_PROFILE',
     str(BASE_DIR / '.processos-browser-profile'),

@@ -8,10 +8,15 @@ services:
     ports:
       - "5433:5432"
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   web:
     build: .
-    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000"
+    # Comando vem do Dockerfile (scripts/entrypoint.sh): migrate + collectstatic + gunicorn
     volumes:
       - media_volume:/app/media
     ports:
@@ -19,8 +24,15 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
 
   processos-worker:
     build:
