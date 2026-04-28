@@ -1,0 +1,26 @@
+# Padrão: o git decide pelo conteúdo
+* text=auto
+
+# Arquivos que DEVEM ter LF (rodam em Linux/container)
+*.sh           text eol=lf
+Dockerfile*    text eol=lf
+*.yml          text eol=lf
+*.yaml         text eol=lf
+.dockerignore  text eol=lf
+.env*          text eol=lf
+
+# Python — pra ficar idêntico no Windows e no container
+*.py           text eol=lf
+
+# Binários — não tocar
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.zip  binary
+*.gz   binary
