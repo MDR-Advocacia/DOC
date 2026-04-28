@@ -86,20 +86,43 @@ class Equipe(models.Model):
 
 class PastaPersonalizada(models.Model):
     """Pastas da biblioteca (agora suportam subpastas e compartilhamento em lote)."""
+    ESCOPO_BIBLIOTECA = 'biblioteca'
+    ESCOPO_REPOSITORIO = 'repositorio'
+    ESCOPO_CHOICES = [
+        (ESCOPO_BIBLIOTECA, 'Biblioteca'),
+        (ESCOPO_REPOSITORIO, 'Repositorio'),
+    ]
+
+    ACESSO_PRIVADO = 'privado'
+    ACESSO_EQUIPES = 'equipes'
+    ACESSO_RESTRITO = 'restrito'
+    ACESSO_CHOICES = [
+        (ACESSO_PRIVADO, 'Privada'),
+        (ACESSO_EQUIPES, 'Equipes'),
+        (ACESSO_RESTRITO, 'Usuarios selecionados'),
+    ]
+
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pastas_criadas')
     nome = models.CharField(max_length=100)
+    escopo = models.CharField(max_length=20, choices=ESCOPO_CHOICES, default=ESCOPO_BIBLIOTECA)
     
     # Auto-referência: Permite criar Pastas dentro de Pastas
     pasta_pai = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subpastas')
     
     # Lógica de Compartilhamento
     compartilhada = models.BooleanField(default=False)
+    nivel_acesso = models.CharField(max_length=20, choices=ACESSO_CHOICES, default=ACESSO_PRIVADO)
     equipes_permitidas = models.ManyToManyField(Equipe, blank=True, related_name='pastas_acessiveis')
+    usuarios_permitidos = models.ManyToManyField(User, blank=True, related_name='pastas_com_acesso')
     
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['nome']
+        indexes = [
+            models.Index(fields=['escopo', 'usuario'], name='docgen_pasta_esc_usuario_idx'),
+            models.Index(fields=['escopo', 'nivel_acesso'], name='docgen_pasta_esc_acesso_idx'),
+        ]
 
     def __str__(self):
         if self.pasta_pai:
@@ -300,6 +323,13 @@ class ArquivoArmazenado(models.Model):
     nome_original = models.CharField(max_length=255)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default=TIPO_OUTRO)
     descricao = models.TextField(blank=True)
+    pasta = models.ForeignKey(
+        PastaPersonalizada,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='arquivos',
+    )
     usuario = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -312,8 +342,8 @@ class ArquivoArmazenado(models.Model):
     class Meta:
         ordering = ['-criado_em']
         indexes = [
-            models.Index(fields=['usuario', '-criado_em']),
-            models.Index(fields=['tipo']),
+            models.Index(fields=['usuario', '-criado_em'], name='docgen_arq_usuario_29a1b6_idx'),
+            models.Index(fields=['tipo'], name='docgen_arq_tipo_2cd9f4_idx'),
         ]
 
     def __str__(self):

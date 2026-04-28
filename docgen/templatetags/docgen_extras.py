@@ -2,30 +2,36 @@ from django import template
 
 register = template.Library()
 
+
 @register.simple_tag(takes_context=True)
 def param_replace(context, **kwargs):
     """
-    Retorna os parâmetros da URL atual atualizando apenas o que mudou.
+    Retorna os parametros da URL atual atualizando apenas o que mudou.
     """
-    d = context['request'].GET.copy()
-    for k, v in kwargs.items():
-        d[k] = v
-    for k in [k for k, v in d.items() if not v]:
-        del d[k]
-    return d.urlencode()
+    params = context['request'].GET.copy()
+    for key, value in kwargs.items():
+        params[key] = value
+    for key in [key for key, value in params.items() if not value]:
+        del params[key]
+    return params.urlencode()
 
-# --- FILTROS NOVOS ---
 
 @register.filter(name='split')
 def split_string(value, key):
-    """Quebra string em lista."""
     if not value:
         return []
     return value.split(key)
 
+
 @register.filter(name='strip')
 def strip_string(value):
-    """Remove espaços."""
     if not value:
         return ""
     return str(value).strip()
+
+
+@register.filter(name='get_item')
+def get_item(value, key):
+    if isinstance(value, dict):
+        return value.get(key)
+    return None

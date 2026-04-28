@@ -28,4 +28,4 @@ RUN mkdir -p /app/staticfiles /app/media
 EXPOSE 8000
 
 # Comando para rodar o servidor (usando Gunicorn)
-CMD ["gunicorn", "core.wsgi:application", "--bind", "192.168.0.31:8000"]
+CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000"]

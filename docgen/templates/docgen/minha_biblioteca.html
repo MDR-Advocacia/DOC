@@ -49,15 +49,13 @@
 </button>
 {% endif %}
 {% if pasta.usuario == request.user or request.user.is_staff %}
-{% if pasta.usuario == request.user %}
+{% if pasta.compartilhada %}<span class="chip info" title="{{ pasta.get_nivel_acesso_display }}"><i class="fa-solid fa-user-lock"></i></span>{% endif %}
+<button class="btn btn-link p-0" onclick="abrirModalCompartilhar('{{ pasta.id }}', '{{ pasta.nivel_acesso }}', '{% for eq in pasta.equipes_permitidas.all %}{{ eq.id }}{% if not forloop.last %},{% endif %}{% endfor %}', '{% for usr in pasta.usuarios_permitidos.all %}{{ usr.id }}{% if not forloop.last %},{% endif %}{% endfor %}')" title="Permissoes"><i class="fa-solid fa-user-gear" style="color: hsl(var(--duna-blue));"></i></button>
 {% if pasta.compartilhada %}
 <form action="{% url 'parar_compartilhamento' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Tornar privado novamente?')">
 {% csrf_token %}
-<button type="submit" class="btn btn-link p-0 text-warning"><i class="fa-solid fa-slash"></i></button>
+<button type="submit" class="btn btn-link p-0 text-warning" title="Tornar privada"><i class="fa-solid fa-lock"></i></button>
 </form>
-{% else %}
-<button class="btn btn-link p-0" onclick="abrirModalCompartilhar('{{ pasta.id }}')" title="Compartilhar"><i class="fa-solid fa-share-nodes" style="color: hsl(var(--duna-blue));"></i></button>
-{% endif %}
 {% endif %}
 <form action="{% url 'excluir_pasta' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir?')">
 {% csrf_token %}
@@ -100,7 +98,7 @@
 <ul class="dropdown-menu dropdown-menu-end">
 <li class="dropdown-header">Mover para...</li>
 <li><a class="dropdown-item btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="nenhuma">Sem pasta</a></li>
-{% for p in pastas %}
+{% for p in pastas_editaveis %}
 <li><a class="dropdown-item btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ p.id }}">{{ p.nome }}</a></li>
 {% for sub in p.subpastas.all %}
 <li><a class="dropdown-item btn-mover ps-4" href="#" data-id="{{ fav.template.id }}" data-pasta="{{ sub.id }}">↳ {{ sub.nome }}</a></li>
@@ -160,6 +158,38 @@
 </select>
 <div class="form-text">Selecione se deseja que esta seja uma subpasta.</div>
 </div>
+{% if request.user.is_staff %}
+<div class="mb-3">
+<label class="form-label">Nivel de acesso</label>
+<select name="nivel_acesso" class="form-select permission-level-select" data-target-prefix="nova">
+<option value="privado">Privada</option>
+<option value="equipes">Equipes selecionadas</option>
+<option value="restrito">Usuarios selecionados</option>
+</select>
+</div>
+<div class="mb-3 d-none" data-permission-target="nova-equipes">
+<label class="form-label">Equipes</label>
+<div class="border rounded p-3 border-apex" style="max-height: 180px; overflow-y: auto;">
+{% for eq in equipes_disponiveis %}
+<div class="form-check mb-2">
+<input class="form-check-input" type="checkbox" name="equipes" value="{{ eq.id }}" id="nova_eq_{{ eq.id }}">
+<label class="form-check-label" for="nova_eq_{{ eq.id }}">{{ eq.nome }}</label>
+</div>
+{% endfor %}
+</div>
+</div>
+<div class="mb-3 d-none" data-permission-target="nova-usuarios">
+<label class="form-label">Usuarios</label>
+<div class="border rounded p-3 border-apex" style="max-height: 180px; overflow-y: auto;">
+{% for usuario in usuarios_disponiveis %}
+<div class="form-check mb-2">
+<input class="form-check-input" type="checkbox" name="usuarios" value="{{ usuario.id }}" id="nova_user_{{ usuario.id }}">
+<label class="form-check-label" for="nova_user_{{ usuario.id }}">{{ usuario.get_full_name|default:usuario.username }}</label>
+</div>
+{% endfor %}
+</div>
+</div>
+{% endif %}
 </div>
 <div class="modal-footer">
 <button type="submit" class="btn btn-primary">Salvar pasta</button>
@@ -180,6 +210,15 @@
 {% csrf_token %}
 <input type="hidden" name="pasta_id" id="share_pasta_id">
 <div class="modal-body">
+<div class="mb-3">
+<label class="form-label">Nivel de acesso</label>
+<select name="nivel_acesso" id="share_nivel_acesso" class="form-select permission-level-select" data-target-prefix="share">
+<option value="privado">Privada</option>
+<option value="equipes">Equipes selecionadas</option>
+{% if request.user.is_staff %}<option value="restrito">Usuarios selecionados</option>{% endif %}
+</select>
+</div>
+<div data-permission-target="share-equipes">
 <p class="text-muted-apex" style="font-size:.85rem">Selecione os núcleos que terão acesso a esta pasta e aos modelos dentro dela.</p>
 <div class="mb-3">
 <label class="form-label">Núcleos disponíveis</label>
@@ -193,6 +232,20 @@
 </div>
 </div>
 </div>
+{% if request.user.is_staff %}
+<div class="mb-3 d-none" data-permission-target="share-usuarios">
+<label class="form-label">Usuarios</label>
+<div class="border rounded p-3 border-apex" style="max-height: 220px; overflow-y: auto;">
+{% for usuario in usuarios_disponiveis %}
+<div class="form-check mb-2">
+<input class="form-check-input share-usuario-check" type="checkbox" name="usuarios" value="{{ usuario.id }}" id="share_user_{{ usuario.id }}">
+<label class="form-check-label" for="share_user_{{ usuario.id }}">{{ usuario.get_full_name|default:usuario.username }}</label>
+</div>
+{% endfor %}
+</div>
+</div>
+{% endif %}
+</div>
 <div class="modal-footer">
 <button type="submit" class="btn btn-primary w-100">Salvar permissões</button>
 </div>
@@ -204,9 +257,37 @@
 
 {% block extra_js %}
 <script>
-function abrirModalCompartilhar(pastaId) {
+function atualizarCamposPermissao(select) {
+  const prefix = select.dataset.targetPrefix;
+  document.querySelectorAll(`[data-permission-target^="${prefix}-"]`).forEach(el => {
+    el.classList.add('d-none');
+  });
+  const alvo = document.querySelector(`[data-permission-target="${prefix}-${select.value}"]`);
+  if (alvo) alvo.classList.remove('d-none');
+}
+
+document.querySelectorAll('.permission-level-select').forEach(select => {
+  select.addEventListener('change', () => atualizarCamposPermissao(select));
+  atualizarCamposPermissao(select);
+});
+
+function marcarIds(selector, ids) {
+  const selecionados = (ids || '').split(',').filter(Boolean);
+  document.querySelectorAll(selector).forEach(input => {
+    input.checked = selecionados.includes(input.value);
+  });
+}
+
+function abrirModalCompartilhar(pastaId, nivelAcesso = 'equipes', equipes = '', usuarios = '') {
   const modal = new bootstrap.Modal(document.getElementById('modalCompartilhar'));
   document.getElementById('share_pasta_id').value = pastaId;
+  const select = document.getElementById('share_nivel_acesso');
+  if (select) {
+    select.value = nivelAcesso || 'privado';
+    atualizarCamposPermissao(select);
+  }
+  marcarIds('#modalCompartilhar input[name="equipes"]', equipes);
+  marcarIds('#modalCompartilhar input[name="usuarios"]', usuarios);
   modal.show();
 }
 

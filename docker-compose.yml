@@ -22,6 +22,23 @@ services:
       - db
     restart: always
 
+  processos-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.processos-worker
+    command: python -m docgen.processos_worker
+    env_file:
+      - .env
+    environment:
+      PROCESSOS_WORKER_API_BASE_URL: http://web:8000
+      PROCESSOS_WORKER_BROWSER_PROFILE: /app/.processos-browser-profile
+    depends_on:
+      - web
+    volumes:
+      - processos_worker_profile:/app/.processos-browser-profile
+    restart: always
+
 volumes:
   postgres_data:
   media_volume:
+  processos_worker_profile:
