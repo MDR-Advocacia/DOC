@@ -1,7 +1,9 @@
-{# Item de pasta na sidebar de Minha Biblioteca.
-   Espera o contexto: pasta, pasta_atual_id, request.
-   Botões de gerenciamento só aparecem se o usuário é dono ou staff;
-   senão, mostra chip com nome do dono. #}
+{% comment %}
+Item de pasta na sidebar de Minha Biblioteca.
+Espera o contexto: pasta, pasta_atual_id, request.
+Botões de gerenciamento só aparecem se o usuário é dono ou staff;
+senão, mostra chip com nome do dono.
+{% endcomment %}
 <div class="list-group-item d-flex justify-content-between {% if pasta_atual_id == pasta.id|stringformat:'s' %}active{% endif %}">
 <a href="?pasta={{ pasta.id }}" class="text-decoration-none text-truncate flex-grow-1 me-2" style="color: inherit;">
 <i class="fa-solid fa-folder me-2 {% if pasta_atual_id != pasta.id|stringformat:'s' %}text-warning{% endif %}" style="width:18px"></i>{{ pasta.nome }}
