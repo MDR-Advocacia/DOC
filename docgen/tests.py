@@ -15,37 +15,18 @@ from docx import Document
 
 from .models import (
     ArquivoArmazenado,
-    ArquivoProcesso,
     DocumentoGerado,
     Equipe,
-    ExecucaoCapturaProcesso,
-    LoteImportacaoProcessos,
     PastaPersonalizada,
-    Processo,
-    ProcessoStatus,
     Setor,
     Template,
     TemplateFavorito,
 )
-from .processos_constants import TRIBUNAIS_ESTADUAIS
-from .processos_services import concluir_execucao_com_arquivo, resolver_tribunal_por_cnj
-from .processos_worker.adapters import (
-    CapturedDocument,
-    GenericWhomTribunalAdapter,
-    ProcessNotFound,
-    TribunalAutomationConfig,
-    load_tribunal_configs,
-    resolve_extension_id,
-)
-from .processos_worker.runner import ProcessosWorker
 
 
 TEST_MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="docgen-test-media-"))
 TEST_STATIC_ROOT = TEST_MEDIA_ROOT / "staticfiles"
 TEST_STATIC_ROOT.mkdir(parents=True, exist_ok=True)
-PROCESSOS_TEST_MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="docgen-processos-test-media-"))
-PROCESSOS_TEST_STATIC_ROOT = PROCESSOS_TEST_MEDIA_ROOT / "staticfiles"
-PROCESSOS_TEST_STATIC_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 def _docx_upload(nome_arquivo, conteudo):
@@ -132,7 +113,11 @@ class DocgenFlowTests(TestCase):
         equipe.supervisores.add(dono)
         equipe.membros.add(membro)
 
-        pasta = PastaPersonalizada.objects.create(usuario=dono, nome='Compartilhados', compartilhada=True)
+        pasta = PastaPersonalizada.objects.create(
+            usuario=dono,
+            nome='Compartilhados',
+            nivel_acesso=PastaPersonalizada.ACESSO_EQUIPES,
+        )
         pasta.equipes_permitidas.add(equipe)
 
         TemplateFavorito.objects.create(usuario=dono, template=self.template, pasta=pasta)
@@ -152,7 +137,11 @@ class DocgenFlowTests(TestCase):
         equipe.supervisores.add(dono)
         equipe.membros.add(membro)
 
-        pasta = PastaPersonalizada.objects.create(usuario=dono, nome='Pasta da Equipe', compartilhada=True)
+        pasta = PastaPersonalizada.objects.create(
+            usuario=dono,
+            nome='Pasta da Equipe',
+            nivel_acesso=PastaPersonalizada.ACESSO_EQUIPES,
+        )
         pasta.equipes_permitidas.add(equipe)
         TemplateFavorito.objects.create(usuario=dono, template=self.template, pasta=pasta)
 
@@ -161,7 +150,7 @@ class DocgenFlowTests(TestCase):
 
         self.assertRedirects(response, reverse('minha_biblioteca'))
         pasta.refresh_from_db()
-        self.assertFalse(pasta.compartilhada)
+        self.assertEqual(pasta.nivel_acesso, PastaPersonalizada.ACESSO_PRIVADO)
 
         self.client.force_login(membro)
         biblioteca = self.client.get(reverse('minha_biblioteca'))
@@ -178,7 +167,6 @@ class DocgenFlowTests(TestCase):
             nome='Modelos Restritos',
             escopo=PastaPersonalizada.ESCOPO_BIBLIOTECA,
             nivel_acesso=PastaPersonalizada.ACESSO_RESTRITO,
-            compartilhada=True,
         )
         pasta.usuarios_permitidos.add(permitido)
         TemplateFavorito.objects.create(usuario=admin, template=self.template, pasta=pasta)
@@ -202,7 +190,6 @@ class DocgenFlowTests(TestCase):
         pasta = PastaPersonalizada.objects.create(
             usuario=dono,
             nome='Somente leitura',
-            compartilhada=True,
             nivel_acesso=PastaPersonalizada.ACESSO_EQUIPES,
         )
         pasta.equipes_permitidas.add(equipe)
@@ -368,396 +355,3 @@ class DocgenFlowTests(TestCase):
         self.assertContains(response, "o PDF &#x27;maria.pdf&#x27; nao foi enviado.")
         self.assertEqual(len(mail.outbox), 0)
 
-
-@override_settings(
-    MEDIA_ROOT=PROCESSOS_TEST_MEDIA_ROOT,
-    STATIC_ROOT=PROCESSOS_TEST_STATIC_ROOT,
-    PROCESSOS_WORKER_TOKEN='worker-test-token',
-)
-class ProcessosFlowTests(TestCase):
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(PROCESSOS_TEST_MEDIA_ROOT, ignore_errors=True)
-
-    def setUp(self):
-        self.admin = User.objects.create_user(
-            username='admin-processos@example.com',
-            email='admin-processos@example.com',
-            password='SenhaForte123!',
-            is_active=True,
-            is_staff=True,
-        )
-        self.usuario = User.objects.create_user(
-            username='usuario-processos@example.com',
-            email='usuario-processos@example.com',
-            password='SenhaForte123!',
-            is_active=True,
-        )
-        self.outro_usuario = User.objects.create_user(
-            username='outro-processos@example.com',
-            email='outro-processos@example.com',
-            password='SenhaForte123!',
-            is_active=True,
-        )
-
-    def _headers_worker(self):
-        return {'HTTP_AUTHORIZATION': 'Bearer worker-test-token'}
-
-    def test_importacao_de_lote_cria_processo_e_execucao(self):
-        self.client.force_login(self.admin)
-        numero_cnj = _numero_cnj_para_tribunal('8.25')
-
-        response = self.client.post(
-            reverse('processos_importar_lote'),
-            {
-                'planilha': _csv_upload(
-                    'processos.csv',
-                    (
-                        'numero_processo,usuario_email,observacao,referencia_interna\n'
-                        f'{numero_cnj},{self.usuario.username},Cliente prioritario,REF-001\n'
-                    ),
-                ),
-                'confirmar_importacao': 'on',
-            },
-            follow=True,
-        )
-
-        self.assertRedirects(response, reverse('processos_monitoramento'))
-        processo = Processo.objects.get(usuario=self.usuario, numero_cnj=numero_cnj)
-        self.assertEqual(processo.tribunal_codigo, '8.25')
-        self.assertEqual(processo.status_atual, ProcessoStatus.EM_FILA)
-        self.assertEqual(processo.referencia_interna, 'REF-001')
-        self.assertTrue(LoteImportacaoProcessos.objects.exists())
-        self.assertEqual(ExecucaoCapturaProcesso.objects.filter(processo=processo).count(), 1)
-
-    def test_importacao_rejeita_cnj_invalido(self):
-        self.client.force_login(self.admin)
-        response = self.client.post(
-            reverse('processos_importar_lote'),
-            {
-                'planilha': _csv_upload(
-                    'processos-invalidos.csv',
-                    (
-                        'numero_processo,usuario_email\n'
-                        f'0000001-00.2026.8.25.0001,{self.usuario.username}\n'
-                    ),
-                ),
-                'confirmar_importacao': 'on',
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'nao passou na validacao do CNJ')
-        self.assertEqual(Processo.objects.count(), 0)
-
-    def test_usuario_comum_nao_acessa_monitoramento(self):
-        self.client.force_login(self.usuario)
-        response = self.client.get(reverse('processos_monitoramento'))
-        self.assertEqual(response.status_code, 403)
-
-    def test_usuario_visualiza_apenas_processos_proprios(self):
-        processo_usuario = Processo.objects.create(
-            usuario=self.usuario,
-            numero_cnj=_numero_cnj_para_tribunal('8.06', sequencial='0000002'),
-            tribunal_codigo='8.06',
-            tribunal_nome='Ceara',
-            status_atual=ProcessoStatus.EM_FILA,
-        )
-        processo_outro = Processo.objects.create(
-            usuario=self.outro_usuario,
-            numero_cnj=_numero_cnj_para_tribunal('8.19', sequencial='0000003'),
-            tribunal_codigo='8.19',
-            tribunal_nome='Rio de Janeiro',
-            status_atual=ProcessoStatus.EM_FILA,
-        )
-
-        self.client.force_login(self.usuario)
-        response = self.client.get(reverse('processos_lista'))
-
-        self.assertContains(response, processo_usuario.numero_cnj)
-        self.assertNotContains(response, processo_outro.numero_cnj)
-
-    def test_download_e_detalhe_respeitam_permissao(self):
-        processo = Processo.objects.create(
-            usuario=self.usuario,
-            numero_cnj=_numero_cnj_para_tribunal('8.10', sequencial='0000004'),
-            tribunal_codigo='8.10',
-            tribunal_nome='Maranhao',
-            status_atual=ProcessoStatus.PROCESSANDO,
-        )
-        execucao = ExecucaoCapturaProcesso.objects.create(
-            processo=processo,
-            status=ProcessoStatus.PROCESSANDO,
-            tentativa=1,
-        )
-        arquivo = concluir_execucao_com_arquivo(execucao, _pdf_upload('inicial.pdf'))
-
-        self.client.force_login(self.outro_usuario)
-        detalhe = self.client.get(reverse('processo_detalhe', args=[processo.id]))
-        download = self.client.get(reverse('download_arquivo_processo', args=[arquivo.id]))
-
-        self.assertEqual(detalhe.status_code, 404)
-        self.assertEqual(download.status_code, 403)
-
-        self.client.force_login(self.usuario)
-        detalhe_ok = self.client.get(reverse('processo_detalhe', args=[processo.id]))
-        download_ok = self.client.get(reverse('download_arquivo_processo', args=[arquivo.id]))
-
-        self.assertEqual(detalhe_ok.status_code, 200)
-        self.assertEqual(download_ok.status_code, 200)
-
-    def test_worker_claim_nao_duplica_execucao(self):
-        processo = Processo.objects.create(
-            usuario=self.usuario,
-            numero_cnj=_numero_cnj_para_tribunal('8.17', sequencial='0000005'),
-            tribunal_codigo='8.17',
-            tribunal_nome='Pernambuco',
-            status_atual=ProcessoStatus.EM_FILA,
-        )
-        execucao = ExecucaoCapturaProcesso.objects.create(
-            processo=processo,
-            status=ProcessoStatus.EM_FILA,
-        )
-
-        primeira = self.client.post(
-            reverse('api_processos_worker_claim'),
-            data=json.dumps({'worker_id': 'worker-a'}),
-            content_type='application/json',
-            **self._headers_worker(),
-        )
-        segunda = self.client.post(
-            reverse('api_processos_worker_claim'),
-            data=json.dumps({'worker_id': 'worker-b'}),
-            content_type='application/json',
-            **self._headers_worker(),
-        )
-
-        execucao.refresh_from_db()
-        self.assertEqual(primeira.status_code, 200)
-        self.assertEqual(segunda.status_code, 204)
-        self.assertEqual(execucao.status, ProcessoStatus.PROCESSANDO)
-        self.assertEqual(execucao.worker_id, 'worker-a')
-        self.assertEqual(execucao.tentativa, 1)
-
-    def test_worker_claim_nao_sofre_throttle_no_polling(self):
-        for _ in range(12):
-            response = self.client.post(
-                reverse('api_processos_worker_claim'),
-                data=json.dumps({'worker_id': 'worker-poll'}),
-                content_type='application/json',
-                **self._headers_worker(),
-            )
-            self.assertEqual(response.status_code, 204)
-
-    def test_worker_complete_substitui_arquivo_atual(self):
-        processo = Processo.objects.create(
-            usuario=self.usuario,
-            numero_cnj=_numero_cnj_para_tribunal('8.21', sequencial='0000006'),
-            tribunal_codigo='8.21',
-            tribunal_nome='Rio Grande do Sul',
-            status_atual=ProcessoStatus.PROCESSANDO,
-        )
-        execucao_antiga = ExecucaoCapturaProcesso.objects.create(
-            processo=processo,
-            status=ProcessoStatus.PROCESSANDO,
-            tentativa=1,
-        )
-        arquivo_antigo = concluir_execucao_com_arquivo(execucao_antiga, _pdf_upload('antigo.pdf'))
-        nova_execucao = ExecucaoCapturaProcesso.objects.create(
-            processo=processo,
-            status=ProcessoStatus.PROCESSANDO,
-            tentativa=2,
-        )
-
-        response = self.client.post(
-            reverse('api_processos_worker_complete', args=[nova_execucao.id]),
-            data={
-                'arquivo': _pdf_upload('novo.pdf'),
-                'checksum': 'checksum-novo',
-                'mensagem': 'Documento atualizado.',
-            },
-            **self._headers_worker(),
-        )
-
-        arquivo_antigo.refresh_from_db()
-        novo_arquivo = ArquivoProcesso.objects.filter(processo=processo, atual=True).get()
-        processo.refresh_from_db()
-        nova_execucao.refresh_from_db()
-
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(arquivo_antigo.atual)
-        self.assertEqual(novo_arquivo.checksum, 'checksum-novo')
-        self.assertEqual(processo.status_atual, ProcessoStatus.BAIXADO)
-        self.assertEqual(nova_execucao.status, ProcessoStatus.BAIXADO)
-
-    def test_worker_fail_registra_falha(self):
-        processo = Processo.objects.create(
-            usuario=self.usuario,
-            numero_cnj=_numero_cnj_para_tribunal('8.24', sequencial='0000007'),
-            tribunal_codigo='8.24',
-            tribunal_nome='Santa Catarina',
-            status_atual=ProcessoStatus.PROCESSANDO,
-        )
-        execucao = ExecucaoCapturaProcesso.objects.create(
-            processo=processo,
-            status=ProcessoStatus.PROCESSANDO,
-            tentativa=1,
-        )
-
-        response = self.client.post(
-            reverse('api_processos_worker_fail', args=[execucao.id]),
-            data=json.dumps(
-                {
-                    'status': ProcessoStatus.PETICAO_NAO_LOCALIZADA,
-                    'mensagem': 'Documento inicial nao apareceu na lista.',
-                }
-            ),
-            content_type='application/json',
-            **self._headers_worker(),
-        )
-
-        execucao.refresh_from_db()
-        processo.refresh_from_db()
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(execucao.status, ProcessoStatus.PETICAO_NAO_LOCALIZADA)
-        self.assertEqual(processo.status_atual, ProcessoStatus.PETICAO_NAO_LOCALIZADA)
-
-    def test_mapeamento_cobre_todos_os_27_tjs(self):
-        for indice, (codigo, nome) in enumerate(TRIBUNAIS_ESTADUAIS.items(), start=10):
-            numero_cnj = _numero_cnj_para_tribunal(codigo, sequencial=f'{indice:07d}')
-            codigo_resolvido, nome_resolvido = resolver_tribunal_por_cnj(numero_cnj)
-            self.assertEqual(codigo_resolvido, codigo)
-            self.assertEqual(nome_resolvido, nome)
-
-    def test_smoke_worker_separado(self):
-        repo_root = Path(__file__).resolve().parent.parent
-        docker_compose = (repo_root / 'docker-compose.yml').read_text(encoding='utf-8')
-
-        self.assertTrue((repo_root / 'Dockerfile.processos-worker').exists())
-        self.assertTrue((repo_root / 'requirements.processos-worker.txt').exists())
-        self.assertIn('processos-worker:', docker_compose)
-        self.assertIn('processos_worker_profile', docker_compose)
-
-        with patch.dict(
-            os.environ,
-            {
-                'PROCESSOS_WORKER_TOKEN': 'worker-test-token',
-                'PROCESSOS_WORKER_API_BASE_URL': 'http://web:8000',
-                'PROCESSOS_WORKER_BROWSER_PROFILE': str(repo_root / '.tmp-processos-profile'),
-            },
-            clear=False,
-        ):
-            worker = ProcessosWorker.from_env()
-        self.assertEqual(worker.worker_id, 'processos-worker')
-
-    def test_adapter_aceita_fluxo_via_whom_sem_url_manual(self):
-        config = TribunalAutomationConfig(
-            tribunal_codigo='8.05',
-            tribunal_nome='Bahia',
-            portal_url='',
-            whom_system_name='TJBA Pje - 1º grau',
-            search_input_selector='#numeroProcesso',
-            search_submit_selector='',
-            document_row_selector='.documento',
-            document_name_selector='.nome',
-            document_download_selector='.download',
-            process_not_found_text='',
-            download_timeout_ms=1000,
-            navigation_timeout_ms=1000,
-        )
-
-        adapter = GenericWhomTribunalAdapter(config)
-        adapter._validate_configuration(config)
-
-    def test_resolve_extension_id_le_configs_json(self):
-        extension_dir = PROCESSOS_TEST_MEDIA_ROOT / 'fake-extension'
-        extension_dir.mkdir(parents=True, exist_ok=True)
-        (extension_dir / 'configs.json').write_text(
-            json.dumps({'id': 'lnidijeaekolpfeckelhkomndglcglhh'}),
-            encoding='utf-8',
-        )
-
-        self.assertEqual(
-            resolve_extension_id(extension_dir),
-            'lnidijeaekolpfeckelhkomndglcglhh',
-        )
-
-    def test_carrega_configuracoes_alternativas_do_mesmo_tribunal(self):
-        with patch.dict(
-            os.environ,
-            {
-                'PROCESSOS_TRIBUNAL_8_05_WHOM_SYSTEM': 'TJBA Pje - 1º grau',
-                'PROCESSOS_TRIBUNAL_8_05_SEARCH_INPUT': '#pje',
-                'PROCESSOS_TRIBUNAL_8_05_DOCUMENT_ROW': '.pje-row',
-                'PROCESSOS_TRIBUNAL_8_05_ALT_1_WHOM_SYSTEM': 'TJBA Projudi - 1º Grau',
-                'PROCESSOS_TRIBUNAL_8_05_ALT_1_SEARCH_INPUT': '#projudi',
-                'PROCESSOS_TRIBUNAL_8_05_ALT_1_DOCUMENT_ROW': '.projudi-row',
-            },
-            clear=False,
-        ):
-            configs = load_tribunal_configs('8.05', 'Bahia')
-
-        self.assertEqual(len(configs), 2)
-        self.assertEqual(configs[0].whom_system_name, 'TJBA Pje - 1º grau')
-        self.assertEqual(configs[0].source_label, 'principal')
-        self.assertEqual(configs[1].whom_system_name, 'TJBA Projudi - 1º Grau')
-        self.assertEqual(configs[1].source_label, 'alternativo 1')
-
-    def test_adapter_tenta_sistema_alternativo_quando_primeiro_nao_encontra_processo(self):
-        adapter = GenericWhomTribunalAdapter(
-            [
-                TribunalAutomationConfig(
-                    tribunal_codigo='8.05',
-                    tribunal_nome='Bahia',
-                    portal_url='',
-                    whom_system_name='TJBA Pje - 1º grau',
-                    search_input_selector='#pje',
-                    search_submit_selector='',
-                    document_row_selector='.pje-row',
-                    document_name_selector='.nome',
-                    document_download_selector='.download',
-                    process_not_found_text='',
-                    download_timeout_ms=1000,
-                    navigation_timeout_ms=1000,
-                    source_label='principal',
-                ),
-                TribunalAutomationConfig(
-                    tribunal_codigo='8.05',
-                    tribunal_nome='Bahia',
-                    portal_url='',
-                    whom_system_name='TJBA Projudi - 1º Grau',
-                    search_input_selector='#projudi',
-                    search_submit_selector='',
-                    document_row_selector='.projudi-row',
-                    document_name_selector='.nome',
-                    document_download_selector='.download',
-                    process_not_found_text='',
-                    download_timeout_ms=1000,
-                    navigation_timeout_ms=1000,
-                    source_label='alternativo 1',
-                ),
-            ]
-        )
-        captured = CapturedDocument(
-            file_path=PROCESSOS_TEST_MEDIA_ROOT / 'arquivo.pdf',
-            tribunal_url='https://exemplo.local/processo',
-            document_name='Peticao Inicial',
-        )
-
-        with patch.object(
-            GenericWhomTribunalAdapter,
-            '_capture_with_config',
-            side_effect=[
-                ProcessNotFound('Processo nao encontrado no PJe.'),
-                captured,
-            ],
-        ) as mocked_capture:
-            result = adapter.capture_initial_petition(
-                numero_cnj='8041588-22.2026.8.05.0001',
-                browser_profile_dir=PROCESSOS_TEST_MEDIA_ROOT / 'profile',
-                download_dir=PROCESSOS_TEST_MEDIA_ROOT / 'downloads',
-            )
-
-        self.assertEqual(result, captured)
-        self.assertEqual(mocked_capture.call_count, 2)

@@ -1,0 +1,47 @@
+{# Item de pasta na sidebar de Minha Biblioteca.
+   Espera o contexto: pasta, pasta_atual_id, request.
+   Botões de gerenciamento só aparecem se o usuário é dono ou staff;
+   senão, mostra chip com nome do dono. #}
+<div class="list-group-item d-flex justify-content-between {% if pasta_atual_id == pasta.id|stringformat:'s' %}active{% endif %}">
+<a href="?pasta={{ pasta.id }}" class="text-decoration-none text-truncate flex-grow-1 me-2" style="color: inherit;">
+<i class="fa-solid fa-folder me-2 {% if pasta_atual_id != pasta.id|stringformat:'s' %}text-warning{% endif %}" style="width:18px"></i>{{ pasta.nome }}
+</a>
+<div class="d-flex gap-2 align-items-center">
+{% if pasta.subpastas.exists %}
+<button class="btn btn-link p-0 btn-collapse" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ pasta.id }}" aria-expanded="false" title="Expandir">
+<i class="fa-solid fa-chevron-down small"></i>
+</button>
+{% endif %}
+{% if pasta.usuario == request.user or request.user.is_staff %}
+{% if pasta.nivel_acesso != 'privado' %}<span class="chip info" title="{{ pasta.get_nivel_acesso_display }}"><i class="fa-solid fa-user-lock"></i></span>{% endif %}
+<button class="btn btn-link p-0" onclick="abrirModalCompartilhar('{{ pasta.id }}', '{{ pasta.nivel_acesso }}', '{% for eq in pasta.equipes_permitidas.all %}{{ eq.id }}{% if not forloop.last %},{% endif %}{% endfor %}', '{% for usr in pasta.usuarios_permitidos.all %}{{ usr.id }}{% if not forloop.last %},{% endif %}{% endfor %}')" title="Permissoes"><i class="fa-solid fa-user-gear" style="color: hsl(var(--duna-blue));"></i></button>
+{% if pasta.nivel_acesso != 'privado' %}
+<form action="{% url 'parar_compartilhamento' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Tornar privado novamente?')">
+{% csrf_token %}
+<button type="submit" class="btn btn-link p-0 text-warning" title="Tornar privada"><i class="fa-solid fa-lock"></i></button>
+</form>
+{% endif %}
+<form action="{% url 'excluir_pasta' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir?')">
+{% csrf_token %}
+<button type="submit" class="btn btn-link p-0 text-hover-danger" style="color: hsl(var(--apex-text-soft));"><i class="fa-solid fa-trash-can"></i></button>
+</form>
+{% else %}
+<span class="chip info" title="Compartilhada por {{ pasta.usuario.get_full_name|default:pasta.usuario.username }}"><i class="fa-solid fa-share-nodes"></i> {{ pasta.usuario.first_name|default:pasta.usuario.username|truncatechars:12 }}</span>
+{% endif %}
+</div>
+</div>
+<div class="collapse" id="collapse-{{ pasta.id }}" data-bs-parent="#accordionPastas">
+{% for sub in pasta.subpastas.all %}
+<div class="list-group-item subpasta-item d-flex justify-content-between {% if pasta_atual_id == sub.id|stringformat:'s' %}active{% endif %}">
+<a href="?pasta={{ sub.id }}" class="text-decoration-none text-truncate flex-grow-1" style="color: inherit;">
+<i class="fa-regular fa-folder-open me-1 {% if pasta_atual_id != sub.id|stringformat:'s' %}text-warning{% endif %}"></i> {{ sub.nome }}
+</a>
+{% if sub.usuario == request.user or request.user.is_staff %}
+<form action="{% url 'excluir_pasta' sub.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir subpasta?')">
+{% csrf_token %}
+<button type="submit" class="btn btn-link p-0 text-hover-danger" style="color: hsl(var(--apex-text-soft));"><i class="fa-solid fa-trash-can"></i></button>
+</form>
+{% endif %}
+</div>
+{% endfor %}
+</div>

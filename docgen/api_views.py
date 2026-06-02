@@ -5,20 +5,12 @@ from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, status
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
-from .models import DocumentoGerado, ExecucaoCapturaProcesso, ProcessoStatus, Template
-from .permissions import HasWorkerToken
-from .serializers import DocumentoSerializer, ExecucaoCapturaProcessoSerializer
-from .processos_services import (
-    claim_execucao_para_worker,
-    concluir_execucao_com_arquivo,
-    falhar_execucao,
-    registrar_heartbeat_execucao,
-)
+from .models import DocumentoGerado, Template
+from .serializers import DocumentoSerializer
 from .utils import renderizar_template_docx
 
 
@@ -96,81 +88,3 @@ class GerarDocumentoAPIView(APIView):
                 {"erro": f"Erro interno: {exc}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-
-class WorkerClaimAPIView(APIView):
-    authentication_classes = []
-    permission_classes = [HasWorkerToken]
-    parser_classes = [JSONParser]
-    throttle_classes = []
-
-    def post(self, request):
-        worker_id = (request.data.get('worker_id') or 'processos-worker').strip()
-        execucao = claim_execucao_para_worker(worker_id)
-        if not execucao:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        serializer = ExecucaoCapturaProcessoSerializer(execucao)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class WorkerHeartbeatAPIView(APIView):
-    authentication_classes = []
-    permission_classes = [HasWorkerToken]
-    parser_classes = [JSONParser]
-    throttle_classes = []
-
-    def post(self, request, execucao_id):
-        execucao = get_object_or_404(ExecucaoCapturaProcesso, id=execucao_id)
-        registrar_heartbeat_execucao(execucao, mensagem=request.data.get('mensagem', ''))
-        return Response({'status': 'ok'}, status=status.HTTP_200_OK)
-
-
-class WorkerCompleteAPIView(APIView):
-    authentication_classes = []
-    permission_classes = [HasWorkerToken]
-    parser_classes = [MultiPartParser, FormParser]
-    throttle_classes = []
-
-    def post(self, request, execucao_id):
-        execucao = get_object_or_404(ExecucaoCapturaProcesso.objects.select_related('processo'), id=execucao_id)
-        arquivo = request.FILES.get('arquivo')
-        if not arquivo:
-            return Response({'erro': "Envie o arquivo em 'arquivo'."}, status=status.HTTP_400_BAD_REQUEST)
-
-        concluir_execucao_com_arquivo(
-            execucao,
-            arquivo_upload=arquivo,
-            checksum=(request.data.get('checksum') or '').strip(),
-            mensagem=(request.data.get('mensagem') or '').strip(),
-            tribunal_url=(request.data.get('tribunal_url') or '').strip(),
-        )
-        return Response({'status': 'ok'}, status=status.HTTP_200_OK)
-
-
-class WorkerFailAPIView(APIView):
-    authentication_classes = []
-    permission_classes = [HasWorkerToken]
-    parser_classes = [JSONParser]
-    throttle_classes = []
-
-    def post(self, request, execucao_id):
-        execucao = get_object_or_404(ExecucaoCapturaProcesso.objects.select_related('processo'), id=execucao_id)
-        status_final = (request.data.get('status') or '').strip()
-        mensagem = (request.data.get('mensagem') or '').strip()
-        if status_final not in {
-            ProcessoStatus.PROCESSO_NAO_ENCONTRADO,
-            ProcessoStatus.PETICAO_NAO_LOCALIZADA,
-            ProcessoStatus.FALHA_TECNICA,
-        }:
-            return Response({'erro': 'Status de falha invalido.'}, status=status.HTTP_400_BAD_REQUEST)
-        if not mensagem:
-            return Response({'erro': 'Informe a mensagem da falha.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        falhar_execucao(
-            execucao,
-            status_final=status_final,
-            mensagem=mensagem,
-            tribunal_url=(request.data.get('tribunal_url') or '').strip(),
-        )
-        return Response({'status': 'ok'}, status=status.HTTP_200_OK)

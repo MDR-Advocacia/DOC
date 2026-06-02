@@ -3,6 +3,7 @@ import secrets
 import string
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
@@ -11,7 +12,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Case, Count, IntegerField, Min, Prefetch, Q, Value, When
 from django.db.models.functions import TruncMonth
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -124,25 +125,34 @@ def _apply_folder_permissions(pasta, nivel_acesso, equipes=None, usuarios=None):
     apply_folder_permissions(pasta, nivel_acesso, equipes, usuarios)
 
 
-def _ordered_unique_favorites(favoritos, user):
-    favoritos_ordenados = sorted(
-        favoritos,
-        key=lambda favorito: (
-            favorito.template.titulo.lower(),
-            0 if favorito.usuario_id == user.id else 1,
-            favorito.usuario.username.lower(),
-        ),
+def _unique_favorites_queryset(base_queryset, user):
+    """Para cada template_id, retorna um único TemplateFavorito — preferindo o do
+    próprio `user` quando existir; caso contrário, o favorito alheio de menor id.
+
+    Implementação portátil (Postgres + SQLite): combina IDs do user logado com
+    IDs alheios deduplicados via Min(id) por template. Retorna um QuerySet pronto
+    para paginação, ordenado alfabeticamente por título.
+    """
+    meus_ids = list(
+        base_queryset.filter(usuario=user).values_list('id', flat=True)
+    )
+    meus_template_ids = list(
+        base_queryset.filter(usuario=user).values_list('template_id', flat=True)
+    )
+    alheios_ids = list(
+        base_queryset
+        .exclude(template_id__in=meus_template_ids)
+        .values('template_id')
+        .annotate(escolhido=Min('id'))
+        .values_list('escolhido', flat=True)
     )
 
-    favoritos_unicos = []
-    templates_vistos = set()
-    for favorito in favoritos_ordenados:
-        if favorito.template_id in templates_vistos:
-            continue
-        templates_vistos.add(favorito.template_id)
-        favoritos_unicos.append(favorito)
-
-    return favoritos_unicos
+    return (
+        TemplateFavorito.objects
+        .filter(id__in=meus_ids + alheios_ids)
+        .select_related('template', 'template__setor', 'pasta', 'usuario')
+        .order_by('template__titulo')
+    )
 
 
 def _nome_arquivo_gerado(titulo_template):
@@ -152,7 +162,122 @@ def _nome_arquivo_gerado(titulo_template):
 
 @login_required
 @staff_member_required
+def sugerir_template_ia(request):
+    """Upload de DOCX exemplo → Claude sugere placeholders → cria Template.
+
+    Redireciona para `configurar_template` com os campos já pré-populados, onde
+    o usuário revisa antes de salvar.
+    """
+    from django.core.files.base import ContentFile
+    from . import template_ai
+
+    if not settings.ANTHROPIC_API_KEY:
+        messages.error(
+            request,
+            "Sugestão por IA indisponível: ANTHROPIC_API_KEY não configurada no servidor.",
+        )
+        return redirect('criar_template')
+
+    if request.method == 'POST':
+        titulo = request.POST.get('titulo', '').strip()
+        descricao = request.POST.get('descricao', '').strip()
+        setor_id = request.POST.get('setor')
+        area_id = request.POST.get('area')
+        categoria_id = request.POST.get('categoria')
+        arquivo = request.FILES.get('arquivo')
+
+        if not arquivo or not titulo or not setor_id:
+            messages.error(request, "Preencha os campos obrigatórios e envie um arquivo .docx exemplo.")
+            return redirect('sugerir_template_ia')
+
+        if not arquivo.name.lower().endswith('.docx'):
+            messages.error(request, "Apenas arquivos .docx são aceitos pela sugestão por IA.")
+            return redirect('sugerir_template_ia')
+
+        try:
+            docx_bytes = arquivo.read()
+            resultado = template_ai.gerar_sugestao_de_template(docx_bytes)
+        except template_ai.IAIndisponivelError as exc:
+            messages.error(request, str(exc))
+            return redirect('criar_template')
+        except Exception as exc:
+            messages.error(
+                request,
+                f"Não foi possível analisar o arquivo: {exc}. Tente o upload manual.",
+            )
+            return redirect('criar_template')
+
+        if not resultado.placeholders:
+            messages.warning(
+                request,
+                "A IA não identificou trechos variáveis. Talvez a peça seja muito curta ou "
+                "já esteja em formato de template. Tente upload manual.",
+            )
+            return redirect('criar_template')
+
+        configuracao_campos = [
+            {
+                'tag': p.get('tag', ''),
+                'label': p.get('label', '') or p.get('tag', '').replace('_', ' ').title(),
+                'tipo': p.get('tipo', 'text'),
+                'dependencia': '',
+                'opcoes': p.get('opcoes', ''),
+            }
+            for p in resultado.placeholders
+            if p.get('tag')
+        ]
+
+        # Normaliza tags Jinja com acentos/cedilha → ASCII (defesa em
+        # profundidade — Claude geralmente gera ASCII, mas se um dia gerar
+        # com acento o template ainda funcionará).
+        from . import template_utils
+        docx_normalizado, renames = template_utils.normalize_jinja_tags_in_docx(
+            resultado.docx_modificado
+        )
+        configuracao_campos = template_utils.apply_renames_to_configuracao(
+            configuracao_campos, renames
+        )
+
+        try:
+            template = Template.objects.create(
+                titulo=titulo,
+                descricao=descricao,
+                setor_id=setor_id,
+                area_id=area_id or None,
+                categoria_id=categoria_id or None,
+                arquivo_template=ContentFile(docx_normalizado, name=arquivo.name),
+                configuracao_campos=configuracao_campos,
+                ativo=True,
+            )
+        except Exception as exc:
+            messages.error(request, f"Erro ao salvar o modelo: {exc}")
+            return redirect('sugerir_template_ia')
+
+        messages.success(
+            request,
+            f"IA sugeriu {len(configuracao_campos)} campo(s). Revise abaixo antes de finalizar. "
+            f"(Tokens: {resultado.tokens_input} in / {resultado.tokens_output} out, "
+            f"{resultado.tokens_cached} cached)",
+        )
+        return redirect('configurar_template', template_id=template.id)
+
+    return render(
+        request,
+        'docgen/sugerir_template.html',
+        {
+            'setores': Setor.objects.all().order_by('nome'),
+            'areas': Area.objects.all().order_by('nome'),
+            'categorias': Categoria.objects.all().order_by('nome'),
+        },
+    )
+
+
+@login_required
+@staff_member_required
 def criar_template(request):
+    from django.core.files.base import ContentFile
+    from . import template_utils
+
     if request.method == 'POST':
         titulo = request.POST.get('titulo', '').strip()
         descricao = request.POST.get('descricao', '').strip()
@@ -165,15 +290,30 @@ def criar_template(request):
             messages.error(request, "Preencha os campos obrigatorios e envie um arquivo.")
         else:
             try:
+                # Normaliza tags Jinja com acentos/cedilha → versão ASCII,
+                # evitando o erro "expected token 'end of print statement'"
+                # causado pela fragmentação de runs do Word.
+                docx_bytes_normalizado, renames = template_utils.normalize_jinja_tags_in_docx(
+                    arquivo.read()
+                )
+                arquivo_final = ContentFile(docx_bytes_normalizado, name=arquivo.name)
+
                 template = Template.objects.create(
                     titulo=titulo,
                     descricao=descricao,
                     setor_id=setor_id,
                     area_id=area_id or None,
                     categoria_id=categoria_id or None,
-                    arquivo_template=arquivo,
+                    arquivo_template=arquivo_final,
                     ativo=True,
                 )
+                if renames:
+                    messages.info(
+                        request,
+                        f"{len(renames)} variável(eis) com acento/cedilha foram renomeadas "
+                        f"para evitar erro de renderização: "
+                        + ', '.join(f"{a} → {n}" for a, n in renames.items()),
+                    )
                 messages.success(request, "Arquivo enviado. Agora configure os campos do modelo.")
                 return redirect('configurar_template', template_id=template.id)
             except Exception as exc:
@@ -673,6 +813,19 @@ def toggle_favorito(request, template_id):
 
 
 @login_required
+def adicionar_favorito(request, template_id):
+    """Cria um favorito do usuário logado para o template. Idempotente:
+    se já existir, devolve `ja_existe` sem alterar nada (não toca pasta).
+    """
+    if request.method != 'POST':
+        return JsonResponse({'erro': 'Metodo invalido.'}, status=400)
+
+    template = get_object_or_404(Template, id=template_id, ativo=True)
+    _, created = TemplateFavorito.objects.get_or_create(usuario=request.user, template=template)
+    return JsonResponse({'status': 'adicionado' if created else 'ja_existe'})
+
+
+@login_required
 def minha_biblioteca(request):
     pasta_id = request.GET.get('pasta')
     accessible_folders = _accessible_folders_queryset(request.user).select_related('usuario', 'pasta_pai')
@@ -686,32 +839,32 @@ def minha_biblioteca(request):
         queryset=editable_folders.order_by('nome'),
     )
 
-    pastas = list(
+    pastas_raiz = list(
         accessible_folders.filter(pasta_pai__isnull=True)
         .prefetch_related('equipes_permitidas', 'usuarios_permitidos', accessible_subpastas)
         .order_by('nome')
     )
+    minhas_pastas = [p for p in pastas_raiz if p.usuario_id == request.user.id]
+    pastas_compartilhadas_comigo = [p for p in pastas_raiz if p.usuario_id != request.user.id]
     pastas_editaveis = list(
         editable_folders.filter(pasta_pai__isnull=True)
         .prefetch_related('equipes_permitidas', 'usuarios_permitidos', editable_subpastas)
         .order_by('nome')
     )
 
-    favoritos_query = (
-        TemplateFavorito.objects.filter(Q(usuario=request.user) | Q(pasta__in=accessible_folders))
-        .select_related('template', 'template__setor', 'pasta', 'usuario')
-        .distinct()
+    favoritos_base = TemplateFavorito.objects.filter(
+        Q(usuario=request.user) | Q(pasta__in=accessible_folders)
     )
 
     subpastas = []
     if pasta_id == 'sem_pasta':
-        favoritos_query = favoritos_query.filter(usuario=request.user, pasta__isnull=True)
+        favoritos_base = favoritos_base.filter(usuario=request.user, pasta__isnull=True)
     elif pasta_id:
         pasta_atual = get_object_or_404(accessible_folders, id=pasta_id)
-        favoritos_query = favoritos_query.filter(pasta=pasta_atual)
+        favoritos_base = favoritos_base.filter(pasta=pasta_atual)
         subpastas = list(accessible_folders.filter(pasta_pai=pasta_atual).order_by('nome'))
 
-    favoritos_unicos = _ordered_unique_favorites(list(favoritos_query), request.user)
+    favoritos_unicos = _unique_favorites_queryset(favoritos_base, request.user)
     paginator = Paginator(favoritos_unicos, 12)
     page_obj = paginator.get_page(request.GET.get('page'))
 
@@ -721,7 +874,8 @@ def minha_biblioteca(request):
         {
             'favoritos': page_obj,
             'page_obj': page_obj,
-            'pastas': pastas,
+            'minhas_pastas': minhas_pastas,
+            'pastas_compartilhadas_comigo': pastas_compartilhadas_comigo,
             'pastas_editaveis': pastas_editaveis,
             'subpastas': subpastas,
             'pasta_atual_id': pasta_id,
@@ -783,7 +937,13 @@ def mover_para_pasta(request, template_id):
     except json.JSONDecodeError:
         return JsonResponse({'erro': 'Payload invalido.'}, status=400)
 
-    favorito = get_object_or_404(TemplateFavorito, template_id=template_id, usuario=request.user)
+    try:
+        favorito = TemplateFavorito.objects.get(template_id=template_id, usuario=request.user)
+    except TemplateFavorito.DoesNotExist:
+        return JsonResponse(
+            {'erro': 'Voce ainda nao adicionou este modelo a sua biblioteca.'},
+            status=403,
+        )
     nova_pasta_id = payload.get('pasta_id')
 
     if not nova_pasta_id or nova_pasta_id == 'nenhuma':
@@ -818,6 +978,7 @@ def compartilhar_pasta(request):
     nivel_acesso = request.POST.get('nivel_acesso') or PastaPersonalizada.ACESSO_EQUIPES
     equipes_ids = request.POST.getlist('equipes')
     usuarios_ids = request.POST.getlist('usuarios')
+    cascade = request.POST.get('aplicar_subpastas') == 'on'
 
     pasta = get_object_or_404(
         _editable_folders_queryset(request.user).prefetch_related('subpastas'),
@@ -828,8 +989,11 @@ def compartilhar_pasta(request):
     nivel_acesso = normalize_access_level(request.user, nivel_acesso)
     equipes = Equipe.objects.filter(id__in=equipes_ids)
     usuarios = User.objects.filter(id__in=usuarios_ids, is_active=True)
-    _apply_folder_permissions(pasta, nivel_acesso, equipes, usuarios)
-    messages.success(request, f"Permissoes aplicadas a pasta '{pasta.nome}' e suas subpastas.")
+    apply_folder_permissions(pasta, nivel_acesso, equipes, usuarios, cascade=cascade)
+    if cascade:
+        messages.success(request, f"Permissoes aplicadas a pasta '{pasta.nome}' e a todas as suas subpastas.")
+    else:
+        messages.success(request, f"Permissoes aplicadas a pasta '{pasta.nome}'. Subpastas mantiveram suas permissoes.")
     return redirect('minha_biblioteca')
 
 
@@ -842,7 +1006,7 @@ def parar_compartilhamento(request, pasta_id):
     _require_folder_editor(request.user, pasta)
 
     if request.method == 'POST':
-        _apply_folder_permissions(pasta, PastaPersonalizada.ACESSO_PRIVADO)
+        apply_folder_permissions(pasta, PastaPersonalizada.ACESSO_PRIVADO)
         messages.success(request, f"A pasta '{pasta.nome}' voltou a ser privada.")
 
     return redirect('minha_biblioteca')

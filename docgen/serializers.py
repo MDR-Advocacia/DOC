@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import DocumentoGerado, ExecucaoCapturaProcesso, Processo, Template
+from .models import DocumentoGerado, Template
 
 
 class TemplateSerializer(serializers.ModelSerializer):
@@ -15,46 +15,3 @@ class DocumentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentoGerado
         fields = ['id', 'template', 'template_nome', 'arquivo_final', 'data_geracao', 'usuario']
-
-
-class ProcessoSerializer(serializers.ModelSerializer):
-    usuario_email = serializers.CharField(source='usuario.username', read_only=True)
-    status_label = serializers.CharField(source='get_status_atual_display', read_only=True)
-
-    class Meta:
-        model = Processo
-        fields = [
-            'id',
-            'numero_cnj',
-            'tribunal_codigo',
-            'tribunal_nome',
-            'status_atual',
-            'status_label',
-            'ultima_mensagem',
-            'usuario_email',
-            'referencia_interna',
-            'observacao',
-            'ultimo_sucesso_em',
-        ]
-
-
-class ExecucaoCapturaProcessoSerializer(serializers.ModelSerializer):
-    processo = ProcessoSerializer(read_only=True)
-    status_label = serializers.CharField(source='get_status_display', read_only=True)
-
-    class Meta:
-        model = ExecucaoCapturaProcesso
-        fields = [
-            'id',
-            'processo',
-            'status',
-            'status_label',
-            'worker_id',
-            'tentativa',
-            'iniciada_em',
-            'finalizada_em',
-            'heartbeat_em',
-            'mensagem',
-            'tribunal_url',
-            'lote_id',
-        ]

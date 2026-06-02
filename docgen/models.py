@@ -5,6 +5,17 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 
+
+# Helpers retidos para a migration histórica 0005 conseguir importá-los.
+# O módulo de processos foi removido; estas funções não são mais usadas em runtime.
+def _upload_lote_processos(instance, filename):  # pragma: no cover
+    return f"processos/lotes/{filename}"
+
+
+def _upload_arquivo_processo(instance, filename):  # pragma: no cover
+    return f"processos/arquivos/{filename}"
+
+
 # --- Tabela para as Categorias (NOVO) ---
 class Categoria(models.Model):
     nome = models.CharField(max_length=100, unique=True)
@@ -109,8 +120,8 @@ class PastaPersonalizada(models.Model):
     # Auto-referência: Permite criar Pastas dentro de Pastas
     pasta_pai = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subpastas')
     
-    # Lógica de Compartilhamento
-    compartilhada = models.BooleanField(default=False)
+    # Lógica de Compartilhamento — derivada de `nivel_acesso`.
+    # `compartilhada` (legado) foi removido; use `pasta.nivel_acesso != ACESSO_PRIVADO`.
     nivel_acesso = models.CharField(max_length=20, choices=ACESSO_CHOICES, default=ACESSO_PRIVADO)
     equipes_permitidas = models.ManyToManyField(Equipe, blank=True, related_name='pastas_acessiveis')
     usuarios_permitidos = models.ManyToManyField(User, blank=True, related_name='pastas_com_acesso')
@@ -144,168 +155,15 @@ class TemplateFavorito(models.Model):
         return f"{self.usuario.username} favoritou {self.template.titulo}"
 
 
-class ProcessoStatus(models.TextChoices):
-    PENDENTE = 'PENDENTE', 'Pendente'
-    EM_FILA = 'EM_FILA', 'Em fila'
-    PROCESSANDO = 'PROCESSANDO', 'Processando'
-    BAIXADO = 'BAIXADO', 'Baixado'
-    PROCESSO_NAO_ENCONTRADO = 'PROCESSO_NAO_ENCONTRADO', 'Processo nao encontrado'
-    PETICAO_NAO_LOCALIZADA = 'PETICAO_NAO_LOCALIZADA', 'Peticao inicial nao localizada'
-    FALHA_TECNICA = 'FALHA_TECNICA', 'Falha tecnica'
-
-
-class TipoArquivoProcesso(models.TextChoices):
-    PETICAO_INICIAL = 'peticao_inicial', 'Peticao inicial'
-
-
-def _upload_lote_processos(instance, filename):
-    extensao = Path(filename or '').suffix.lower() or '.csv'
-    timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
-    return f"processos/lotes/lote_{instance.usuario_id}_{timestamp}{extensao}"
-
-
-def _upload_arquivo_processo(instance, filename):
-    numero_cnj = re.sub(r'[^0-9]', '', instance.processo.numero_cnj or '') or 'processo'
-    extensao = Path(filename or '').suffix.lower() or '.pdf'
-    nome_base = instance.tipo or 'arquivo'
-    timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
-    return (
-        f"processos/{instance.processo.usuario_id}/{numero_cnj}/"
-        f"{nome_base}_{timestamp}{extensao}"
-    )
-
-
-class LoteImportacaoProcessos(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.PROTECT, related_name='lotes_importacao_processos')
-    arquivo_planilha = models.FileField(upload_to=_upload_lote_processos)
-    total_linhas = models.PositiveIntegerField(default=0)
-    total_validas = models.PositiveIntegerField(default=0)
-    total_invalidas = models.PositiveIntegerField(default=0)
-    total_processos_criados = models.PositiveIntegerField(default=0)
-    total_processos_atualizados = models.PositiveIntegerField(default=0)
-    resultado_importacao = models.JSONField(default=dict, blank=True)
-    criado_em = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-criado_em']
-
-    def __str__(self):
-        return f"Lote #{self.pk} - {self.usuario.username}"
-
-
-class Processo(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='processos')
-    numero_cnj = models.CharField(max_length=25)
-    tribunal_codigo = models.CharField(max_length=4)
-    tribunal_nome = models.CharField(max_length=100)
-    status_atual = models.CharField(
-        max_length=40,
-        choices=ProcessoStatus.choices,
-        default=ProcessoStatus.PENDENTE,
-    )
-    ultima_mensagem = models.TextField(blank=True)
-    observacao = models.TextField(blank=True)
-    referencia_interna = models.CharField(max_length=120, blank=True)
-    ultimo_sucesso_em = models.DateTimeField(null=True, blank=True)
-    criado_em = models.DateTimeField(auto_now_add=True)
-    atualizado_em = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-atualizado_em']
-        constraints = [
-            models.UniqueConstraint(fields=['usuario', 'numero_cnj'], name='uniq_processo_usuario_numero_cnj'),
-        ]
-        indexes = [
-            models.Index(fields=['status_atual', 'tribunal_codigo']),
-        ]
-
-    def __str__(self):
-        return f"{self.numero_cnj} - {self.usuario.username}"
-
-    @property
-    def arquivo_peticao_atual(self):
-        return self.arquivos.filter(
-            tipo=TipoArquivoProcesso.PETICAO_INICIAL,
-            atual=True,
-        ).first()
-
-
-class ExecucaoCapturaProcesso(models.Model):
-    lote = models.ForeignKey(
-        LoteImportacaoProcessos,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='execucoes',
-    )
-    processo = models.ForeignKey(Processo, on_delete=models.CASCADE, related_name='execucoes')
-    status = models.CharField(
-        max_length=40,
-        choices=ProcessoStatus.choices,
-        default=ProcessoStatus.PENDENTE,
-    )
-    worker_id = models.CharField(max_length=120, blank=True)
-    tentativa = models.PositiveIntegerField(default=0)
-    iniciada_em = models.DateTimeField(null=True, blank=True)
-    finalizada_em = models.DateTimeField(null=True, blank=True)
-    heartbeat_em = models.DateTimeField(null=True, blank=True)
-    mensagem = models.TextField(blank=True)
-    tribunal_url = models.URLField(max_length=500, blank=True)
-    criado_em = models.DateTimeField(auto_now_add=True)
-    atualizado_em = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-criado_em']
-        indexes = [
-            models.Index(fields=['status', 'criado_em']),
-        ]
-
-    def __str__(self):
-        return f"Execucao #{self.pk} - {self.processo.numero_cnj}"
-
-
-class ArquivoProcesso(models.Model):
-    processo = models.ForeignKey(Processo, on_delete=models.CASCADE, related_name='arquivos')
-    execucao = models.ForeignKey(
-        ExecucaoCapturaProcesso,
-        on_delete=models.CASCADE,
-        related_name='arquivos',
-    )
-    tipo = models.CharField(
-        max_length=40,
-        choices=TipoArquivoProcesso.choices,
-        default=TipoArquivoProcesso.PETICAO_INICIAL,
-    )
-    arquivo = models.FileField(upload_to=_upload_arquivo_processo)
-    atual = models.BooleanField(default=True)
-    checksum = models.CharField(max_length=64, blank=True)
-    criado_em = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-criado_em']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['processo', 'tipo'],
-                condition=models.Q(atual=True),
-                name='uniq_arquivo_processo_atual_por_tipo',
-            ),
-        ]
-
-    def __str__(self):
-        return f"{self.get_tipo_display()} - {self.processo.numero_cnj}"
-
-
 def _upload_arquivo_armazenado(instance, filename):
     """Path: arquivos/<user_id>/YYYY-MM/<filename>."""
     return f"arquivos/{instance.usuario_id or 'anon'}/{timezone.now():%Y-%m}/{filename}"
 
 
 class ArquivoArmazenado(models.Model):
-    """Arquivos PDF/XLSX/CSV armazenados pelos usuarios para consulta posterior.
+    """Repositório livre de arquivos (PDF/XLSX/CSV) que o usuário sobe para consulta posterior.
 
-    Diferente de DocumentoGerado (que e saida do gerador) e ArquivoProcesso (que e
-    captura de peticao inicial), este e um repositorio livre: o usuario sobe arquivos
-    de referencia, planilhas, documentos diversos para consulta e download.
+    Diferente de DocumentoGerado (saída do gerador de documentos).
     """
 
     TIPO_PDF = 'pdf'

@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from . import api_views, arquivos_views, processos_views, views
+from . import api_views, arquivos_views, views
 
 
 urlpatterns = [
@@ -25,13 +25,8 @@ urlpatterns = [
     path('arquivos/<int:arquivo_id>/mover/', arquivos_views.arquivo_mover, name='arquivo_mover'),
     path('arquivos/<int:arquivo_id>/download/', arquivos_views.arquivo_download, name='arquivo_download'),
     path('arquivos/<int:arquivo_id>/excluir/', arquivos_views.arquivo_excluir, name='arquivo_excluir'),
-    path('processos/', processos_views.processos_lista, name='processos_lista'),
-    path('processos/<int:processo_id>/', processos_views.processo_detalhe, name='processo_detalhe'),
-    path('processos/arquivos/<int:arquivo_id>/download/', processos_views.download_arquivo_processo, name='download_arquivo_processo'),
-    path('processos/lotes/novo/', processos_views.processos_importar_lote, name='processos_importar_lote'),
-    path('processos/admin/monitoramento/', processos_views.processos_monitoramento, name='processos_monitoramento'),
-    path('processos/<int:processo_id>/reprocessar/', processos_views.reprocessar_processo_view, name='reprocessar_processo'),
     path('favoritar/<int:template_id>/', views.toggle_favorito, name='toggle_favorito'),
+    path('biblioteca/adicionar/<int:template_id>/', views.adicionar_favorito, name='adicionar_favorito'),
     path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),
@@ -44,6 +39,7 @@ urlpatterns = [
     path('painel-usuarios/', views.gerenciar_usuarios, name='gerenciar_usuarios'),
     path('disparo-obrigacao-fazer/', views.disparar_obrigacao_fazer, name='disparar_obrigacao_fazer'),
     path('novo-modelo/', views.criar_template, name='criar_template'),
+    path('novo-modelo/sugerir-ia/', views.sugerir_template_ia, name='sugerir_template_ia'),
     path('configurar/<int:template_id>/', views.configurar_template, name='configurar_template'),
     path('gestao-equipes/', views.gerenciar_equipes, name='gerenciar_equipes'),
     path('gestao-equipes/<int:equipe_id>/membros/', views.gerenciar_membros_equipe, name='gerenciar_membros_equipe'),
@@ -53,8 +49,4 @@ urlpatterns = [
     path('definir-senha/', views.definir_senha_primeiro_acesso, name='definir_primeira_senha'),
     path('api/v1/biblioteca/', api_views.BibliotecaAPIView.as_view(), name='api_biblioteca'),
     path('api/v1/gerar/', api_views.GerarDocumentoAPIView.as_view(), name='api_gerar'),
-    path('api/v1/processos/worker/claim/', api_views.WorkerClaimAPIView.as_view(), name='api_processos_worker_claim'),
-    path('api/v1/processos/worker/<int:execucao_id>/heartbeat/', api_views.WorkerHeartbeatAPIView.as_view(), name='api_processos_worker_heartbeat'),
-    path('api/v1/processos/worker/<int:execucao_id>/complete/', api_views.WorkerCompleteAPIView.as_view(), name='api_processos_worker_complete'),
-    path('api/v1/processos/worker/<int:execucao_id>/fail/', api_views.WorkerFailAPIView.as_view(), name='api_processos_worker_fail'),
 ]

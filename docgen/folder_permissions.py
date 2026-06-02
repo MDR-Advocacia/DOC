@@ -22,7 +22,6 @@ def accessible_folders_queryset(user, escopo=None):
     return qs.filter(
         Q(usuario=user)
         | Q(nivel_acesso=PastaPersonalizada.ACESSO_EQUIPES, equipes_permitidas__in=equipes)
-        | Q(compartilhada=True, equipes_permitidas__in=equipes)
         | Q(nivel_acesso=PastaPersonalizada.ACESSO_RESTRITO, usuarios_permitidos=user)
     ).distinct()
 
@@ -50,7 +49,7 @@ def can_access_folder(user, pasta):
         return True
     if pasta.nivel_acesso == PastaPersonalizada.ACESSO_RESTRITO:
         return pasta.usuarios_permitidos.filter(id=user.id).exists()
-    if pasta.nivel_acesso == PastaPersonalizada.ACESSO_EQUIPES or pasta.compartilhada:
+    if pasta.nivel_acesso == PastaPersonalizada.ACESSO_EQUIPES:
         return pasta.equipes_permitidas.filter(
             Q(membros=user) | Q(supervisores=user)
         ).exists()
@@ -68,13 +67,16 @@ def normalize_access_level(user, nivel_acesso):
     return nivel_acesso
 
 
-def apply_folder_permissions(pasta, nivel_acesso, equipes=None, usuarios=None):
+def apply_folder_permissions(pasta, nivel_acesso, equipes=None, usuarios=None, cascade=False):
+    """Aplica permissões à pasta. Se `cascade=True`, propaga recursivamente para
+    todas as subpastas (sobrescrevendo as permissões delas). Quando `cascade=False`
+    (default), subpastas mantêm suas próprias permissões.
+    """
     equipes = equipes if equipes is not None else Equipe.objects.none()
     usuarios = usuarios if usuarios is not None else pasta.usuarios_permitidos.model.objects.none()
 
     pasta.nivel_acesso = nivel_acesso
-    pasta.compartilhada = nivel_acesso != PastaPersonalizada.ACESSO_PRIVADO
-    pasta.save(update_fields=['nivel_acesso', 'compartilhada'])
+    pasta.save(update_fields=['nivel_acesso'])
 
     if nivel_acesso == PastaPersonalizada.ACESSO_EQUIPES:
         pasta.equipes_permitidas.set(equipes)
@@ -86,13 +88,13 @@ def apply_folder_permissions(pasta, nivel_acesso, equipes=None, usuarios=None):
         pasta.equipes_permitidas.clear()
         pasta.usuarios_permitidos.clear()
 
-    for subpasta in pasta.subpastas.all():
-        apply_folder_permissions(subpasta, nivel_acesso, equipes, usuarios)
+    if cascade:
+        for subpasta in pasta.subpastas.all():
+            apply_folder_permissions(subpasta, nivel_acesso, equipes, usuarios, cascade=True)
 
 
 def copy_folder_permissions(origem, destino):
     destino.nivel_acesso = origem.nivel_acesso
-    destino.compartilhada = origem.compartilhada
-    destino.save(update_fields=['nivel_acesso', 'compartilhada'])
+    destino.save(update_fields=['nivel_acesso'])
     destino.equipes_permitidas.set(origem.equipes_permitidas.all())
     destino.usuarios_permitidos.set(origem.usuarios_permitidos.all())

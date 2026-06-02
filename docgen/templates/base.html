@@ -17,17 +17,15 @@
 </head>
 <body>
 {% if user.is_authenticated %}
-{% url 'processos_lista' as url_processos_lista %}
-{% url 'calculadora_lista' as url_calculadora_lista %}
 {% url 'disparar_obrigacao_fazer' as url_disparar %}
-{% url 'processos_monitoramento' as url_monitoramento %}
-{% url 'processos_importar_lote' as url_importar_lote %}
 {% url 'arquivos_lista' as url_arquivos_lista %}
+{% url 'sugerir_template_ia' as url_sugerir_ia %}
+{% url 'criar_template' as url_criar_template %}
 <div class="apex-shell">
 <aside class="sb">
-<a href="{% url 'home' %}" class="sb-brand">
-<div class="sb-logo"><img src="{% static 'img/logo-duna-colorida.png' %}" alt="Duna" onerror="this.parentElement.textContent='D';this.remove();"></div>
-<div><div class="doc-mark">DOC</div><small>by MDR Advocacia</small></div>
+<a href="{% url 'home' %}" class="sb-brand" title="DOC by DUNATECH">
+<img src="{% static 'img/dunatech-logo.png' %}" alt="DUNATECH" class="dunatech-logo">
+<span class="doc-mark">DOC</span>
 </a>
 <nav class="sb-nav" aria-label="Navegação principal">
 <a href="{% url 'home' %}" class="sb-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fa-solid fa-house"></i>Dashboard</a>
@@ -36,11 +34,6 @@
 <a href="{% url 'minha_biblioteca' %}" class="sb-item {% if request.resolver_match.url_name == 'minha_biblioteca' %}active{% endif %}"><i class="fa-solid fa-bookmark"></i>Minha Biblioteca</a>
 <a href="{% url 'biblioteca' %}" class="sb-item {% if request.resolver_match.url_name == 'biblioteca' %}active{% endif %}"><i class="fa-solid fa-book"></i>Acervo Geral</a>
 {% if url_arquivos_lista %}<a href="{{ url_arquivos_lista }}" class="sb-item {% if request.resolver_match.url_name == 'arquivos_lista' %}active{% endif %}"><i class="fa-solid fa-folder-open"></i>Arquivos</a>{% endif %}
-{% if url_processos_lista or url_calculadora_lista %}
-<div class="sb-section">Operação</div>
-{% if url_processos_lista %}<a href="{{ url_processos_lista }}" class="sb-item {% if request.resolver_match.url_name == 'processos_lista' %}active{% endif %}"><i class="fa-solid fa-folder-tree"></i>Processos</a>{% endif %}
-{% if url_calculadora_lista %}<a href="{{ url_calculadora_lista }}" class="sb-item {% if 'calculadora' in request.resolver_match.url_name|default:'' %}active{% endif %}"><i class="fa-solid fa-scale-balanced"></i>Cálculo Cível</a>{% endif %}
-{% endif %}
 <div class="sb-section">Histórico</div>
 <a href="{% url 'dashboard' %}" class="sb-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-clock-rotate-left"></i>Documentos gerados</a>
 <a href="{% url 'guia_modelos' %}" class="sb-item {% if request.resolver_match.url_name == 'guia_modelos' %}active{% endif %}"><i class="fa-solid fa-circle-question"></i>FAQ</a>
@@ -49,9 +42,9 @@
 {% if user.is_staff %}<a href="{% url 'gerenciar_usuarios' %}" class="sb-item {% if request.resolver_match.url_name == 'gerenciar_usuarios' %}active{% endif %}"><i class="fa-solid fa-users-gear"></i>Usuários</a>{% endif %}
 <a href="{% url 'gerenciar_equipes' %}" class="sb-item {% if 'equipe' in request.resolver_match.url_name|default:'' %}active{% endif %}"><i class="fa-solid fa-sitemap"></i>Equipes</a>
 {% if user.is_staff %}
+{% if url_criar_template %}<a href="{{ url_criar_template }}" class="sb-item {% if request.resolver_match.url_name == 'criar_template' %}active{% endif %}"><i class="fa-solid fa-file-circle-plus"></i>Novo modelo</a>{% endif %}
+{% if url_sugerir_ia %}<a href="{{ url_sugerir_ia }}" class="sb-item {% if request.resolver_match.url_name == 'sugerir_template_ia' %}active{% endif %}"><i class="fa-solid fa-wand-magic-sparkles"></i>Sugerir modelo (IA)</a>{% endif %}
 {% if url_disparar %}<a href="{{ url_disparar }}" class="sb-item {% if request.resolver_match.url_name == 'disparar_obrigacao_fazer' %}active{% endif %}"><i class="fa-solid fa-paper-plane"></i>Disparo administrativo</a>{% endif %}
-{% if url_monitoramento %}<a href="{{ url_monitoramento }}" class="sb-item {% if request.resolver_match.url_name == 'processos_monitoramento' %}active{% endif %}"><i class="fa-solid fa-chart-line"></i>Monitorar processos</a>{% endif %}
-{% if url_importar_lote %}<a href="{{ url_importar_lote }}" class="sb-item {% if request.resolver_match.url_name == 'processos_importar_lote' %}active{% endif %}"><i class="fa-solid fa-file-arrow-up"></i>Importar lote</a>{% endif %}
 {% endif %}
 {% endif %}
 </nav>
@@ -60,9 +53,9 @@
 
 <div class="offcanvas offcanvas-start" tabindex="-1" id="sbMobile" style="width: 280px;">
 <div class="offcanvas-header">
-<div class="sb-brand p-0 border-0">
-<div class="sb-logo"><img src="{% static 'img/logo-duna-colorida.png' %}" alt="Duna" onerror="this.parentElement.textContent='D';this.remove();"></div>
-<div><div class="doc-mark">DOC</div><small>by MDR Advocacia</small></div>
+<div class="sb-brand p-0 border-0" style="height:auto;">
+<img src="{% static 'img/dunatech-logo.png' %}" alt="DUNATECH" class="dunatech-logo">
+<span class="doc-mark">DOC</span>
 </div>
 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
 </div>
@@ -74,11 +67,6 @@
 <a href="{% url 'minha_biblioteca' %}" class="sb-item"><i class="fa-solid fa-bookmark"></i>Minha Biblioteca</a>
 <a href="{% url 'biblioteca' %}" class="sb-item"><i class="fa-solid fa-book"></i>Acervo Geral</a>
 {% if url_arquivos_lista %}<a href="{{ url_arquivos_lista }}" class="sb-item"><i class="fa-solid fa-folder-open"></i>Arquivos</a>{% endif %}
-{% if url_processos_lista or url_calculadora_lista %}
-<div class="sb-section">Operação</div>
-{% if url_processos_lista %}<a href="{{ url_processos_lista }}" class="sb-item"><i class="fa-solid fa-folder-tree"></i>Processos</a>{% endif %}
-{% if url_calculadora_lista %}<a href="{{ url_calculadora_lista }}" class="sb-item"><i class="fa-solid fa-scale-balanced"></i>Cálculo Cível</a>{% endif %}
-{% endif %}
 <div class="sb-section">Histórico</div>
 <a href="{% url 'dashboard' %}" class="sb-item"><i class="fa-solid fa-clock-rotate-left"></i>Documentos gerados</a>
 <a href="{% url 'guia_modelos' %}" class="sb-item"><i class="fa-solid fa-circle-question"></i>FAQ</a>
@@ -87,9 +75,9 @@
 {% if user.is_staff %}<a href="{% url 'gerenciar_usuarios' %}" class="sb-item"><i class="fa-solid fa-users-gear"></i>Usuários</a>{% endif %}
 <a href="{% url 'gerenciar_equipes' %}" class="sb-item"><i class="fa-solid fa-sitemap"></i>Equipes</a>
 {% if user.is_staff %}
+{% if url_criar_template %}<a href="{{ url_criar_template }}" class="sb-item"><i class="fa-solid fa-file-circle-plus"></i>Novo modelo</a>{% endif %}
+{% if url_sugerir_ia %}<a href="{{ url_sugerir_ia }}" class="sb-item"><i class="fa-solid fa-wand-magic-sparkles"></i>Sugerir modelo (IA)</a>{% endif %}
 {% if url_disparar %}<a href="{{ url_disparar }}" class="sb-item"><i class="fa-solid fa-paper-plane"></i>Disparo administrativo</a>{% endif %}
-{% if url_monitoramento %}<a href="{{ url_monitoramento }}" class="sb-item"><i class="fa-solid fa-chart-line"></i>Monitorar processos</a>{% endif %}
-{% if url_importar_lote %}<a href="{{ url_importar_lote }}" class="sb-item"><i class="fa-solid fa-file-arrow-up"></i>Importar lote</a>{% endif %}
 {% endif %}
 {% endif %}
 </nav>

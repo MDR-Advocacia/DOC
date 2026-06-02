@@ -37,51 +37,14 @@
 <a href="?pasta=sem_pasta" class="list-group-item {% if pasta_atual_id == 'sem_pasta' %}active{% endif %}">
 <i class="fa-solid fa-box-open" style="width:18px"></i> Sem pasta
 </a>
-{% for pasta in pastas %}
-<div class="list-group-item d-flex justify-content-between {% if pasta_atual_id == pasta.id|stringformat:'s' %}active{% endif %}">
-<a href="?pasta={{ pasta.id }}" class="text-decoration-none text-truncate flex-grow-1 me-2" style="color: inherit;">
-<i class="fa-solid fa-folder me-2 {% if pasta_atual_id != pasta.id|stringformat:'s' %}text-warning{% endif %}" style="width:18px"></i>{{ pasta.nome }}
-</a>
-<div class="d-flex gap-2 align-items-center">
-{% if pasta.subpastas.exists %}
-<button class="btn btn-link p-0 btn-collapse" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ pasta.id }}" aria-expanded="false" title="Expandir">
-<i class="fa-solid fa-chevron-down small"></i>
-</button>
+{% if minhas_pastas %}
+<div class="sb-section" style="padding:.85rem .5rem .25rem;font-size:.62rem">Minhas pastas</div>
+{% for pasta in minhas_pastas %}{% include 'docgen/_pasta_item.html' %}{% endfor %}
 {% endif %}
-{% if pasta.usuario == request.user or request.user.is_staff %}
-{% if pasta.compartilhada %}<span class="chip info" title="{{ pasta.get_nivel_acesso_display }}"><i class="fa-solid fa-user-lock"></i></span>{% endif %}
-<button class="btn btn-link p-0" onclick="abrirModalCompartilhar('{{ pasta.id }}', '{{ pasta.nivel_acesso }}', '{% for eq in pasta.equipes_permitidas.all %}{{ eq.id }}{% if not forloop.last %},{% endif %}{% endfor %}', '{% for usr in pasta.usuarios_permitidos.all %}{{ usr.id }}{% if not forloop.last %},{% endif %}{% endfor %}')" title="Permissoes"><i class="fa-solid fa-user-gear" style="color: hsl(var(--duna-blue));"></i></button>
-{% if pasta.compartilhada %}
-<form action="{% url 'parar_compartilhamento' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Tornar privado novamente?')">
-{% csrf_token %}
-<button type="submit" class="btn btn-link p-0 text-warning" title="Tornar privada"><i class="fa-solid fa-lock"></i></button>
-</form>
+{% if pastas_compartilhadas_comigo %}
+<div class="sb-section" style="padding:.85rem .5rem .25rem;font-size:.62rem">Compartilhadas comigo</div>
+{% for pasta in pastas_compartilhadas_comigo %}{% include 'docgen/_pasta_item.html' %}{% endfor %}
 {% endif %}
-<form action="{% url 'excluir_pasta' pasta.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir?')">
-{% csrf_token %}
-<button type="submit" class="btn btn-link p-0 text-hover-danger" style="color: hsl(var(--apex-text-soft));"><i class="fa-solid fa-trash-can"></i></button>
-</form>
-{% else %}
-<span class="opacity-50"><i class="fa-solid fa-users-viewfinder"></i></span>
-{% endif %}
-</div>
-</div>
-<div class="collapse" id="collapse-{{ pasta.id }}" data-bs-parent="#accordionPastas">
-{% for sub in pasta.subpastas.all %}
-<div class="list-group-item subpasta-item d-flex justify-content-between {% if pasta_atual_id == sub.id|stringformat:'s' %}active{% endif %}">
-<a href="?pasta={{ sub.id }}" class="text-decoration-none text-truncate flex-grow-1" style="color: inherit;">
-<i class="fa-regular fa-folder-open me-1 {% if pasta_atual_id != sub.id|stringformat:'s' %}text-warning{% endif %}"></i> {{ sub.nome }}
-</a>
-{% if sub.usuario == request.user or request.user.is_staff %}
-<form action="{% url 'excluir_pasta' sub.id %}" method="post" class="m-0 p-0" onsubmit="return confirm('Excluir subpasta?')">
-{% csrf_token %}
-<button type="submit" class="btn btn-link p-0 text-hover-danger" style="color: hsl(var(--apex-text-soft));"><i class="fa-solid fa-trash-can"></i></button>
-</form>
-{% endif %}
-</div>
-{% endfor %}
-</div>
-{% endfor %}
 </div>
 </div>
 </div>
@@ -96,6 +59,7 @@
 <div class="dropdown">
 <button class="btn btn-light btn-sm" type="button" data-bs-toggle="dropdown"><i class="fa-solid fa-ellipsis-vertical"></i></button>
 <ul class="dropdown-menu dropdown-menu-end">
+{% if fav.usuario_id == request.user.id %}
 <li class="dropdown-header">Mover para...</li>
 <li><a class="dropdown-item btn-mover" href="#" data-id="{{ fav.template.id }}" data-pasta="nenhuma">Sem pasta</a></li>
 {% for p in pastas_editaveis %}
@@ -106,6 +70,10 @@
 {% endfor %}
 <li><hr class="dropdown-divider"></li>
 <li><a class="dropdown-item btn-remover-favorito" href="#" data-id="{{ fav.template.id }}" style="color: hsl(var(--apex-error));">Remover favorito</a></li>
+{% else %}
+<li class="dropdown-header">Compartilhado por {{ fav.usuario.get_full_name|default:fav.usuario.username }}</li>
+<li><a class="dropdown-item btn-adicionar-favorito" href="#" data-id="{{ fav.template.id }}"><i class="fa-solid fa-plus me-1"></i> Adicionar à minha biblioteca</a></li>
+{% endif %}
 </ul>
 </div>
 </div>
@@ -245,6 +213,14 @@
 </div>
 </div>
 {% endif %}
+
+<div class="form-check mt-3 pt-3" style="border-top: 1px solid hsl(var(--apex-border));">
+<input class="form-check-input" type="checkbox" name="aplicar_subpastas" id="share_cascade">
+<label class="form-check-label" for="share_cascade">
+<strong>Aplicar também às subpastas</strong>
+<div class="text-muted-apex" style="font-size: .78rem;">Sobrescreve as permissões de todas as subpastas. Por padrão, subpastas mantêm suas próprias permissões.</div>
+</label>
+</div>
 </div>
 <div class="modal-footer">
 <button type="submit" class="btn btn-primary w-100">Salvar permissões</button>
@@ -288,6 +264,8 @@ function abrirModalCompartilhar(pastaId, nivelAcesso = 'equipes', equipes = '', 
   }
   marcarIds('#modalCompartilhar input[name="equipes"]', equipes);
   marcarIds('#modalCompartilhar input[name="usuarios"]', usuarios);
+  const cascadeCheckbox = document.getElementById('share_cascade');
+  if (cascadeCheckbox) cascadeCheckbox.checked = false;
   modal.show();
 }
 
@@ -315,6 +293,24 @@ document.querySelectorAll('.btn-mover').forEach(button => {
       headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
       body: JSON.stringify({ pasta_id: pastaId })
     }).then(response => { if (response.ok) window.location.reload(); });
+  });
+});
+
+document.querySelectorAll('.btn-adicionar-favorito').forEach(button => {
+  button.addEventListener('click', function(e) {
+    e.preventDefault();
+    const templateId = this.getAttribute('data-id');
+    const link = this;
+    fetch(`/biblioteca/adicionar/${templateId}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    }).then(response => {
+      if (response.ok) {
+        link.innerHTML = '<i class="fa-solid fa-check me-1"></i> Adicionado!';
+        link.classList.add('disabled');
+        setTimeout(() => window.location.reload(), 700);
+      }
+    });
   });
 });
 </script>

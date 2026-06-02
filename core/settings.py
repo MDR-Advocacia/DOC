@@ -70,10 +70,9 @@ ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', [
     "192.168.0.31",
     "doc.mdr.local",
 ])
-# Hosts internos da rede Docker do Coolify — sempre incluídos para que o
-# processos-worker (que chama http://web:8000/...) não bata em DisallowedHost.
-# Esses nomes só resolvem dentro da rede do compose, não são acessíveis externamente.
-for _internal_host in ('web', 'processos-worker'):
+# Hosts internos da rede Docker do Coolify — sempre incluídos para que os
+# serviços do compose resolvam http://web:8000 sem cair em DisallowedHost.
+for _internal_host in ('web',):
     if _internal_host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_internal_host)
 
@@ -251,14 +250,11 @@ EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT') or 30)
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@doc.local')
 SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
 
-PROCESSOS_WORKER_TOKEN = os.environ.get('PROCESSOS_WORKER_TOKEN', 'processos-worker-dev-token')
-PROCESSOS_WORKER_POLL_SECONDS = int(os.environ.get('PROCESSOS_WORKER_POLL_SECONDS') or 15)
-PROCESSOS_WORKER_HEADLESS = _env_as_bool('PROCESSOS_WORKER_HEADLESS', True)
-PROCESSOS_WORKER_BROWSER_PROFILE = os.environ.get(
-    'PROCESSOS_WORKER_BROWSER_PROFILE',
-    str(BASE_DIR / '.processos-browser-profile'),
-)
-PROCESSOS_WORKER_API_BASE_URL = os.environ.get('PROCESSOS_WORKER_API_BASE_URL', 'http://web:8000')
+# --- Anthropic Claude API (sugestão de modelo com IA) ---
+# Key obtida em console.anthropic.com. Se vazia, a feature "Sugerir com IA"
+# fica oculta no UI e os endpoints retornam erro amigável.
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -271,15 +267,6 @@ REST_FRAMEWORK = {
     # --- NOVO: LIMITAÇÃO DE TAXA (Throttling) ---
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle', # Para não logados
-        'rest_framework.throttling.UserRateThrottle'  # Para logados
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '10/minute',   # Desconhecidos: max 10 req/min
-        'user': '100/minute',  # Usuários logados: max 100 req/min
-        'doc_gen': '20/minute', # Específico para gerar documentos (pesado)
-    }
-}
-_framework.throttling.AnonRateThrottle', # Para não logados
         'rest_framework.throttling.UserRateThrottle'  # Para logados
     ],
     'DEFAULT_THROTTLE_RATES': {

@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Sugerir modelo com IA — DOC{% endblock %}
+
+{% block content %}
+<div style="max-width: 880px;">
+
+<div class="page-head">
+<div>
+<span class="eyebrow">Catálogo › Novo modelo</span>
+<h1 style="margin-top:.4rem"><i class="fa-solid fa-wand-magic-sparkles" style="color:hsl(var(--duna-blue))"></i> Sugerir com IA</h1>
+<p class="lead">Suba uma peça já preenchida — a IA identifica o que varia entre clientes e propõe os placeholders.</p>
+</div>
+<a href="{% url 'criar_template' %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-arrow-left"></i> Upload manual</a>
+</div>
+
+<div class="card mb-4">
+<div class="card-body" style="padding: 1.25rem 1.5rem;">
+<div class="d-flex gap-3 align-items-start">
+<div style="font-size:1.5rem;color:hsl(var(--duna-blue));"><i class="fa-solid fa-shield-halved"></i></div>
+<div style="font-size:.88rem;color:hsl(var(--apex-text-muted));">
+<strong style="color:hsl(var(--apex-text));">Dados sensíveis protegidos.</strong>
+Antes de enviar pra IA, o sistema substitui automaticamente CPF, CNPJ, valores em R$, números de processo, datas, e-mails, telefones e CEP por marcadores anônimos. A IA vê só a estrutura.
+</div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-body" style="padding: 2rem;">
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+
+<div class="mb-4">
+<label for="arquivo" class="form-label"><strong>Peça-exemplo (.docx)</strong></label>
+<input type="file" name="arquivo" id="arquivo" class="form-control" accept=".docx" required>
+<div class="form-text">Use uma peça já usada para um cliente real. O sistema redata antes de mandar pra IA.</div>
+</div>
+
+<div class="mb-4">
+<label for="titulo" class="form-label"><strong>Título do modelo</strong></label>
+<input type="text" name="titulo" id="titulo" class="form-control" placeholder="Ex: Contestação Credcesta Cartão" required>
+</div>
+
+<div class="mb-4">
+<label for="descricao" class="form-label">Descrição (opcional)</label>
+<textarea name="descricao" id="descricao" class="form-control" rows="2" placeholder="Quando usar esse modelo, observações..."></textarea>
+</div>
+
+<div class="row g-3 mb-4">
+<div class="col-md-4">
+<label for="setor" class="form-label"><strong>Setor</strong></label>
+<select name="setor" id="setor" class="form-select" required>
+<option value="">Selecione...</option>
+{% for setor in setores %}<option value="{{ setor.id }}">{{ setor.nome }}</option>{% endfor %}
+</select>
+</div>
+<div class="col-md-4">
+<label for="area" class="form-label">Área</label>
+<select name="area" id="area" class="form-select">
+<option value="">—</option>
+{% for area in areas %}<option value="{{ area.id }}">{{ area.nome }}</option>{% endfor %}
+</select>
+</div>
+<div class="col-md-4">
+<label for="categoria" class="form-label">Categoria</label>
+<select name="categoria" id="categoria" class="form-select">
+<option value="">—</option>
+{% for cat in categorias %}<option value="{{ cat.id }}">{{ cat.nome }}</option>{% endfor %}
+</select>
+</div>
+</div>
+
+<div class="alert alert-info" role="alert" style="font-size:.85rem;">
+<i class="fa-solid fa-circle-info"></i>
+<div class="flex-grow-1">
+A análise leva ~5-15 segundos. Você vai ser levado direto pra tela de configuração com os campos já preenchidos — onde pode revisar tipo, nome e remover o que não fizer sentido.
+</div>
+</div>
+
+<button type="submit" class="btn btn-primary" id="btn-submit">
+<i class="fa-solid fa-wand-magic-sparkles"></i> Analisar com IA
+</button>
+</form>
+</div>
+</div>
+
+</div>
+
+<div class="modal fade" id="modalProgresso" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="modalProgressoLabel" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+<div class="modal-body text-center" style="padding: 2.5rem 2rem;">
+<div style="font-size: 2.5rem; color: hsl(var(--duna-blue)); margin-bottom: 1rem;">
+<i class="fa-solid fa-wand-magic-sparkles" id="modalIcon"></i>
+</div>
+<h5 id="modalProgressoLabel" style="font-weight: 600; margin-bottom: .5rem;">Analisando com IA</h5>
+<p class="text-muted-apex mb-4" id="modalEtapa" style="font-size: .88rem; min-height: 2.4rem;">Lendo o documento…</p>
+<div class="progress" style="height: 8px; background: hsl(var(--apex-surface-2));">
+<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="modalBarra" style="width: 5%; background: linear-gradient(90deg, hsl(var(--duna-navy)), hsl(var(--duna-blue)));"></div>
+</div>
+<p class="text-muted-apex mt-3 mb-0" style="font-size: .75rem;">Não feche essa janela. O processo leva entre 30 e 90 segundos.</p>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  const ETAPAS = [
+    { texto: "Lendo o documento…",                        progresso: 10 },
+    { texto: "Redatando dados sensíveis (CPF, valores)…", progresso: 20 },
+    { texto: "Enviando para análise da IA…",              progresso: 35 },
+    { texto: "Identificando variáveis no texto…",         progresso: 55 },
+    { texto: "Propondo placeholders…",                    progresso: 75 },
+    { texto: "Aplicando placeholders no documento…",      progresso: 90 },
+    { texto: "Quase lá, finalizando…",                    progresso: 97 },
+  ];
+
+  const form = document.querySelector('form[enctype="multipart/form-data"]');
+  if (!form) {
+    console.error('[sugerir-ia] form não encontrado');
+    return;
+  }
+
+  form.addEventListener('submit', function(e) {
+    const arquivo = document.getElementById('arquivo').files[0];
+    if (!arquivo) return;
+
+    if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+      console.error('[sugerir-ia] Bootstrap não carregado; pulando modal');
+      const btn = document.getElementById('btn-submit');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analisando…';
+      }
+      return;
+    }
+
+    const modalEl = document.getElementById('modalProgresso');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    const etapaEl = document.getElementById('modalEtapa');
+    const barraEl = document.getElementById('modalBarra');
+    let i = 0;
+
+    // Distribui as etapas ao longo de ~60s (8.5s por etapa).
+    // Se o backend responder antes, a página recarrega e o modal some junto.
+    // Se demorar mais, trava na última etapa até a resposta chegar.
+    const interval = setInterval(() => {
+      if (i >= ETAPAS.length) { clearInterval(interval); return; }
+      etapaEl.textContent = ETAPAS[i].texto;
+      barraEl.style.width = ETAPAS[i].progresso + '%';
+      i++;
+    }, 8500);
+  });
+})();
+</script>
+{% endblock %}

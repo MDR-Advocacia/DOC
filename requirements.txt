@@ -11,3 +11,4 @@ djangorestframework>=3.16,<4
 drf-yasg>=1.21,<2
 pypdf>=6.9,<7
 openpyxl>=3.1,<4
+anthropic>=0.40,<1

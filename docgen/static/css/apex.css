@@ -55,17 +55,31 @@ html, body {
 
 body { display: flex; flex-direction: column; min-height: 100vh; }
 
-/* Marca-d'água sutil */
+/* Marca-d'água da onda DUNATECH — fixa, centralizada, extremamente sutil.
+   pointer-events:none garante que não bloqueia cliques.
+   z-index: -1 mantém ela atrás de todo o conteúdo SEM criar stacking context
+   que confine modais do Bootstrap (que usam z-index 1050+). */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  width: min(640px, 60vmin);
+  height: min(640px, 60vmin);
+  transform: translate(-50%, -50%);
+  background-image: url("/static/img/dunatech-icon.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.04;
   pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(circle at 12% 18%, hsl(var(--duna-blue) / .06), transparent 38%),
-    radial-gradient(circle at 88% 82%, hsl(var(--duna-navy) / .06), transparent 42%);
+  z-index: -1;
 }
+
+/* O body precisa ter background transparente ou semi pra que o ::before
+   com z-index negativo seja visível. */
+html, body { background-color: transparent; }
+html { background: hsl(var(--apex-bg)); }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Inter', system-ui, sans-serif;
@@ -91,6 +105,18 @@ a:hover { color: hsl(217 100% 48%); }
 }
 
 /* ---------- 3. Wordmark DOC e logo ---------- */
+.dunatech-logo {
+  height: 26px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.dunatech-logo-lg {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+}
+
 .doc-mark {
   font-family: 'Jura', 'Inter', sans-serif;
   font-weight: 500;
@@ -117,8 +143,6 @@ a:hover { color: hsl(217 100% 48%); }
   grid-template-columns: 260px 1fr;
   flex: 1;
   min-height: 100vh;
-  position: relative;
-  z-index: 1;
 }
 @media (max-width: 991.98px) {
   .apex-shell { grid-template-columns: 1fr; }
@@ -142,12 +166,15 @@ a:hover { color: hsl(217 100% 48%); }
 .sb-brand {
   display: flex;
   align-items: center;
-  gap: .6rem;
-  padding: 1rem 1.25rem 1.25rem;
+  justify-content: center;
+  gap: .55rem;
+  padding: 1rem 1.25rem;
+  height: 60px;
   border-bottom: 1px solid hsl(var(--apex-border));
   text-decoration: none;
 }
 .sb-brand:hover { color: inherit; }
+.sb-brand .doc-mark { font-size: 1.65rem; }
 
 .sb-logo {
   width: 32px;
@@ -403,9 +430,7 @@ a:hover { color: hsl(217 100% 48%); }
 .content {
   flex: 1;
   padding: 2rem;
-  max-width: 1400px;
   width: 100%;
-  margin: 0 auto;
 }
 @media (max-width: 991.98px) { .content { padding: 1.25rem 1rem 2rem; } }
 
