@@ -119,22 +119,12 @@ a:hover { color: hsl(217 100% 48%); }
 
 .doc-mark {
   font-family: 'Jura', 'Inter', sans-serif;
-  font-weight: 500;
+  font-weight: 700;
   font-size: 1.55rem;
   line-height: 1;
-  background: linear-gradient(90deg, hsl(var(--duna-navy)) 0%, hsl(var(--duna-blue)) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 4px hsl(var(--duna-blue) / .35));
-  animation: doc-mark-pulse 2.6s ease-in-out infinite;
-}
-@keyframes doc-mark-pulse {
-  0%, 100% { filter: drop-shadow(0 0 3px hsl(var(--duna-blue) / .35)); }
-  50%      { filter: drop-shadow(0 0 8px hsl(var(--duna-blue) / .6)); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .doc-mark { animation: none; }
+  -webkit-text-stroke: 1.5px hsl(var(--duna-blue));
+  color: hsl(var(--duna-blue) / .12);
+  letter-spacing: .04em;
 }
 
 /* ---------- 4. Shell de aplicação ---------- */
@@ -178,8 +168,8 @@ a:hover { color: hsl(217 100% 48%); }
 /* Wordmark grande pra cabeçalho da sidebar (DOC ocupando sozinho) */
 .doc-mark-xl {
   font-size: 2.5rem !important;
-  letter-spacing: .04em;
-  font-weight: 600 !important;
+  letter-spacing: .05em;
+  -webkit-text-stroke-width: 2px;
 }
 
 .sb-logo {

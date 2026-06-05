@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Wordmark DOC — preview outline</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Jura:wght@500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --duna-navy: 220 74% 14%;
+    --duna-blue: 217 100% 56%;
+    --bg: hsl(220 15% 97%);
+    --card: #ffffff;
+    --border: hsl(220 20% 90%);
+    --text-soft: hsl(220 15% 45%);
+    --text-strong: hsl(220 30% 20%);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 2rem 4rem;
+    background: var(--bg);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text-strong);
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  .lead { color: var(--text-soft); margin: 0 0 2rem; font-size: .9rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+  }
+  .swatch {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 2rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+    position: relative;
+  }
+  .number {
+    position: absolute;
+    top: -14px;
+    left: 14px;
+    background: var(--text-strong);
+    color: #fff;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 600;
+  }
+  .wm {
+    font-size: 3.5rem;
+    line-height: 1;
+    display: inline-block;
+  }
+  .meta {
+    font-size: .72rem;
+    color: var(--text-soft);
+    text-align: center;
+    line-height: 1.4;
+    border-top: 1px solid var(--border);
+    padding-top: .85rem;
+    width: 100%;
+  }
+  .meta strong { color: var(--text-strong); font-weight: 600; }
+
+  /* ===== Variações do outline ===== */
+
+  /* 1 — Original do preview anterior (Jura 700, stroke 2px azul) */
+  .v1 {
+    font-family: 'Jura', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 2px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .04em;
+  }
+
+  /* 2 — Stroke fino e elegante (1.5px) */
+  .v2 {
+    font-family: 'Jura', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 1.5px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .04em;
+  }
+
+  /* 3 — Stroke ultra fino (1px) — minimal */
+  .v3 {
+    font-family: 'Jura', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 1px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .05em;
+  }
+
+  /* 4 — Stroke grosso (3px) — mais presente */
+  .v4 {
+    font-family: 'Jura', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 3px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .06em;
+  }
+
+  /* 5 — Stroke navy (cor mais escura) */
+  .v5 {
+    font-family: 'Jura', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 2px hsl(var(--duna-navy));
+    color: transparent;
+    letter-spacing: .04em;
+  }
+
+  /* 6 — Outline com glow externo (luminoso) */
+  .v6 {
+    font-family: 'Jura', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 2px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .04em;
+    filter: drop-shadow(0 0 6px hsl(var(--duna-blue) / .55))
+            drop-shadow(0 0 14px hsl(var(--duna-blue) / .25));
+  }
+
+  /* 7 — Outline + fill semi-transparente azul-soft (vidro) */
+  .v7 {
+    font-family: 'Jura', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 1.5px hsl(var(--duna-blue));
+    color: hsl(var(--duna-blue) / .12);
+    letter-spacing: .04em;
+  }
+
+  /* 8 — Outline + fill gradient suave (técnica composta) */
+  .v8 {
+    font-family: 'Jura', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 1.5px hsl(var(--duna-blue));
+    background: linear-gradient(180deg, hsl(var(--duna-blue) / .25) 0%, hsl(var(--duna-blue) / 0) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: .04em;
+  }
+
+  /* 9 — Outline pulsante (anima entre fino e médio) */
+  .v9 {
+    font-family: 'Jura', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 2px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .04em;
+    animation: stroke-glow 2.6s ease-in-out infinite;
+  }
+
+  /* 10 — Stroke duplo: navy externo (mais grosso) + azul interno (mais fino) */
+  /* Truque: stroke base navy + text-shadow azul rebaixado pra simular dupla camada */
+  .v10 {
+    font-family: 'Jura', sans-serif; font-weight: 800;
+    -webkit-text-stroke: 2.5px hsl(var(--duna-navy));
+    color: transparent;
+    letter-spacing: .05em;
+    text-shadow:
+      0 0 0 hsl(var(--duna-blue)),
+      1px 0 0 hsl(var(--duna-blue) / .35);
+  }
+
+  /* 11 — Peso 600 (mais light) + stroke fino */
+  .v11 {
+    font-family: 'Jura', sans-serif; font-weight: 600;
+    -webkit-text-stroke: 1.5px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .04em;
+  }
+
+  /* 12 — Outfit 700 outline (geométrica) */
+  .v12 {
+    font-family: 'Outfit', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 2px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .02em;
+  }
+
+  /* 13 — Space Grotesk 700 outline (variável + leve grotesco) */
+  .v13 {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 2px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .02em;
+  }
+
+  /* 14 — Plus Jakarta Sans 800 outline (mais peso, ar moderno) */
+  .v14 {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800;
+    -webkit-text-stroke: 2px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .02em;
+  }
+
+  /* 15 — Bricolage Grotesque 700 outline (display, leve calor) */
+  .v15 {
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700;
+    -webkit-text-stroke: 2px hsl(var(--duna-blue));
+    color: transparent;
+    letter-spacing: .02em;
+  }
+
+  @keyframes stroke-glow {
+    0%, 100% {
+      filter: drop-shadow(0 0 2px hsl(var(--duna-blue) / .3));
+    }
+    50% {
+      filter: drop-shadow(0 0 10px hsl(var(--duna-blue) / .65))
+              drop-shadow(0 0 18px hsl(var(--duna-blue) / .25));
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Wordmark DOC — variações do outline</h1>
+<p class="lead">Tudo partindo do conceito vazado que você gostou. Variando espessura, cor, fonte e combinações com glow/fill.</p>
+
+<div class="grid">
+
+  <div class="swatch"><div class="number">1</div><span class="wm v1">DOC</span><div class="meta"><strong>Referência</strong> · Jura 700 · stroke 2px azul</div></div>
+  <div class="swatch"><div class="number">2</div><span class="wm v2">DOC</span><div class="meta">Jura 700 · stroke <strong>1.5px</strong> azul (mais elegante)</div></div>
+  <div class="swatch"><div class="number">3</div><span class="wm v3">DOC</span><div class="meta">Jura 700 · stroke <strong>1px</strong> azul (minimal)</div></div>
+  <div class="swatch"><div class="number">4</div><span class="wm v4">DOC</span><div class="meta">Jura 700 · stroke <strong>3px</strong> azul (mais presente)</div></div>
+  <div class="swatch"><div class="number">5</div><span class="wm v5">DOC</span><div class="meta">Jura 700 · stroke 2px <strong>navy</strong> (cor mais sóbria)</div></div>
+  <div class="swatch"><div class="number">6</div><span class="wm v6">DOC</span><div class="meta">Jura 700 · stroke 2px · <strong>glow externo</strong> (luminoso)</div></div>
+  <div class="swatch"><div class="number">7</div><span class="wm v7">DOC</span><div class="meta">Jura 700 · stroke 1.5px · <strong>fill azul translúcido</strong></div></div>
+  <div class="swatch"><div class="number">8</div><span class="wm v8">DOC</span><div class="meta">Jura 700 · stroke 1.5px · <strong>fill gradient top→bottom</strong></div></div>
+  <div class="swatch"><div class="number">9</div><span class="wm v9">DOC</span><div class="meta">Jura 700 · stroke 2px · <strong>glow pulsante</strong></div></div>
+  <div class="swatch"><div class="number">10</div><span class="wm v10">DOC</span><div class="meta">Jura 800 · stroke 2.5px navy · efeito <strong>duplo</strong> com azul</div></div>
+  <div class="swatch"><div class="number">11</div><span class="wm v11">DOC</span><div class="meta">Jura <strong>600</strong> · stroke 1.5px (peso menor)</div></div>
+  <div class="swatch"><div class="number">12</div><span class="wm v12">DOC</span><div class="meta"><strong>Outfit</strong> 700 · stroke 2px (geométrica)</div></div>
+  <div class="swatch"><div class="number">13</div><span class="wm v13">DOC</span><div class="meta"><strong>Space Grotesk</strong> 700 · stroke 2px</div></div>
+  <div class="swatch"><div class="number">14</div><span class="wm v14">DOC</span><div class="meta"><strong>Plus Jakarta Sans</strong> 800 · stroke 2px</div></div>
+  <div class="swatch"><div class="number">15</div><span class="wm v15">DOC</span><div class="meta"><strong>Bricolage Grotesque</strong> 700 · stroke 2px</div></div>
+
+</div>
+
+</body>
+</html>

@@ -24,6 +24,12 @@ schema_view = get_schema_view(
 )
 
 
+def wordmark_preview(request):
+    """Preview standalone de variações do wordmark DOC (sem login, só local)."""
+    from django.shortcuts import render
+    return render(request, 'wordmark_preview.html')
+
+
 def healthz(_request):
     """Endpoint leve para healthcheck do Coolify/Docker.
 
@@ -63,6 +69,7 @@ def media_protegida(request, filename):
 
 urlpatterns = [
     path('healthz/', healthz, name='healthz'),
+    path('dev/wordmark/', wordmark_preview, name='wordmark_preview'),
     path('admin/', admin.site.urls),
     path('calculadora/', include('calculadora.urls')),
     path('', include('docgen.urls')),
