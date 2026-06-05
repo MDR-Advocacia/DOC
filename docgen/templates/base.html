@@ -93,7 +93,7 @@
 <input type="search" placeholder="Buscar modelos, processos, cálculos…" aria-label="Busca global">
 </div>
 <div class="topbar-actions">
-{% if user.is_staff %}<a href="/admin/" target="_blank" class="topbar-icon" title="Admin Django"><i class="fa-solid fa-database"></i></a>{% endif %}
+{% if user.is_staff %}<a href="/admin/login/?next=/admin/" target="_blank" class="topbar-icon" title="Admin Django"><i class="fa-solid fa-database"></i></a>{% endif %}
 <a href="{% url 'guia_modelos' %}" class="topbar-icon" title="Ajuda"><i class="fa-regular fa-circle-question"></i></a>
 <div class="dropdown">
 <button class="topbar-user" data-bs-toggle="dropdown" aria-expanded="false">
