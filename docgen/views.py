@@ -241,6 +241,25 @@ def sugerir_template_ia(request):
             configuracao_campos, renames
         )
 
+        # Pré-validação: confirma que o DOCX gerado pela IA é parseável.
+        valido, msg_erro, tags_suspeitas = template_utils.validar_template_docx(
+            docx_normalizado
+        )
+        if not valido:
+            messages.error(
+                request,
+                "A IA gerou um modelo que não passou na validação técnica. "
+                "Tente o upload manual com a peça-exemplo, ou refaça a sugestão.\n\n"
+                + msg_erro,
+            )
+            if tags_suspeitas:
+                messages.warning(
+                    request,
+                    "Tags identificadas como problemáticas:\n• "
+                    + "\n• ".join(tags_suspeitas),
+                )
+            return redirect('sugerir_template_ia')
+
         try:
             template = Template.objects.create(
                 titulo=titulo,
@@ -299,6 +318,27 @@ def criar_template(request):
                 docx_bytes_normalizado, renames = template_utils.normalize_jinja_tags_in_docx(
                     arquivo.read()
                 )
+
+                # Pré-validação: tenta parsear como template Jinja. Se falhar,
+                # NÃO cria o Template — devolve mensagem clara pro usuário
+                # apontando o trecho problemático.
+                valido, msg_erro, tags_suspeitas = template_utils.validar_template_docx(
+                    docx_bytes_normalizado
+                )
+                if not valido:
+                    messages.error(request, msg_erro)
+                    if tags_suspeitas:
+                        messages.warning(
+                            request,
+                            "Revise no Word as tags abaixo (foram identificadas como "
+                            "possivelmente quebradas):\n• " + "\n• ".join(tags_suspeitas),
+                        )
+                    return render(request, 'docgen/novo_template.html', {
+                        'setores': Setor.objects.all().order_by('nome'),
+                        'areas': Area.objects.all().order_by('nome'),
+                        'categorias': Categoria.objects.all().order_by('nome'),
+                    })
+
                 arquivo_final = ContentFile(docx_bytes_normalizado, name=arquivo.name)
 
                 template = Template.objects.create(
