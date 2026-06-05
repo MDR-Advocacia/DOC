@@ -1,7 +1,10 @@
 import json
+import logging
 import secrets
 import string
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib import messages
@@ -440,6 +443,15 @@ def gerar_documento(request, template_id):
             response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
             return response
         except Exception as exc:
+            # Log do traceback completo pro stdout do gunicorn (visível no
+            # painel de logs do Coolify). Sem isso o erro fica invisível —
+            # só o usuário vê a mensagem na tela.
+            logger.exception(
+                "gerar_documento: falha ao renderizar template_id=%s titulo=%r path=%s",
+                template.id,
+                template.titulo,
+                template.arquivo_template.name,
+            )
             messages.error(request, f"Erro ao gerar o documento: {exc}")
             return redirect('lista_templates')
 
