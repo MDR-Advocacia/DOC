@@ -41,5 +41,8 @@ urlpatterns = [
 ]
 
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve arquivos de mídia (templates DOCX, documentos gerados) também em
+# produção. Pra baixo volume de tráfego (escritório pequeno) é aceitável o
+# Django/Gunicorn servir direto. Atenção: arquivos ficam públicos via URL —
+# pendência: trocar por view dedicada com @login_required + FileResponse.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
