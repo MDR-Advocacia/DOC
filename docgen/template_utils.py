@@ -42,11 +42,30 @@ def _normalize_identifier(match: re.Match) -> str:
     return _ascii_normalize(match.group(0))
 
 
+def _merge_split_identifiers(tag_text: str) -> str:
+    """Junta identifiers acidentalmente partidos por espaço dentro de uma tag.
+
+    Padrão alvo: `endereco_ eletronico` (underscore + espaço + palavra) — quase
+    sempre um split acidental (Word inserindo correção, digitação errada).
+    Loop até estabilizar pra cobrir casos com múltiplos splits.
+    """
+    pattern = re.compile(r'(_)\s+([A-Za-z_À-ɏ])')
+    while True:
+        novo = pattern.sub(r'\1\2', tag_text)
+        if novo == tag_text:
+            return tag_text
+        tag_text = novo
+
+
 def _normalize_tag(match: re.Match) -> str:
-    """Recebe uma tag Jinja `{{ ... }}` ou `{% ... %}` e normaliza
-    APENAS os identifiers internos (não toca em strings literais entre
-    aspas — embora improvável dentro de tags Jinja num template típico)."""
+    """Recebe uma tag Jinja `{{ ... }}` ou `{% ... %}` e normaliza:
+    1. Junta identifiers partidos por espaço residual (foo_ bar → foo_bar).
+    2. Remove acentos/cedilha dos identifiers.
+
+    Não toca em strings literais entre aspas — embora improvável dentro de
+    tags Jinja num template típico de peça jurídica."""
     full = match.group(0)
+    full = _merge_split_identifiers(full)
     return IDENTIFIER_PATTERN.sub(_normalize_identifier, full)
 
 
