@@ -45,13 +45,43 @@ def _normalize_identifier(match: re.Match) -> str:
 def _merge_split_identifiers(tag_text: str) -> str:
     """Junta identifiers acidentalmente partidos por espaço dentro de uma tag.
 
-    Padrão alvo: `endereco_ eletronico` (underscore + espaço + palavra) — quase
-    sempre um split acidental (Word inserindo correção, digitação errada).
+    Cobre dois padrões comuns:
+
+    1. ``endereco_ eletronico`` (underscore + espaço + palavra) — split
+       residual do Word, quase sempre acidental.
+    2. ``{% if executado 2 %}`` / ``{% if avalista N %}`` — dentro de
+       ``{% if ... %}`` ou ``{% elif ... %}``, quando o conteúdo entre
+       a keyword e ``%}`` é apenas identifiers/números separados por
+       espaço (sem operadores Jinja como ``==``, ``and``, ``is``, ``|``),
+       junta tudo com underscore. Resolve nomes de variáveis que foram
+       digitados com espaço onde deveria ter ``_``.
+
     Loop até estabilizar pra cobrir casos com múltiplos splits.
     """
-    pattern = re.compile(r'(_)\s+([A-Za-z_À-ɏ])')
+    # Padrão 1 — underscore residual
+    pattern_underscore = re.compile(r'(_)\s+([A-Za-z_À-ɏ0-9])')
+
+    # Padrão 2 — `{% if X Y %}` onde X e Y são identifiers/números puros.
+    # Não casa quando há operador Jinja (==, !=, <, >, |, .) ou keyword
+    # de expressão (`is`, `in`, `and`, `or`, `not`).
+    pattern_if = re.compile(
+        r'(\{%\s*(?:el)?if\s+)'                        # abre {% if ou {% elif
+        r'([A-Za-z_À-ɏ][A-Za-z0-9_À-ɏ]*'               # primeiro identifier
+        r'(?:\s+[A-Za-z0-9_À-ɏ]+)+)'                   # +um ou mais blocos
+        r'(\s*%\})'                                     # fecha %}
+    )
+
+    def _join_if(m):
+        partes = re.split(r'\s+', m.group(2).strip())
+        # Se algum bloco contém keyword Jinja, abortamos e devolvemos como veio.
+        keywords = {'is', 'in', 'and', 'or', 'not', 'if', 'else', 'true', 'false', 'none'}
+        if any(p.lower() in keywords for p in partes):
+            return m.group(0)
+        return m.group(1) + '_'.join(partes) + m.group(3)
+
     while True:
-        novo = pattern.sub(r'\1\2', tag_text)
+        novo = pattern_underscore.sub(r'\1\2', tag_text)
+        novo = pattern_if.sub(_join_if, novo)
         if novo == tag_text:
             return tag_text
         tag_text = novo
