@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Jura:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Jura:wght@500&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/apex.css' %}">
 {% block extra_css %}{% endblock %}
 </head>
@@ -24,7 +24,7 @@
 <div class="apex-shell">
 <aside class="sb">
 <a href="{% url 'home' %}" class="sb-brand" title="DOC by DUNATECH">
-<span class="doc-mark doc-mark-xl">DOC</span>
+<img src="{% static 'img/doc-wordmark.png' %}" alt="DOC" class="doc-wordmark">
 </a>
 <nav class="sb-nav" aria-label="Navegação principal">
 <a href="{% url 'home' %}" class="sb-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fa-solid fa-house"></i>Dashboard</a>
@@ -56,7 +56,7 @@
 <div class="offcanvas offcanvas-start" tabindex="-1" id="sbMobile" style="width: 280px;">
 <div class="offcanvas-header">
 <div class="sb-brand p-0 border-0" style="height:auto;">
-<span class="doc-mark doc-mark-xl">DOC</span>
+<img src="{% static 'img/doc-wordmark.png' %}" alt="DOC" class="doc-wordmark">
 </div>
 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
 </div>
