@@ -78,8 +78,11 @@ def sso_login(request):
 
     if not email:
         # Sem sessão Entra → manda pro oauth2-proxy, que autentica e volta pra cá.
+        # Força https no rd: atrás do Traefik, sem DJANGO_SECURE_PROXY o Django
+        # acha que é http e o oauth2-proxy rejeita o rd http (cai na tela
+        # estática "Authenticated" sem voltar pro app).
         base = getattr(settings, "SSO_AUTHORIZE_BASE", "").rstrip("/")
-        rd = request.build_absolute_uri("/accounts/sso/")
+        rd = f"https://{request.get_host()}/accounts/sso/"
         return redirect(f"{base}/oauth2/start?rd={quote(rd, safe='')}")
 
     user = User.objects.filter(email__iexact=email).first()
