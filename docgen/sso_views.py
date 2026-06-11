@@ -24,7 +24,7 @@ from django.conf import settings
 from django.contrib.auth import get_backends, login
 from django.contrib.auth.models import User
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 
 logger = logging.getLogger(__name__)
 
@@ -87,8 +87,9 @@ def sso_login(request):
 
     user = User.objects.filter(email__iexact=email).first()
     if user is None:
-        # Acha-ou-cria (JIT). Conta nova entra sem equipe/pasta — o gate de
-        # boas-vindas (próxima fase) trata o "aguardando liberação".
+        # Acha-ou-cria (JIT). Conta nova nasce PENDENTE (is_active=False): cai na
+        # tela de boas-vindas e aparece pro admin em "Gerenciar Usuários" pra
+        # liberar — reusa o fluxo de aprovação que o DOC já tem.
         nome = _name_from_id_token(id_token) or email.split("@")[0]
         partes = nome.split(" ", 1)
         user = User(
@@ -96,13 +97,18 @@ def sso_login(request):
             email=email,
             first_name=partes[0][:30],
             last_name=(partes[1] if len(partes) > 1 else "")[:150],
-            is_active=True,
+            is_active=False,
         )
         user.set_unusable_password()
         user.save()
 
     if not user.is_active:
-        return redirect("/accounts/login/?sso=inativa")
+        # Conta nova ou ainda não aprovada → tela de boas-vindas (não loga).
+        # O admin libera em Gerenciar Usuários (pendentes); aí o usuário entra.
+        return render(request, "registration/sso_aguardando.html", {
+            "nome": user.get_full_name() or user.first_name or email.split("@")[0],
+            "email": email,
+        })
 
     # login() exige um backend. Não usamos authenticate() (não há senha), então
     # carimbamos o backend padrão manualmente.
