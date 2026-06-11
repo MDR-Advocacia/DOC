@@ -37,6 +37,17 @@
         </button>
     </form>
 
+    {% if sso_enabled %}
+    <div class="text-center my-3 text-soft-apex" style="font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;">ou</div>
+    <a href="{% url 'sso_login' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 21 21" aria-hidden="true">
+            <rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+            <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+        </svg>
+        Entrar com Microsoft
+    </a>
+    {% endif %}
+
     <div class="auth-foot">
         <p class="mb-2">Sua conta foi aprovada? <a href="{% url 'definir_primeira_senha' %}" class="fw-semibold">Defina sua senha aqui</a></p>
         <p class="mb-0">Ainda não tem acesso? <a href="{% url 'signup' %}" class="fw-semibold">Solicitar acesso</a></p>

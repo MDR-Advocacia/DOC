@@ -45,6 +45,17 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 # Qual a URL de login?
 LOGIN_URL = '/accounts/login/'
 
+# --- SSO Microsoft Entra ID (via oauth2-proxy — mesmo approach do Flow) ---
+# Quando SSO_ENABLED=True, a view /accounts/sso/ valida a sessão do oauth2-proxy
+# server-side (chama SSO_VALIDATE_URL repassando o cookie .dunatecnologia.com),
+# acha-ou-cria o User pelo e-mail e faz login por sessão. A senha continua
+# valendo (coexistência). Sem efeito enquanto SSO_ENABLED=False (default).
+SSO_ENABLED = _env_as_bool('SSO_ENABLED', False)
+# Endpoint de verificação do oauth2-proxy. Ex.: https://auth.dunatecnologia.com/oauth2/auth
+SSO_VALIDATE_URL = os.environ.get('SSO_VALIDATE_URL', '')
+SSO_AUTHORIZE_BASE = os.environ.get('SSO_AUTHORIZE_BASE', 'https://auth.dunatecnologia.com')
+SSO_EMAIL_HEADER = os.environ.get('SSO_EMAIL_HEADER', 'X-Auth-Request-Email')
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
