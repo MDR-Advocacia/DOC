@@ -24,7 +24,7 @@
 <div class="apex-shell">
 <aside class="sb">
 <a href="{% url 'home' %}" class="sb-brand" title="DOC by DUNATECH">
-<img src="{% static 'img/doc-wordmark.png' %}" alt="DOC" class="doc-wordmark">
+{% include '_dunadoc_mark.html' %}
 </a>
 <nav class="sb-nav" aria-label="Navegação principal">
 <a href="{% url 'home' %}" class="sb-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="fa-solid fa-house"></i>Dashboard</a>
@@ -56,7 +56,7 @@
 <div class="offcanvas offcanvas-start" tabindex="-1" id="sbMobile" style="width: 280px;">
 <div class="offcanvas-header">
 <div class="sb-brand p-0 border-0" style="height:auto;">
-<img src="{% static 'img/doc-wordmark.png' %}" alt="DOC" class="doc-wordmark">
+{% include '_dunadoc_mark.html' %}
 </div>
 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
 </div>

@@ -142,6 +142,27 @@ a:hover { color: hsl(217 100% 48%); }
   filter: drop-shadow(0 0 4px hsl(var(--duna-blue) / .25));
 }
 
+/* Marca DunaDoc — símbolo de onda (duna) + wordmark, mesmo estilo do
+   DunaFlow. Usa currentColor: navy no fundo claro do sidebar/login. */
+.dunadoc-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  color: hsl(var(--duna-navy));
+  line-height: 1;
+}
+.dunadoc-mark__wave { flex-shrink: 0; width: 34px; height: 20px; }
+.dunadoc-mark__text {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 1.35rem;
+  letter-spacing: .14em;
+}
+.dunadoc-mark__light { font-weight: 400; opacity: .8; }
+.dunadoc-mark--lg { gap: .85rem; }
+.dunadoc-mark--lg .dunadoc-mark__wave { width: 56px; height: 33px; }
+.dunadoc-mark--lg .dunadoc-mark__text { font-size: 2.15rem; letter-spacing: .1em; }
+
 /* ---------- 4. Shell de aplicação ---------- */
 .apex-shell {
   display: grid;
@@ -173,8 +194,8 @@ a:hover { color: hsl(217 100% 48%); }
   align-items: center;
   justify-content: center;
   gap: .55rem;
-  padding: 1.25rem;
-  height: 72px;
+  padding: 0 1.25rem;
+  height: 60px;
   border-bottom: 1px solid hsl(var(--apex-border));
   text-decoration: none;
 }

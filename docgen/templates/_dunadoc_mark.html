@@ -1,0 +1,12 @@
+{% comment %}
+  Marca DunaDoc — símbolo de onda (duna) + wordmark, mesmo estilo do DunaFlow.
+  Usa currentColor, então herda a cor do container (navy no fundo claro).
+  Parâmetro opcional: size='lg' (tela de login). Default: tamanho médio.
+{% endcomment %}
+<span class="dunadoc-mark dunadoc-mark--{{ size|default:'md' }}">
+  <svg class="dunadoc-mark__wave" viewBox="0 0 40 24" fill="none" aria-hidden="true">
+    <path d="M2,15 C9,8 13,8 20,13 C26,17 31,16 38,10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    <path d="M3,21 C10,15 14,15 20,19 C25,22 30,21 37,16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" opacity="0.7"/>
+  </svg>
+  <span class="dunadoc-mark__text">DUNA<span class="dunadoc-mark__light">DOC</span></span>
+</span>
