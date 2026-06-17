@@ -20,7 +20,7 @@ services:
     volumes:
       - media_volume:/app/media
     ports:
-      - "8888:8001"
+      - "8900:8001"
     env_file:
       - .env
     depends_on:
