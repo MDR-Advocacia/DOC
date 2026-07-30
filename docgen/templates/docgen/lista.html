@@ -4,17 +4,27 @@
 {% block content %}
 <div class="page-head">
 <div>
-<h1>Catálogo de modelos</h1>
-<p class="lead">Selecione uma peça para iniciar a automação.</p>
+<h1>{% if mostrar_arquivados %}Modelos arquivados{% else %}Catálogo de modelos{% endif %}</h1>
+<p class="lead">{% if mostrar_arquivados %}Modelos fora do catálogo. Restaure para voltarem a aparecer.{% else %}Selecione uma peça para iniciar a automação.{% endif %}</p>
 </div>
+<div class="d-flex gap-2">
+{% if mostrar_arquivados %}
+<a href="{% url 'lista_templates' %}" class="btn btn-outline-primary"><i class="fa-solid fa-arrow-left"></i> Voltar ao catálogo</a>
+{% else %}
+{% if user.is_staff or total_arquivados %}
+<a href="?arquivados=1" class="btn btn-outline-primary"><i class="fa-solid fa-box-archive"></i> Arquivados{% if total_arquivados %} ({{ total_arquivados }}){% endif %}</a>
+{% endif %}
 {% if user.is_staff %}
 <a href="{% url 'criar_template' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Novo modelo</a>
 {% endif %}
+{% endif %}
+</div>
 </div>
 
 <div class="card mb-4">
 <div class="card-body">
 <form method="get" action=".">
+{% if mostrar_arquivados %}<input type="hidden" name="arquivados" value="1">{% endif %}
 <div class="row g-3">
 <div class="col-md-4">
 <label class="form-label eyebrow">Buscar</label>
@@ -72,10 +82,21 @@
 {% if doc.area %}<span class="chip neutral">{{ doc.area.nome }}</span>{% endif %}
 </div>
 <div class="tpl-desc">{{ doc.descricao|default:"Sem descrição." }}</div>
+{% if doc.criado_por %}<div class="text-soft-apex" style="font-size:.72rem;margin-top:.35rem;"><i class="fa-regular fa-user"></i> {{ doc.criado_por.get_full_name|default:doc.criado_por.username }}</div>{% endif %}
 <div class="tpl-foot">
+{% if mostrar_arquivados %}
+<form method="post" action="{% url 'restaurar_template' doc.id %}" class="flex-grow-1">{% csrf_token %}
+<button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-rotate-left"></i> Restaurar</button>
+</form>
+{% else %}
 <a href="{% url 'gerar_documento' doc.id %}" class="btn btn-primary flex-grow-1"><i class="fa-solid fa-pen-to-square"></i> Preencher</a>
-{% if user.is_staff %}
-<a href="{% url 'configurar_template' doc.id %}" class="btn btn-outline-primary" title="Configurar"><i class="fa-solid fa-gear"></i></a>
+{% endif %}
+{% if user.is_staff or doc.criado_por_id == user.id %}
+<a href="{% url 'configurar_template' doc.id %}" class="btn btn-outline-primary" title="Mapear campos"><i class="fa-solid fa-gear"></i></a>
+<a href="{% url 'editar_template' doc.id %}" class="btn btn-outline-primary" title="Editar, renomear ou trocar o arquivo"><i class="fa-solid fa-pen"></i></a>
+<form method="post" action="{% url 'excluir_template' doc.id %}" onsubmit="return confirm('Excluir o modelo &quot;{{ doc.titulo|escapejs }}&quot;?\n\nSe já houver documentos gerados com ele, será apenas arquivado para preservar o histórico.');">{% csrf_token %}
+<button type="submit" class="btn btn-outline-danger" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+</form>
 {% endif %}
 </div>
 </div>

@@ -48,9 +48,20 @@ class Template(models.Model):
     
     arquivo_template = models.FileField(upload_to='templates/')
     configuracao_campos = models.JSONField(default=list, verbose_name="Configuração dos Campos")
-    
+
     data_criacao = models.DateTimeField(auto_now_add=True)
     ativo = models.BooleanField(default=True)
+
+    # Quem subiu o modelo. Null nos modelos criados antes deste campo existir
+    # (e se o usuário for removido depois) — nesse caso só o staff gerencia.
+    criado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='templates_criados',
+        verbose_name="Criado por",
+    )
 
     def __str__(self):
         return self.titulo

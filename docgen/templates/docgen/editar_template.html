@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<div style="max-width: 880px;">
+
+<div class="page-head">
+<div>
+<span class="eyebrow">Catálogo</span>
+<h1 style="margin-top:.4rem">Editar modelo</h1>
+</div>
+<a href="{% url 'lista_templates' %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
+</div>
+
+<div class="card">
+<div class="card-body" style="padding: 2rem;">
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+
+<div class="mb-3">
+<label class="form-label">Título da peça <span style="color: hsl(var(--apex-error));">*</span></label>
+<input type="text" name="titulo" class="form-control" value="{{ template.titulo }}" required>
+</div>
+
+<div class="row g-3 mb-3">
+<div class="col-md-4">
+<label class="form-label">Setor <span style="color: hsl(var(--apex-error));">*</span></label>
+<select name="setor" class="form-select" required>
+<option value="">Selecione...</option>
+{% for s in setores %}<option value="{{ s.id }}" {% if template.setor_id == s.id %}selected{% endif %}>{{ s.nome }}</option>{% endfor %}
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label">Área</label>
+<select name="area" class="form-select">
+<option value="">Geral</option>
+{% for a in areas %}<option value="{{ a.id }}" {% if template.area_id == a.id %}selected{% endif %}>{{ a.nome }}</option>{% endfor %}
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label">Categoria</label>
+<select name="categoria" class="form-select">
+<option value="">Geral</option>
+{% for c in categorias %}<option value="{{ c.id }}" {% if template.categoria_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+</select>
+</div>
+</div>
+
+<div class="mb-4">
+<label class="form-label">Descrição / instruções</label>
+<textarea name="descricao" class="form-control" rows="3" placeholder="Explique brevemente quando usar este modelo...">{{ template.descricao }}</textarea>
+</div>
+
+<div class="mb-4 p-4" style="background: hsl(var(--apex-surface-2)); border: 2px dashed hsl(var(--apex-border-strong)); border-radius: var(--apex-radius);">
+<label for="arquivo" class="form-label d-block mb-2">
+<i class="fa-solid fa-file-word" style="color: hsl(var(--duna-blue));"></i>
+<strong>Documento base</strong>
+</label>
+<p class="text-muted-apex mb-3" style="font-size:.85rem;">
+Arquivo atual: <code>{{ template.arquivo_template.name }}</code><br>
+Envie um novo <code>.docx</code> apenas se quiser <strong>substituir</strong> o documento base. Deixe vazio para manter o atual.
+</p>
+<input type="file" name="arquivo" id="arquivo" class="form-control" accept=".docx">
+<div class="form-text mt-2">
+O arquivo é validado antes de substituir: se alguma tag estiver quebrada, a troca é recusada e o modelo atual continua intacto.
+Depois da troca você é levado ao mapeamento de campos para conferir as variáveis.
+</div>
+</div>
+
+<div class="d-grid">
+<button type="submit" class="btn btn-primary btn-lg">Salvar alterações</button>
+</div>
+</form>
+</div>
+</div>
+
+<div class="card mt-4" style="border: 1px solid hsl(var(--apex-error) / .35);">
+<div class="card-body d-md-flex justify-content-between align-items-center" style="gap:1.25rem;">
+<div style="flex:1;min-width:240px;">
+<h3 class="mb-1" style="font-size:1rem; color: hsl(var(--apex-error));">Excluir este modelo</h3>
+<p class="mb-0 text-muted-apex" style="font-size:.85rem;">
+{% if qtd_documentos %}
+Existem <strong>{{ qtd_documentos }}</strong> documento(s) já gerado(s) com este modelo. Por isso ele será <strong>arquivado</strong> (sai do catálogo, histórico preservado) em vez de apagado.
+{% else %}
+Nenhum documento foi gerado com este modelo ainda, então ele será apagado definitivamente.
+{% endif %}
+</p>
+</div>
+<form method="post" action="{% url 'excluir_template' template.id %}" onsubmit="return confirm('Confirma excluir o modelo &quot;{{ template.titulo|escapejs }}&quot;?');">
+{% csrf_token %}
+<button type="submit" class="btn btn-outline-danger mt-3 mt-md-0" style="white-space:nowrap;">
+<i class="fa-solid fa-trash"></i> {% if qtd_documentos %}Arquivar modelo{% else %}Excluir modelo{% endif %}
+</button>
+</form>
+</div>
+</div>
+
+</div>
+{% endblock %}

@@ -15,7 +15,17 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
-from django.db.models import Case, Count, IntegerField, Min, Prefetch, Q, Value, When
+from django.db.models import (
+    Case,
+    Count,
+    IntegerField,
+    Min,
+    Prefetch,
+    ProtectedError,
+    Q,
+    Value,
+    When,
+)
 from django.db.models.functions import TruncMonth
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -270,6 +280,7 @@ def sugerir_template_ia(request):
                 arquivo_template=ContentFile(docx_normalizado, name=arquivo.name),
                 configuracao_campos=configuracao_campos,
                 ativo=True,
+                criado_por=request.user,
             )
         except Exception as exc:
             messages.error(request, f"Erro ao salvar o modelo: {exc}")
@@ -349,6 +360,7 @@ def criar_template(request):
                     categoria_id=categoria_id or None,
                     arquivo_template=arquivo_final,
                     ativo=True,
+                    criado_por=request.user,
                 )
                 if renames:
                     messages.info(
@@ -374,9 +386,9 @@ def criar_template(request):
 
 
 @login_required
-@staff_member_required
 def configurar_template(request, template_id):
     template = get_object_or_404(Template, pk=template_id)
+    _require_gerente_template(request.user, template)
     tags_encontradas = extrair_tags_do_docx(template.arquivo_template.path)
 
     configuracao_atual = template.configuracao_campos or []
@@ -422,6 +434,197 @@ def configurar_template(request, template_id):
             'todas_tags': tags_encontradas,
         },
     )
+
+
+def _sincronizar_configuracao_campos(template):
+    """Reconcilia configuracao_campos com as tags do .docx atual.
+
+    Usado depois de trocar o arquivo de um modelo já existente: preserva o
+    label/tipo/dependência das tags que continuam no documento e acrescenta
+    as novas com valores padrão. Tags que sumiram do .docx são descartadas.
+    """
+    tags = extrair_tags_do_docx(template.arquivo_template.path)
+    atual = {
+        item.get('tag'): item
+        for item in (template.configuracao_campos or [])
+        if item.get('tag')
+    }
+    return [
+        atual.get(
+            tag,
+            {
+                'tag': tag,
+                'label': tag.replace('_', ' ').title(),
+                'tipo': 'text',
+                'dependencia': '',
+                'opcoes': '',
+            },
+        )
+        for tag in tags
+    ]
+
+
+def _pode_gerenciar_template(user, template):
+    """Staff/superuser gerenciam qualquer modelo; o autor gerencia o dele.
+
+    Vale para editar, substituir o .docx, remapear os campos e excluir.
+    """
+    if user.is_staff or user.is_superuser:
+        return True
+    return template.criado_por_id is not None and template.criado_por_id == user.id
+
+
+def _require_gerente_template(user, template):
+    if not _pode_gerenciar_template(user, template):
+        raise PermissionDenied(
+            "Você só pode alterar modelos que você mesmo criou."
+        )
+
+
+@login_required
+def editar_template(request, template_id):
+    """Edita metadados do modelo (título, descrição, classificação) e,
+    opcionalmente, substitui o arquivo .docx base — tudo pela própria
+    aplicação, sem passar pelo admin do Django."""
+    from . import template_utils
+
+    template = get_object_or_404(Template, pk=template_id)
+    _require_gerente_template(request.user, template)
+
+    if request.method == 'POST':
+        titulo = request.POST.get('titulo', '').strip()
+        setor_id = request.POST.get('setor')
+
+        if not titulo or not setor_id:
+            messages.error(request, "Título e setor são obrigatórios.")
+            return redirect('editar_template', template_id=template.id)
+
+        arquivo = request.FILES.get('arquivo')
+        trocou_arquivo = False
+
+        if arquivo:
+            try:
+                docx_bytes, renames = template_utils.normalize_jinja_tags_in_docx(
+                    arquivo.read()
+                )
+            except Exception as exc:
+                messages.error(request, f"Não foi possível ler o .docx enviado: {exc}")
+                return redirect('editar_template', template_id=template.id)
+
+            # Mesma pré-validação do upload: se o Jinja não parseia, não
+            # deixamos o arquivo quebrado substituir o que já funciona.
+            valido, msg_erro, tags_suspeitas = template_utils.validar_template_docx(
+                docx_bytes
+            )
+            if not valido:
+                messages.error(request, msg_erro)
+                if tags_suspeitas:
+                    messages.warning(
+                        request,
+                        "Revise no Word as tags abaixo:\n• " + "\n• ".join(tags_suspeitas),
+                    )
+                return redirect('editar_template', template_id=template.id)
+
+            template.arquivo_template.save(arquivo.name, ContentFile(docx_bytes), save=False)
+            template.configuracao_campos = template_utils.apply_renames_to_configuracao(
+                template.configuracao_campos, renames
+            )
+            trocou_arquivo = True
+
+        template.titulo = titulo
+        template.descricao = request.POST.get('descricao', '').strip()
+        template.setor_id = setor_id
+        template.area_id = request.POST.get('area') or None
+        template.categoria_id = request.POST.get('categoria') or None
+
+        try:
+            template.save()
+        except Exception as exc:
+            messages.error(request, f"Erro ao salvar o modelo: {exc}")
+            return redirect('editar_template', template_id=template.id)
+
+        if trocou_arquivo:
+            template.configuracao_campos = _sincronizar_configuracao_campos(template)
+            template.save(update_fields=['configuracao_campos'])
+            messages.success(
+                request,
+                f"Modelo '{template.titulo}' atualizado e arquivo substituído. "
+                "Confira o mapeamento dos campos abaixo.",
+            )
+            return redirect('configurar_template', template_id=template.id)
+
+        messages.success(request, f"Modelo '{template.titulo}' atualizado com sucesso.")
+        return redirect('lista_templates')
+
+    return render(
+        request,
+        'docgen/editar_template.html',
+        {
+            'template': template,
+            'setores': Setor.objects.all().order_by('nome'),
+            'areas': Area.objects.all().order_by('nome'),
+            'categorias': Categoria.objects.all().order_by('nome'),
+            'qtd_documentos': DocumentoGerado.objects.filter(template=template).count(),
+        },
+    )
+
+
+@login_required
+def excluir_template(request, template_id):
+    """Exclui o modelo. Permitido ao staff e a quem criou o modelo.
+
+    Se já houver documentos gerados a partir dele, o DocumentoGerado.template
+    é PROTECT — apagar levaria o histórico junto, então nesse caso arquivamos
+    (ativo=False) em vez de excluir."""
+    template = get_object_or_404(Template, pk=template_id)
+    _require_gerente_template(request.user, template)
+
+    if request.method != 'POST':
+        return redirect('lista_templates')
+
+    titulo = template.titulo
+    qtd_documentos = DocumentoGerado.objects.filter(template=template).count()
+
+    if qtd_documentos:
+        template.ativo = False
+        template.save(update_fields=['ativo'])
+        messages.warning(
+            request,
+            f"'{titulo}' foi arquivado em vez de excluído: há {qtd_documentos} "
+            "documento(s) já gerado(s) a partir dele e o histórico seria perdido. "
+            "Ele sai do catálogo e pode ser restaurado em Catálogo → Arquivados.",
+        )
+        return redirect('lista_templates')
+
+    try:
+        template.delete()
+    except ProtectedError:
+        # Defesa contra corrida: alguém gerou um documento entre a contagem
+        # acima e o delete.
+        template.ativo = False
+        template.save(update_fields=['ativo'])
+        messages.warning(
+            request,
+            f"'{titulo}' foi arquivado — surgiram registros vinculados que "
+            "impedem a exclusão definitiva.",
+        )
+        return redirect('lista_templates')
+
+    messages.success(request, f"Modelo '{titulo}' excluído definitivamente.")
+    return redirect('lista_templates')
+
+
+@login_required
+def restaurar_template(request, template_id):
+    template = get_object_or_404(Template, pk=template_id)
+    _require_gerente_template(request.user, template)
+
+    if request.method == 'POST':
+        template.ativo = True
+        template.save(update_fields=['ativo'])
+        messages.success(request, f"Modelo '{template.titulo}' voltou para o catálogo.")
+
+    return redirect('lista_templates')
 
 
 @login_required
@@ -640,7 +843,17 @@ def guia_modelos(request):
 
 @login_required
 def lista_templates(request):
-    templates = Template.objects.filter(ativo=True).select_related('setor', 'area', 'categoria')
+    # Aba de arquivados: modelos com ativo=False, que saíram do catálogo mas
+    # continuam no banco por causa do histórico. Staff vê todos; o usuário
+    # comum vê só os que ele mesmo criou (senão arquivaria sem poder desfazer).
+    eh_staff = request.user.is_staff or request.user.is_superuser
+    mostrar_arquivados = request.GET.get('arquivados') == '1'
+
+    templates = Template.objects.filter(ativo=not mostrar_arquivados).select_related(
+        'setor', 'area', 'categoria', 'criado_por'
+    )
+    if mostrar_arquivados and not eh_staff:
+        templates = templates.filter(criado_por=request.user)
 
     busca = request.GET.get('q')
     setor_id = request.GET.get('setor')
@@ -675,6 +888,12 @@ def lista_templates(request):
             'categorias': Categoria.objects.all().order_by('nome'),
             'filtros_atuais': request.GET,
             'favoritos_ids': favoritos_ids,
+            'mostrar_arquivados': mostrar_arquivados,
+            'total_arquivados': (
+                Template.objects.filter(ativo=False).count()
+                if eh_staff
+                else Template.objects.filter(ativo=False, criado_por=request.user).count()
+            ),
         },
     )
 
