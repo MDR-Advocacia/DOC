@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<div style="max-width: 900px;">
+
+<div class="page-head">
+<div>
+<span class="eyebrow">Pré-validação do modelo</span>
+<h1 style="margin-top:.4rem">O arquivo não foi aceito</h1>
+<p class="lead">Encontrei {{ relatorio.erros|length }} problema{{ relatorio.erros|length|pluralize:"s" }} que fariam a geração falhar. Corrija no Word e envie de novo.</p>
+</div>
+<a href="{{ url_voltar }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
+</div>
+
+<div class="alert alert-info mb-4">
+<i class="fa-solid fa-circle-info"></i>
+<div>
+<strong>Nada foi salvo.</strong>
+{% if template_existente %}O modelo atual continua no ar, intacto.{% else %}O modelo não foi criado.{% endif %}
+{% if not relatorio.paginacao_disponivel %}
+<br><span style="font-size:.85rem;">Este arquivo não tem marcadores de quebra de página, então não dá para dizer a página — o Word calcula isso só ao renderizar. Use o <strong>número do parágrafo</strong> e o <strong>trecho do texto</strong> abaixo (Ctrl+F no Word) para achar cada ponto.</span>
+{% endif %}
+</div>
+</div>
+
+{% if relatorio.erro_tecnico %}
+<div class="card mb-4" style="border: 1px solid hsl(var(--apex-error) / .35);">
+<div class="card-body">
+<h3 style="font-size:1rem; color: hsl(var(--apex-error));"><i class="fa-solid fa-triangle-exclamation"></i> Falha na simulação da geração</h3>
+<p class="mb-0 text-muted-apex" style="font-size:.88rem;">{{ relatorio.erro_tecnico }}</p>
+</div>
+</div>
+{% endif %}
+
+{% for p in relatorio.erros %}
+<div class="card mb-3" style="border-left: 4px solid hsl(var(--apex-error));">
+<div class="card-body">
+
+<div class="d-flex justify-content-between align-items-start" style="gap:1rem;">
+<h3 style="font-size:1rem; margin:0;"><span class="chip" style="background: hsl(var(--apex-error) / .12); color: hsl(var(--apex-error));">{{ forloop.counter }}</span> {{ p.titulo }}</h3>
+<span class="chip neutral" style="white-space:nowrap;">
+{% if p.pagina %}Página {{ p.pagina }} · {% endif %}
+{% if p.paragrafo %}Parágrafo {{ p.paragrafo }}{% else %}{{ p.local }}{% endif %}
+</span>
+</div>
+
+{% if p.paragrafo %}<div class="text-soft-apex" style="font-size:.75rem; margin-top:.25rem;">no {{ p.local }}</div>{% endif %}
+
+<div class="d-flex align-items-center flex-wrap mt-3" style="gap:.6rem;">
+<code style="background: hsl(var(--apex-error) / .1); border: 1px solid hsl(var(--apex-error) / .3); padding:.3rem .6rem; border-radius:6px; font-weight:600;">{{ p.tag }}</code>
+{% if p.sugestao %}
+<i class="fa-solid fa-arrow-right text-soft-apex"></i>
+<code style="background: hsl(var(--apex-success) / .1); border: 1px solid hsl(var(--apex-success) / .35); padding:.3rem .6rem; border-radius:6px; font-weight:600;">{{ p.sugestao }}</code>
+{% endif %}
+</div>
+
+<p class="text-muted-apex mt-3 mb-0" style="font-size:.87rem;">{{ p.explicacao }}</p>
+
+{% if p.trecho %}
+<div class="mt-3" style="background: hsl(var(--apex-surface-2)); border: 1px solid hsl(var(--apex-border)); border-radius: var(--apex-radius-sm); padding:.6rem .8rem;">
+<div class="eyebrow" style="margin-bottom:.25rem;">Trecho no documento</div>
+<div style="font-size:.84rem; font-family: ui-monospace, monospace;">{{ p.trecho }}</div>
+</div>
+{% endif %}
+
+</div>
+</div>
+{% endfor %}
+
+{% if relatorio.avisos %}
+<h2 style="font-size:1.05rem; margin-top:2rem;">Avisos — não bloqueiam o envio</h2>
+<p class="text-muted-apex" style="font-size:.87rem;">Vale revisar, mas o modelo funcionaria assim mesmo.</p>
+{% for p in relatorio.avisos %}
+<div class="card mb-2" style="border-left: 4px solid hsl(var(--apex-warning, 38 92% 50%));">
+<div class="card-body" style="padding:1rem 1.25rem;">
+<div class="d-flex justify-content-between align-items-start" style="gap:1rem;">
+<strong style="font-size:.92rem;">{{ p.titulo }}</strong>
+<span class="chip neutral" style="white-space:nowrap;">{% if p.pagina %}Página {{ p.pagina }} · {% endif %}{% if p.paragrafo %}Parágrafo {{ p.paragrafo }}{% else %}{{ p.local }}{% endif %}</span>
+</div>
+<div class="d-flex align-items-center flex-wrap mt-2" style="gap:.5rem;">
+<code style="font-size:.82rem;">{{ p.tag }}</code>
+{% if p.sugestao %}<i class="fa-solid fa-arrow-right text-soft-apex" style="font-size:.75rem;"></i><code style="font-size:.82rem;">{{ p.sugestao }}</code>{% endif %}
+</div>
+<p class="text-muted-apex mt-2 mb-0" style="font-size:.84rem;">{{ p.explicacao }}</p>
+</div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="d-flex gap-2 mt-4">
+<a href="{{ url_voltar }}" class="btn btn-primary"><i class="fa-solid fa-rotate-left"></i> Corrigir e enviar de novo</a>
+<a href="{% url 'lista_templates' %}" class="btn btn-outline-primary">Ir para o catálogo</a>
+</div>
+
+</div>
+{% endblock %}

@@ -57,12 +57,30 @@ from .models import (
     Template,
     TemplateFavorito,
 )
+from .template_validacao import analisar_template_docx
 from .utils import (
     carregar_campos_template,
     enviar_lote_obrigacao_fazer,
     extrair_tags_do_docx,
     renderizar_template_docx,
 )
+
+
+def _render_relatorio_validacao(request, relatorio, url_voltar, template_existente=None):
+    """Tela de pré-validação reprovada: mostra cada problema já localizado.
+
+    Usada pelos três caminhos que aceitam .docx (upload manual, sugestão por
+    IA e troca de arquivo na edição) para que a mensagem seja sempre a mesma.
+    """
+    return render(
+        request,
+        'docgen/relatorio_validacao.html',
+        {
+            'relatorio': relatorio,
+            'url_voltar': url_voltar,
+            'template_existente': template_existente,
+        },
+    )
 
 
 def _team_memberships_for_user(user):
@@ -251,24 +269,17 @@ def sugerir_template_ia(request):
             configuracao_campos, renames
         )
 
-        # Pré-validação: confirma que o DOCX gerado pela IA é parseável.
-        valido, msg_erro, tags_suspeitas = template_utils.validar_template_docx(
-            docx_normalizado
-        )
-        if not valido:
+        # Pré-validação: nenhum modelo com tag quebrada entra no catálogo.
+        relatorio = analisar_template_docx(docx_normalizado)
+        if not relatorio.ok:
             messages.error(
                 request,
-                "A IA gerou um modelo que não passou na validação técnica. "
-                "Tente o upload manual com a peça-exemplo, ou refaça a sugestão.\n\n"
-                + msg_erro,
+                "A IA gerou um modelo que não passou na pré-validação. "
+                "Tente o upload manual com a peça-exemplo, ou refaça a sugestão.",
             )
-            if tags_suspeitas:
-                messages.warning(
-                    request,
-                    "Tags identificadas como problemáticas:\n• "
-                    + "\n• ".join(tags_suspeitas),
-                )
-            return redirect('sugerir_template_ia')
+            return _render_relatorio_validacao(
+                request, relatorio, reverse('sugerir_template_ia')
+            )
 
         try:
             template = Template.objects.create(
@@ -330,25 +341,13 @@ def criar_template(request):
                     arquivo.read()
                 )
 
-                # Pré-validação: tenta parsear como template Jinja. Se falhar,
-                # NÃO cria o Template — devolve mensagem clara pro usuário
-                # apontando o trecho problemático.
-                valido, msg_erro, tags_suspeitas = template_utils.validar_template_docx(
-                    docx_bytes_normalizado
-                )
-                if not valido:
-                    messages.error(request, msg_erro)
-                    if tags_suspeitas:
-                        messages.warning(
-                            request,
-                            "Revise no Word as tags abaixo (foram identificadas como "
-                            "possivelmente quebradas):\n• " + "\n• ".join(tags_suspeitas),
-                        )
-                    return render(request, 'docgen/novo_template.html', {
-                        'setores': Setor.objects.all().order_by('nome'),
-                        'areas': Area.objects.all().order_by('nome'),
-                        'categorias': Categoria.objects.all().order_by('nome'),
-                    })
+                # Pré-validação: se houver qualquer tag quebrada, NÃO cria o
+                # Template — devolve o relatório apontando onde está cada erro.
+                relatorio = analisar_template_docx(docx_bytes_normalizado)
+                if not relatorio.ok:
+                    return _render_relatorio_validacao(
+                        request, relatorio, reverse('criar_template')
+                    )
 
                 arquivo_final = ContentFile(docx_bytes_normalizado, name=arquivo.name)
 
@@ -511,19 +510,16 @@ def editar_template(request, template_id):
                 messages.error(request, f"Não foi possível ler o .docx enviado: {exc}")
                 return redirect('editar_template', template_id=template.id)
 
-            # Mesma pré-validação do upload: se o Jinja não parseia, não
-            # deixamos o arquivo quebrado substituir o que já funciona.
-            valido, msg_erro, tags_suspeitas = template_utils.validar_template_docx(
-                docx_bytes
-            )
-            if not valido:
-                messages.error(request, msg_erro)
-                if tags_suspeitas:
-                    messages.warning(
-                        request,
-                        "Revise no Word as tags abaixo:\n• " + "\n• ".join(tags_suspeitas),
-                    )
-                return redirect('editar_template', template_id=template.id)
+            # Mesma pré-validação do upload: um arquivo quebrado nunca
+            # substitui um modelo que está funcionando.
+            relatorio = analisar_template_docx(docx_bytes)
+            if not relatorio.ok:
+                return _render_relatorio_validacao(
+                    request,
+                    relatorio,
+                    reverse('editar_template', args=[template.id]),
+                    template_existente=template,
+                )
 
             template.arquivo_template.save(arquivo.name, ContentFile(docx_bytes), save=False)
             template.configuracao_campos = template_utils.apply_renames_to_configuracao(
