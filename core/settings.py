@@ -233,11 +233,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # --- CONFIGURAÇÕES DE TIMEOUT DA SESSÃO ---
-# Opção A (escolhida): janela de 30 min com sliding expiration.
-# A cada request o cookie é renovado por mais 30 min — o usuário só é
-# deslogado por inatividade. EXPIRE_AT_BROWSER_CLOSE precisa ser False,
-# senão o cookie vira "session cookie" e o COOKIE_AGE é ignorado.
-SESSION_COOKIE_AGE = 1800  # 30 minutos
+# Janela de 12h com sliding expiration: a cada request o cookie é renovado
+# por mais 12h, então o usuário só cai por inatividade. Era 30 min e o
+# pessoal perdia peça preenchida pela metade ao ser deslogado no meio do
+# trabalho. EXPIRE_AT_BROWSER_CLOSE precisa ser False, senão o cookie vira
+# "session cookie" e o COOKIE_AGE é ignorado.
+SESSION_COOKIE_AGE = 60 * 60 * 12  # 12 horas
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 

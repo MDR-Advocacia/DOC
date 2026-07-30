@@ -66,11 +66,20 @@ from .utils import (
 )
 
 
-def _render_relatorio_validacao(request, relatorio, url_voltar, template_existente=None):
-    """Tela de pré-validação reprovada: mostra cada problema já localizado.
+def _render_relatorio_validacao(
+    request,
+    relatorio,
+    url_voltar,
+    modo='upload',
+    template_existente=None,
+    pode_corrigir=True,
+):
+    """Tela de problemas do modelo, com cada erro já localizado.
 
-    Usada pelos três caminhos que aceitam .docx (upload manual, sugestão por
-    IA e troca de arquivo na edição) para que a mensagem seja sempre a mesma.
+    ``modo='upload'``  — o arquivo foi recusado na entrada (upload manual,
+    sugestão por IA ou troca do arquivo base). Nada foi salvo.
+    ``modo='geracao'`` — o modelo já estava no catálogo e quebrou na hora de
+    gerar; cadastrado antes da pré-validação existir.
     """
     return render(
         request,
@@ -78,7 +87,9 @@ def _render_relatorio_validacao(request, relatorio, url_voltar, template_existen
         {
             'relatorio': relatorio,
             'url_voltar': url_voltar,
+            'modo': modo,
             'template_existente': template_existente,
+            'pode_corrigir': pode_corrigir,
         },
     )
 
@@ -691,6 +702,34 @@ def gerar_documento(request, template_id):
                 template.titulo,
                 template.arquivo_template.name,
             )
+
+            # Modelos cadastrados antes da pré-validação existir podem estar
+            # quebrados no catálogo. Em vez de despejar o erro cru do Jinja
+            # ("'e' is undefined"), roda o mesmo analisador do upload e mostra
+            # o relatório localizado.
+            try:
+                template.arquivo_template.open('rb')
+                relatorio = analisar_template_docx(template.arquivo_template.read())
+            except Exception:
+                relatorio = None
+            finally:
+                template.arquivo_template.close()
+
+            if relatorio is not None and not relatorio.ok:
+                pode_corrigir = _pode_gerenciar_template(request.user, template)
+                if pode_corrigir:
+                    url_voltar = reverse('editar_template', args=[template.id])
+                else:
+                    url_voltar = reverse('lista_templates')
+                return _render_relatorio_validacao(
+                    request,
+                    relatorio,
+                    url_voltar,
+                    modo='geracao',
+                    template_existente=template,
+                    pode_corrigir=pode_corrigir,
+                )
+
             messages.error(request, f"Erro ao gerar o documento: {exc}")
             return redirect('lista_templates')
 

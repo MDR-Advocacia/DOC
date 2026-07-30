@@ -6,9 +6,15 @@
 
 <div class="page-head">
 <div>
+{% if modo == 'geracao' %}
+<span class="eyebrow">Modelo com defeito</span>
+<h1 style="margin-top:.4rem">Não deu para gerar o documento</h1>
+<p class="lead">O modelo <strong>{{ template_existente.titulo }}</strong> tem {{ relatorio.erros|length }} tag{{ relatorio.erros|length|pluralize:"s" }} quebrada{{ relatorio.erros|length|pluralize:"s" }}. Nada que você preencheu está errado — o defeito está no arquivo do modelo.</p>
+{% else %}
 <span class="eyebrow">Pré-validação do modelo</span>
 <h1 style="margin-top:.4rem">O arquivo não foi aceito</h1>
 <p class="lead">Encontrei {{ relatorio.erros|length }} problema{{ relatorio.erros|length|pluralize:"s" }} que fariam a geração falhar. Corrija no Word e envie de novo.</p>
+{% endif %}
 </div>
 <a href="{{ url_voltar }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
 </div>
@@ -16,8 +22,16 @@
 <div class="alert alert-info mb-4">
 <i class="fa-solid fa-circle-info"></i>
 <div>
+{% if modo == 'geracao' %}
+{% if pode_corrigir %}
+<strong>Você pode corrigir.</strong> Ajuste as tags no Word e substitua o arquivo base pela tela de edição do modelo.
+{% else %}
+<strong>Avise quem cuida deste modelo.</strong> A correção é no arquivo do Word — mostre esta tela para quem for corrigir.
+{% endif %}
+{% else %}
 <strong>Nada foi salvo.</strong>
 {% if template_existente %}O modelo atual continua no ar, intacto.{% else %}O modelo não foi criado.{% endif %}
+{% endif %}
 {% if not relatorio.paginacao_disponivel %}
 <br><span style="font-size:.85rem;">Este arquivo não tem marcadores de quebra de página, então não dá para dizer a página — o Word calcula isso só ao renderizar. Use o <strong>número do parágrafo</strong> e o <strong>trecho do texto</strong> abaixo (Ctrl+F no Word) para achar cada ponto.</span>
 {% endif %}
@@ -89,8 +103,15 @@
 {% endif %}
 
 <div class="d-flex gap-2 mt-4">
+{% if modo == 'geracao' %}
+{% if pode_corrigir %}
+<a href="{{ url_voltar }}" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Corrigir o modelo</a>
+{% endif %}
+<a href="{% url 'lista_templates' %}" class="btn btn-outline-primary">Voltar ao catálogo</a>
+{% else %}
 <a href="{{ url_voltar }}" class="btn btn-primary"><i class="fa-solid fa-rotate-left"></i> Corrigir e enviar de novo</a>
 <a href="{% url 'lista_templates' %}" class="btn btn-outline-primary">Ir para o catálogo</a>
+{% endif %}
 </div>
 
 </div>
