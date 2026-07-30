@@ -34,6 +34,32 @@ services:
       retries: 3
       start_period: 40s
 
+  # Edição online do .docx — PROVA DE CONCEITO, só sobe sob demanda:
+  #   docker compose --profile collabora up -d
+  # O profile mantém o serviço fora de qualquer deploy que não peça por ele.
+  #
+  # Fluxo: o navegador carrega o editor de localhost:9980; o container do
+  # Collabora chama de volta o Django em http://web:8000/wopi/... pela rede
+  # interna do compose. Por isso são dois endereços diferentes nas envs do
+  # serviço web (COLLABORA_SERVER_URL x COLLABORA_WOPI_HOST).
+  collabora:
+    image: collabora/code:latest
+    profiles: ["collabora"]
+    environment:
+      # Allowlist de hosts WOPI: sem isso o Collabora recusa as chamadas.
+      - aliasgroup1=http://web:8000
+      # PoC em HTTP puro na rede local — sem TLS e sem terminação de TLS.
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=false
+      - DONT_GEN_SSL_CERT=1
+      - username=admin
+      - password=admin
+      - dictionaries=pt_BR en_US
+    ports:
+      - "9980:9980"
+    cap_add:
+      - MKNOD
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   media_volume:

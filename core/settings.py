@@ -233,6 +233,33 @@ if RUNNING_TESTS:
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# --- EDIÇÃO ONLINE VIA COLLABORA (WOPI) ---
+# Prova de conceito, DESLIGADA por padrão. Quando ligada, o Django passa a
+# expor endpoints WOPI que entregam e gravam o .docx autenticando por token
+# assinado em vez de sessão — é o Collabora (servidor) que chama, não o
+# navegador do usuário. Por isso fica atrás de flag: em produção só liga
+# depois de revisar essa superfície.
+COLLABORA_ENABLED = _env_as_bool('COLLABORA_ENABLED', False)
+
+# URL que o NAVEGADOR usa para carregar o editor.
+COLLABORA_SERVER_URL = os.environ.get('COLLABORA_SERVER_URL', 'http://localhost:9980')
+
+# URL pela qual o CONTAINER do Collabora enxerga este Django. Não é a mesma
+# de cima: o navegador fala com localhost, o Collabora fala com o nome do
+# serviço na rede do compose.
+COLLABORA_WOPI_HOST = os.environ.get('COLLABORA_WOPI_HOST', 'http://web:8000')
+
+# Origem do DOC do ponto de vista do NAVEGADOR — usada no PostMessageOrigin
+# do CheckFileInfo, que é como o editor conversa com a página que o embute.
+# Não dá para deduzir do request: quem chama o CheckFileInfo é o Collabora,
+# que enxerga o Django por outro endereço (COLLABORA_WOPI_HOST).
+COLLABORA_HOST_ORIGIN = os.environ.get('COLLABORA_HOST_ORIGIN', 'http://localhost:8900')
+
+# Validade do token de edição. Curto de propósito: ele dá acesso de leitura
+# e escrita a um documento sem passar pela sessão.
+COLLABORA_TOKEN_TTL = int(os.environ.get('COLLABORA_TOKEN_TTL', '3600'))
+
+
 # --- CONFIGURAÇÕES DE TIMEOUT DA SESSÃO ---
 # Janela de 12h com sliding expiration: a cada request o cookie é renovado
 # por mais 12h, então o usuário só cai por inatividade. Era 30 min e o

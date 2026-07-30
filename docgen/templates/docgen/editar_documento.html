@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<style>
+#editor-collabora { width: 100%; height: calc(100vh - 170px); min-height: 520px; border: 0; }
+.editor-moldura { border: 1px solid hsl(var(--apex-border)); border-radius: var(--apex-radius); overflow: hidden; background: hsl(var(--apex-surface-2)); }
+</style>
+
+<div class="page-head">
+<div>
+<span class="eyebrow">Documento gerado</span>
+<h1 style="margin-top:.4rem">{{ documento.template.titulo }}</h1>
+<p class="lead">Gerado em {{ documento.data_geracao|date:"d/m/Y H:i" }}. As alterações são salvas direto no arquivo.</p>
+</div>
+<div class="d-flex gap-2">
+{% if documento.arquivo_final %}
+<a href="{{ documento.arquivo_final.url }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-download"></i> Baixar .docx</a>
+{% endif %}
+<a href="{% url 'dashboard' %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
+</div>
+</div>
+
+{% if erro %}
+<div class="card" style="border: 1px solid hsl(var(--apex-error) / .35);">
+<div class="card-body">
+<h3 style="font-size:1rem; color: hsl(var(--apex-error));"><i class="fa-solid fa-plug-circle-xmark"></i> Editor indisponível</h3>
+<p class="text-muted-apex mb-2" style="font-size:.88rem;">{{ erro }}</p>
+<p class="text-soft-apex mb-0" style="font-size:.8rem;">
+O serviço do Collabora precisa estar no ar. Localmente:
+<code>docker compose --profile collabora up -d collabora</code>
+</p>
+</div>
+</div>
+{% else %}
+<div class="editor-moldura">
+<iframe id="editor-collabora" src="{{ url_editor }}" allow="clipboard-read; clipboard-write" title="Editor do documento"></iframe>
+</div>
+<p class="text-soft-apex mt-2" style="font-size:.72rem;">
+Edição servida pelo Collabora Online (motor do LibreOffice). Ao salvar, o <strong>.docx</strong> é reescrito por esse motor — confira a formatação antes de protocolar.
+</p>
+{% endif %}
+
+{% endblock %}

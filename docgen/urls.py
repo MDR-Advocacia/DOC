@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from . import api_views, arquivos_views, sso_views, views
+from . import api_views, arquivos_views, sso_views, views, wopi_views
 
 
 urlpatterns = [
@@ -53,6 +53,13 @@ urlpatterns = [
     path('equipes/excluir/<int:equipe_id>/', views.excluir_equipe, name='excluir_equipe'),
     path('equipes/<int:equipe_pai_id>/criar-nucleo/', views.criar_nucleo_vinculado, name='criar_nucleo_vinculado'),
     path('definir-senha/', views.definir_senha_primeiro_acesso, name='definir_primeira_senha'),
+    # Edição online (Collabora/WOPI). As rotas /wopi/ são chamadas pelo
+    # servidor do Collabora, não pelo navegador — autenticam por token.
+    path('documento/<int:documento_id>/editar/', wopi_views.editar_documento, name='editar_documento'),
+    path('wopi/files/<int:documento_id>', wopi_views.check_file_info, name='wopi_check_file_info'),
+    # GetFile (GET) e PutFile (POST) compartilham a MESMA URL no protocolo —
+    # o que muda é o método.
+    path('wopi/files/<int:documento_id>/contents', wopi_views.contents, name='wopi_contents'),
     path('api/v1/biblioteca/', api_views.BibliotecaAPIView.as_view(), name='api_biblioteca'),
     path('api/v1/gerar/', api_views.GerarDocumentoAPIView.as_view(), name='api_gerar'),
 ]

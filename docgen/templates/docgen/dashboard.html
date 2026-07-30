@@ -29,6 +29,9 @@
 <td>{{ doc.usuario.username }}</td>
 <td class="text-end" style="padding-right: 1.25rem;">
 {% if doc.arquivo_final %}
+{% if collabora_ativo %}
+<a href="{% url 'editar_documento' doc.id %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen-to-square"></i> Editar</a>
+{% endif %}
 <a href="{{ doc.arquivo_final.url }}" class="btn btn-outline-primary btn-sm" download><i class="fa-solid fa-download"></i> Baixar</a>
 {% else %}
 <span class="chip neutral">Indisponível</span>

@@ -813,7 +813,11 @@ def dashboard(request):
 
     paginator = Paginator(historico, 15)
     page_obj = paginator.get_page(request.GET.get('page'))
-    return render(request, 'docgen/dashboard.html', {'historico': page_obj, 'page_obj': page_obj})
+    return render(request, 'docgen/dashboard.html', {
+        'historico': page_obj,
+        'page_obj': page_obj,
+        'collabora_ativo': settings.COLLABORA_ENABLED,
+    })
 
 
 @login_required
