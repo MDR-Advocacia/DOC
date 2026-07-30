@@ -11,6 +11,7 @@ urlpatterns = [
     path('guia-modelos/', views.guia_modelos, name='guia_modelos'),
     path('catalogo/', views.lista_templates, name='lista_templates'),
     path('gerar/<int:template_id>/', views.gerar_documento, name='gerar_documento'),
+    path('preview/<int:template_id>/', views.preview_documento, name='preview_documento'),
     path('minha-biblioteca/', views.minha_biblioteca, name='minha_biblioteca'),
     path('minha-biblioteca/nova-pasta/', views.criar_pasta, name='criar_pasta'),
     path('minha-biblioteca/excluir-pasta/<int:pasta_id>/', views.excluir_pasta, name='excluir_pasta'),

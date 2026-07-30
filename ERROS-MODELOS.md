@@ -68,6 +68,26 @@ imagem Docker) — não compensa.
 
 ---
 
+## Imagem gigante deixa a pré-visualização lenta
+
+Não quebra a geração, mas trava a prévia. O LibreOffice precisa decodificar e
+reescalar cada imagem embutida; imagem de scanner em resolução cheia custa
+dezenas de segundos.
+
+Medido em container de 4 CPUs:
+
+| Modelo | Maior imagem | Conversão |
+|---|---|---|
+| Banco Master - Contestação | 0,4 MP | **1,5 s** |
+| PASEP Base | 2,8 MP | **1,3 s** |
+| PETIÇÃO INICIAL - EXECUÇÃO (BB) | **27,6 MP** (4419×6250) | **21 s** |
+
+Regra prática: imagem acima de ~3 MP num modelo não agrega nada (a página tem
+~16 cm de largura útil) e só pesa. Ao montar o modelo, reduza a imagem antes de
+colar no Word — ou use "Comprimir Imagens" do próprio Word.
+
+---
+
 ## Casos reais já encontrados
 
 | Data | Modelo | Erro | Onde |

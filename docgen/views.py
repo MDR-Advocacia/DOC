@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.db.models import (
@@ -57,6 +58,7 @@ from .models import (
     Template,
     TemplateFavorito,
 )
+from . import preview
 from .template_validacao import analisar_template_docx
 from .utils import (
     carregar_campos_template,
@@ -734,6 +736,68 @@ def gerar_documento(request, template_id):
             return redirect('lista_templates')
 
     return render(request, 'docgen/formulario.html', {'template': template, 'campos': campos})
+
+
+@login_required
+def preview_documento(request, template_id):
+    """Renderiza o modelo com os dados parciais do formulário e devolve o PDF.
+
+    O PDF é só o formato de exibição — é o que o navegador sabe desenhar com
+    fidelidade de página. O download final continua sendo o .docx.
+    """
+    template = get_object_or_404(Template, pk=template_id, ativo=True)
+
+    if request.method != 'POST':
+        return JsonResponse({'erro': 'metodo', 'mensagem': 'Use POST.'}, status=405)
+
+    if not preview.libreoffice_disponivel():
+        return JsonResponse(
+            {
+                'erro': 'indisponivel',
+                'mensagem': (
+                    "A pré-visualização não está disponível neste ambiente "
+                    "(LibreOffice não instalado). O download do .docx funciona normalmente."
+                ),
+            },
+            status=503,
+        )
+
+    # Confere o cache antes de renderizar: se os dados não mudaram desde a
+    # última prévia, não há por que refazer render nem conversão.
+    chave = preview.chave_cache(template, request.POST, request.FILES)
+    pdf = cache.get(chave)
+
+    if pdf is None:
+        try:
+            conteudo_docx, _dados_log, _campos = renderizar_template_docx(
+                template, dados=request.POST, arquivos=request.FILES
+            )
+        except Exception as exc:
+            logger.exception(
+                "preview_documento: falha ao renderizar template_id=%s", template.id
+            )
+            return JsonResponse(
+                {
+                    'erro': 'modelo',
+                    'mensagem': (
+                        f"Não foi possível montar a prévia: {exc}. "
+                        "O modelo pode estar com alguma tag quebrada."
+                    ),
+                },
+                status=422,
+            )
+
+        try:
+            pdf = preview.docx_para_pdf(conteudo_docx)
+        except preview.LibreOfficeIndisponivel as exc:
+            logger.warning("preview_documento: conversao falhou — %s", exc)
+            return JsonResponse({'erro': 'conversao', 'mensagem': str(exc)}, status=503)
+
+        cache.set(chave, pdf, 600)
+
+    resposta = HttpResponse(pdf, content_type='application/pdf')
+    resposta['Content-Disposition'] = 'inline; filename="previa.pdf"'
+    return resposta
 
 
 @login_required

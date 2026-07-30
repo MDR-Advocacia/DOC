@@ -1,6 +1,7 @@
 
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 try:
@@ -238,6 +239,21 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # pessoal perdia peça preenchida pela metade ao ser deslogado no meio do
 # trabalho. EXPIRE_AT_BROWSER_CLOSE precisa ser False, senão o cookie vira
 # "session cookie" e o COOKIE_AGE é ignorado.
+# Cache em arquivo em vez do LocMem padrão: o LocMem é por processo e o
+# gunicorn roda 3 workers, então a prévia de um request cairia em um worker e
+# a próxima em outro, sempre errando o cache. Arquivo é compartilhado dentro
+# do container e guarda blob de PDF sem precisar de Redis.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': os.environ.get(
+            'CACHE_DIR', str(Path(tempfile.gettempdir()) / 'doc_cache')
+        ),
+        'TIMEOUT': 600,
+        'OPTIONS': {'MAX_ENTRIES': 200},
+    }
+}
+
 SESSION_COOKIE_AGE = 60 * 60 * 12  # 12 horas
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False

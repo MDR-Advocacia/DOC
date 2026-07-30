@@ -3,19 +3,39 @@
 
 
 {% block content %}
-<div style="max-width: 880px;">
+<style>
+.preencher-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
+.preencher-layout .coluna-form { flex: 1 1 0; min-width: 0; max-width: 880px; }
+.preencher-layout .coluna-preview { flex: 1 1 0; min-width: 0; position: sticky; top: 1rem; }
+.preencher-layout.sem-preview .coluna-form { margin: 0 auto; }
+#preview-frame { width: 100%; height: calc(100vh - 190px); min-height: 420px; border: 0; background: hsl(var(--apex-surface-2)); }
+#preview-status { font-size: .8rem; }
+.preview-vazio { display: flex; align-items: center; justify-content: center; height: calc(100vh - 190px); min-height: 420px; text-align: center; padding: 2rem; }
+@media (max-width: 1200px) {
+  .preencher-layout { flex-direction: column; }
+  .preencher-layout .coluna-form, .preencher-layout .coluna-preview { max-width: 100%; width: 100%; position: static; }
+}
+</style>
+
+<div>
 
 <div class="page-head">
 <div>
 <span class="eyebrow">Catálogo › {{ template.setor.nome }}</span>
 <h1 style="margin-top:.4rem">{{ template.titulo }}</h1>
 </div>
+<div class="d-flex gap-2">
+<button type="button" id="btn-preview" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-eye"></i> Pré-visualizar</button>
 <a href="{% url 'lista_templates' %}" class="btn btn-outline-primary btn-sm" title="Voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
 </div>
+</div>
+
+<div class="preencher-layout sem-preview" id="layout-preencher">
+<div class="coluna-form">
 
 <div class="card">
 <div class="card-body" style="padding: 2rem;">
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" id="form-peca">
 {% csrf_token %}
 {% for campo in campos %}
 <div class="mb-4 field-wrapper" id="div_{{ campo.tag }}" data-tag="{{ campo.tag }}" data-dependencia="{{ campo.dependencia|default:'' }}" style="transition: all .3s ease;{% if campo.dependencia %}display:none;{% endif %}">
@@ -92,6 +112,37 @@
 <p class="text-center text-soft-apex mt-3 mb-4" style="font-size: .75rem;">
 <i class="fa-solid fa-lock"></i> Seus dados são processados de forma segura e não são compartilhados.
 </p>
+
+</div>
+
+<aside class="coluna-preview" id="painel-preview" hidden>
+<div class="card">
+<div class="card-header d-flex justify-content-between align-items-center" style="gap:.75rem;">
+<div style="min-width:0;">
+<h2 style="font-size:.95rem; margin:0;"><i class="fa-solid fa-eye" style="color: hsl(var(--duna-blue));"></i> Prévia</h2>
+<div id="preview-status" class="text-soft-apex">Como a peça vai sair</div>
+</div>
+<div class="d-flex gap-2">
+<button type="button" id="btn-atualizar-preview" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+<button type="button" id="btn-fechar-preview" class="btn btn-light btn-sm" title="Fechar"><i class="fa-solid fa-xmark"></i></button>
+</div>
+</div>
+<div class="card-body" style="padding:0;">
+<div id="preview-vazio" class="preview-vazio text-muted-apex">
+<div>
+<i class="fa-regular fa-file-pdf fa-2x mb-3 opacity-50"></i>
+<p class="mb-0" style="font-size:.88rem;">Gerando a prévia…</p>
+</div>
+</div>
+<iframe id="preview-frame" title="Pré-visualização da peça" hidden></iframe>
+</div>
+</div>
+<p class="text-soft-apex mt-2" style="font-size:.72rem;">
+A prévia é uma renderização em PDF só para conferência. O arquivo entregue no botão <strong>Gerar documento</strong> continua sendo o <strong>.docx</strong>.
+</p>
+</aside>
+
+</div>
 </div>
 {% endblock %}
 
@@ -115,5 +166,94 @@ function verificarDependencias() {
   });
 }
 document.addEventListener('DOMContentLoaded', verificarDependencias);
+
+// ---------- Pré-visualização ----------
+// Converter no LibreOffice custa alguns segundos, então NÃO atualizamos a cada
+// tecla: só quando o campo perde o foco (change), com debounce, e sempre
+// cancelando a requisição anterior que ainda estiver voando.
+(function () {
+  const btnAbrir     = document.getElementById('btn-preview');
+  const btnAtualizar = document.getElementById('btn-atualizar-preview');
+  const btnFechar    = document.getElementById('btn-fechar-preview');
+  const painel       = document.getElementById('painel-preview');
+  const layout       = document.getElementById('layout-preencher');
+  const frame        = document.getElementById('preview-frame');
+  const vazio        = document.getElementById('preview-vazio');
+  const status       = document.getElementById('preview-status');
+  const form         = document.getElementById('form-peca');
+
+  let aberto = false;
+  let emVoo = null;
+  let debounce = null;
+  let urlAtual = null;
+
+  function mostrarEstado(texto, html) {
+    status.textContent = texto;
+    if (html !== undefined) {
+      vazio.innerHTML = html;
+      vazio.hidden = false;
+      frame.hidden = true;
+    }
+  }
+
+  async function atualizarPreview() {
+    if (!aberto) return;
+    if (emVoo) emVoo.abort();
+    emVoo = new AbortController();
+
+    btnAtualizar.disabled = true;
+    mostrarEstado('Gerando…', '<div><i class="fa-solid fa-spinner fa-spin fa-2x mb-3 opacity-50"></i><p class="mb-0" style="font-size:.88rem;">Montando a prévia…</p></div>');
+
+    try {
+      const resposta = await fetch(`/preview/{{ template.id }}/`, {
+        method: 'POST',
+        body: new FormData(form),
+        signal: emVoo.signal,
+      });
+
+      if (!resposta.ok) {
+        let msg = 'Não foi possível gerar a prévia.';
+        try { msg = (await resposta.json()).mensagem || msg; } catch (e) {}
+        mostrarEstado('Falhou', `<div><i class="fa-solid fa-triangle-exclamation fa-2x mb-3" style="color: hsl(var(--apex-error));"></i><p class="mb-0" style="font-size:.86rem;">${msg}</p></div>`);
+        return;
+      }
+
+      const blob = await resposta.blob();
+      if (urlAtual) URL.revokeObjectURL(urlAtual);
+      urlAtual = URL.createObjectURL(blob);
+      frame.src = urlAtual;
+      frame.hidden = false;
+      vazio.hidden = true;
+      status.textContent = 'Atualizada agora';
+    } catch (erro) {
+      if (erro.name === 'AbortError') return;   // substituída por uma mais nova
+      mostrarEstado('Falhou', '<div><i class="fa-solid fa-triangle-exclamation fa-2x mb-3" style="color: hsl(var(--apex-error));"></i><p class="mb-0" style="font-size:.86rem;">Erro de rede ao gerar a prévia.</p></div>');
+    } finally {
+      btnAtualizar.disabled = false;
+      emVoo = null;
+    }
+  }
+
+  function agendarAtualizacao() {
+    if (!aberto) return;
+    clearTimeout(debounce);
+    status.textContent = 'Aguardando…';
+    debounce = setTimeout(atualizarPreview, 800);
+  }
+
+  btnAbrir.addEventListener('click', () => {
+    aberto = !aberto;
+    painel.hidden = !aberto;
+    layout.classList.toggle('sem-preview', !aberto);
+    btnAbrir.innerHTML = aberto
+      ? '<i class="fa-solid fa-eye-slash"></i> Ocultar prévia'
+      : '<i class="fa-solid fa-eye"></i> Pré-visualizar';
+    if (aberto) atualizarPreview();
+  });
+
+  btnFechar.addEventListener('click', () => btnAbrir.click());
+  btnAtualizar.addEventListener('click', atualizarPreview);
+  form.addEventListener('change', agendarAtualizacao);
+})();
 </script>
 {% endblock %}

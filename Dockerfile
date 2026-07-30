@@ -8,11 +8,27 @@ ENV PYTHONUNBUFFERED=1
 # Define onde o app vai ficar dentro do container
 WORKDIR /app
 
-# Instala dependências do sistema (necessárias para o Postgres e healthcheck)
-RUN apt-get update && apt-get install -y \
+# Instala dependências do sistema (Postgres, healthcheck e pré-visualização).
+#
+# libreoffice-writer converte o .docx em PDF para a prévia fiel na tela — o
+# navegador não renderiza .docx. Pesa a imagem em ~500MB; é o preço de mostrar
+# a peça com a paginação e as margens reais.
+#
+# As fontes são o que faz a prévia bater com o Word. Sem elas o LibreOffice
+# substitui por qualquer coisa e a quebra de linha muda:
+#   fonts-liberation        → métrica de Arial, Times New Roman e Courier New
+#   fonts-urw-base35        → URW Palladio, métrica de Palatino Linotype
+#   fonts-crosextra-carlito → métrica de Calibri
+#   fonts-crosextra-caladea → métrica de Cambria
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
     curl \
+    libreoffice-writer \
+    fonts-liberation \
+    fonts-urw-base35 \
+    fonts-crosextra-carlito \
+    fonts-crosextra-caladea \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia e instala as dependências do Python
