@@ -5,12 +5,18 @@
 {% block content %}
 <style>
 .preencher-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
-.preencher-layout .coluna-form { flex: 1 1 0; min-width: 0; max-width: 880px; }
-.preencher-layout .coluna-preview { flex: 1 1 0; min-width: 0; position: sticky; top: 1rem; }
-.preencher-layout.sem-preview .coluna-form { margin: 0 auto; }
-#preview-frame { width: 100%; height: calc(100vh - 190px); min-height: 420px; border: 0; background: hsl(var(--apex-surface-2)); }
-#preview-status { font-size: .8rem; }
-.preview-vazio { display: flex; align-items: center; justify-content: center; height: calc(100vh - 190px); min-height: 420px; text-align: center; padding: 2rem; }
+/* Com a prévia aberta o formulário encolhe 20% (50% → 40%) e a prévia fica
+   com os 60% restantes: é nela que o usuário confere a peça. */
+.preencher-layout .coluna-form { flex: 4 1 0; min-width: 0; max-width: 880px; }
+.preencher-layout .coluna-preview { flex: 6 1 0; min-width: 0; position: sticky; top: 1rem; }
+.preencher-layout.sem-preview .coluna-form { flex: 1 1 auto; margin: 0 auto; }
+
+.coluna-preview .card { border: 1px solid hsl(var(--duna-blue) / .35); box-shadow: 0 10px 30px hsl(var(--duna-navy) / .12); }
+.coluna-preview .card-header { background: hsl(var(--duna-blue) / .07); }
+#preview-frame { width: 100%; height: calc(100vh - 150px); min-height: 520px; border: 0; background: hsl(var(--apex-surface-2)); }
+#preview-status { font-size: .82rem; }
+.preview-vazio { display: flex; align-items: center; justify-content: center; height: calc(100vh - 150px); min-height: 520px; text-align: center; padding: 2rem; }
+
 @media (max-width: 1200px) {
   .preencher-layout { flex-direction: column; }
   .preencher-layout .coluna-form, .preencher-layout .coluna-preview { max-width: 100%; width: 100%; position: static; }
@@ -119,7 +125,7 @@
 <div class="card">
 <div class="card-header d-flex justify-content-between align-items-center" style="gap:.75rem;">
 <div style="min-width:0;">
-<h2 style="font-size:.95rem; margin:0;"><i class="fa-solid fa-eye" style="color: hsl(var(--duna-blue));"></i> Prévia</h2>
+<h2 style="font-size:1.1rem; margin:0;"><i class="fa-solid fa-eye" style="color: hsl(var(--duna-blue));"></i> Prévia</h2>
 <div id="preview-status" class="text-soft-apex">Como a peça vai sair</div>
 </div>
 <div class="d-flex gap-2">
@@ -131,14 +137,15 @@
 <div id="preview-vazio" class="preview-vazio text-muted-apex">
 <div>
 <i class="fa-regular fa-file-pdf fa-2x mb-3 opacity-50"></i>
-<p class="mb-0" style="font-size:.88rem;">Gerando a prévia…</p>
+<p class="mb-1" style="font-size:.95rem;">Gerando a prévia…</p>
+<p class="mb-0 text-soft-apex" style="font-size:.8rem;">Peças maiores podem levar alguns segundos.</p>
 </div>
 </div>
 <iframe id="preview-frame" title="Pré-visualização da peça" hidden></iframe>
 </div>
 </div>
 <p class="text-soft-apex mt-2" style="font-size:.72rem;">
-A prévia é uma renderização em PDF só para conferência. O arquivo entregue no botão <strong>Gerar documento</strong> continua sendo o <strong>.docx</strong>.
+A prévia é uma renderização em PDF só para conferência — peças maiores levam alguns segundos a mais para montar. O arquivo entregue no botão <strong>Gerar documento</strong> continua sendo o <strong>.docx</strong>.
 </p>
 </aside>
 
@@ -214,7 +221,7 @@ document.addEventListener('DOMContentLoaded', verificarDependencias);
     emVoo = new AbortController();
 
     btnAtualizar.disabled = true;
-    mostrarEstado('Gerando…', '<div><i class="fa-solid fa-spinner fa-spin fa-2x mb-3 opacity-50"></i><p class="mb-0" style="font-size:.88rem;">Montando a prévia…</p></div>');
+    mostrarEstado('Gerando…', '<div><i class="fa-solid fa-spinner fa-spin fa-2x mb-3 opacity-50"></i><p class="mb-1" style="font-size:.95rem;">Montando a prévia…</p><p class="mb-0 text-soft-apex" style="font-size:.8rem;">Peças maiores podem levar alguns segundos.</p></div>');
 
     try {
       const resposta = await fetch(`/preview/{{ template.id }}/`, {
@@ -233,7 +240,10 @@ document.addEventListener('DOMContentLoaded', verificarDependencias);
       const blob = await resposta.blob();
       if (urlAtual) URL.revokeObjectURL(urlAtual);
       urlAtual = URL.createObjectURL(blob);
-      frame.src = urlAtual;
+      // view=FitH faz o leitor de PDF ajustar a página à largura do painel —
+      // como a coluna da prévia é a maior, o texto sai bem maior do que no
+      // zoom padrão. Sem barra lateral de miniaturas para não roubar espaço.
+      frame.src = urlAtual + '#view=FitH&navpanes=0';
       frame.hidden = false;
       vazio.hidden = true;
       status.textContent = 'Atualizada agora';
