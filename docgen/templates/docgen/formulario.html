@@ -151,18 +151,30 @@ A prévia é uma renderização em PDF só para conferência. O arquivo entregue
 function verificarDependencias() {
   document.querySelectorAll('.field-wrapper').forEach(div => {
     const dependencia = div.getAttribute('data-dependencia');
-    if (dependencia && dependencia !== "") {
-      const paiInput = document.getElementById(dependencia);
-      if (paiInput && paiInput.type === 'checkbox') {
-        if (paiInput.checked) {
-          div.style.display = 'block';
-          setTimeout(() => { div.style.opacity = '1'; }, 50);
-        } else {
-          div.style.display = 'none';
-          div.style.opacity = '0';
-        }
-      }
+    if (!dependencia) return;   // campo sempre visível, nada a fazer
+
+    const paiInput = document.getElementById(dependencia);
+    const visivel = !!(paiInput && paiInput.type === 'checkbox' && paiInput.checked);
+
+    div.style.display = visivel ? 'block' : 'none';
+    if (visivel) {
+      setTimeout(() => { div.style.opacity = '1'; }, 50);
+    } else {
+      div.style.opacity = '0';
     }
+
+    // Campo escondido NÃO pode continuar `required`: o navegador se recusa a
+    // enviar um formulário que tem controle inválido impossível de focar, e
+    // falha calado — só loga "An invalid form control is not focusable" no
+    // console. Era o motivo de "Gerar documento" não fazer absolutamente nada
+    // em modelos com data/lista condicional (ex: PETIÇÃO INICIAL - EXECUÇÃO,
+    // com 15 datas atreladas a checkbox desmarcado).
+    div.querySelectorAll('input, select, textarea').forEach(campo => {
+      if (campo.dataset.requiredOriginal === undefined) {
+        campo.dataset.requiredOriginal = campo.required ? '1' : '0';
+      }
+      campo.required = visivel && campo.dataset.requiredOriginal === '1';
+    });
   });
 }
 document.addEventListener('DOMContentLoaded', verificarDependencias);
