@@ -26,7 +26,7 @@ from __future__ import annotations
 import logging
 import urllib.error
 import urllib.request
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urlsplit
 from xml.etree import ElementTree
 
 from django.conf import settings
@@ -76,6 +76,22 @@ def validar_token(token: str, documento_id: int) -> int | None:
 # Descoberta do editor
 # ---------------------------------------------------------------------------
 
+def _reescrever_para_o_navegador(urlsrc: str) -> str:
+    """Troca a origem do urlsrc pela que o navegador consegue alcançar.
+
+    O Collabora monta o urlsrc com o endereço pelo qual FOI consultado. Como
+    quem consulta é o Django, ele volta como ``http://collabora:9980/...`` —
+    nome de serviço que só existe dentro da rede do compose. Se isso fosse
+    direto para o iframe, o navegador não carregaria nada.
+    """
+    origem_navegador = settings.COLLABORA_SERVER_URL.rstrip('/')
+    partes = urlsplit(urlsrc)
+    if not partes.scheme:
+        return urlsrc
+    caminho = urlsrc.split(f"{partes.scheme}://{partes.netloc}", 1)[-1]
+    return f"{origem_navegador}{caminho}"
+
+
 def urlsrc_para_docx(timeout: int = 10) -> str:
     """Descobre no Collabora a URL do editor de .docx.
 
@@ -90,7 +106,7 @@ def urlsrc_para_docx(timeout: int = 10) -> str:
     if cacheado:
         return cacheado
 
-    url = f"{settings.COLLABORA_SERVER_URL.rstrip('/')}/hosting/discovery"
+    url = f"{settings.COLLABORA_INTERNAL_URL.rstrip('/')}/hosting/discovery"
     try:
         with urllib.request.urlopen(url, timeout=timeout) as resposta:
             corpo = resposta.read()
@@ -111,6 +127,7 @@ def urlsrc_para_docx(timeout: int = 10) -> str:
         if acao.get('ext') == 'docx' and acao.get('name') in ('edit', 'view'):
             urlsrc = acao.get('urlsrc')
             if urlsrc:
+                urlsrc = _reescrever_para_o_navegador(urlsrc)
                 cache.set(_CACHE_DISCOVERY, urlsrc, 3600)
                 return urlsrc
 

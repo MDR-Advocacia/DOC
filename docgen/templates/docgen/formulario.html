@@ -13,7 +13,7 @@
 
 .coluna-preview .card { border: 1px solid hsl(var(--duna-blue) / .35); box-shadow: 0 10px 30px hsl(var(--duna-navy) / .12); }
 .coluna-preview .card-header { background: hsl(var(--duna-blue) / .07); }
-#preview-frame { width: 100%; height: calc(100vh - 150px); min-height: 520px; border: 0; background: hsl(var(--apex-surface-2)); }
+#preview-frame, #editor-frame { width: 100%; height: calc(100vh - 150px); min-height: 520px; border: 0; background: hsl(var(--apex-surface-2)); }
 #preview-status { font-size: .82rem; }
 .preview-vazio { display: flex; align-items: center; justify-content: center; height: calc(100vh - 150px); min-height: 520px; text-align: center; padding: 2rem; }
 
@@ -32,6 +32,9 @@
 </div>
 <div class="d-flex gap-2">
 <button type="button" id="btn-preview" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-eye"></i> Pré-visualizar</button>
+{% if collabora_ativo %}
+<button type="button" id="btn-editar" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-pen-to-square"></i> Editar peça</button>
+{% endif %}
 <a href="{% url 'lista_templates' %}" class="btn btn-outline-primary btn-sm" title="Voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</a>
 </div>
 </div>
@@ -148,6 +151,40 @@
 A prévia é uma renderização em PDF só para conferência — peças maiores levam alguns segundos a mais para montar. O arquivo entregue no botão <strong>Gerar documento</strong> continua sendo o <strong>.docx</strong>.
 </p>
 </aside>
+
+{% if collabora_ativo %}
+<aside class="coluna-preview" id="painel-editor" hidden>
+<div class="card">
+<div class="card-header d-flex justify-content-between align-items-center" style="gap:.75rem;">
+<div style="min-width:0;">
+<h2 style="font-size:1.1rem; margin:0;"><i class="fa-solid fa-pen-to-square" style="color: hsl(var(--duna-blue));"></i> Editar peça</h2>
+<div id="editor-status" class="text-soft-apex" style="font-size:.82rem;">Alterações salvas no documento</div>
+</div>
+<div class="d-flex gap-2">
+<button type="button" id="btn-regerar" class="btn btn-outline-primary btn-sm" title="Descarta a edição manual e monta de novo a partir do formulário"><i class="fa-solid fa-rotate"></i> Regerar</button>
+<button type="button" id="btn-fechar-editor" class="btn btn-light btn-sm" title="Fechar"><i class="fa-solid fa-xmark"></i></button>
+</div>
+</div>
+<div class="card-body" style="padding:0;">
+<div id="editor-vazio" class="preview-vazio text-muted-apex">
+<div>
+<i class="fa-regular fa-file-word fa-2x mb-3 opacity-50"></i>
+<p class="mb-1" style="font-size:.95rem;">Preparando o editor…</p>
+<p class="mb-0 text-soft-apex" style="font-size:.8rem;">Peças maiores podem levar alguns segundos.</p>
+</div>
+</div>
+<iframe id="editor-frame" title="Editor da peça" hidden></iframe>
+</div>
+</div>
+<div class="alert alert-info mt-2 mb-0" style="font-size:.75rem;">
+<i class="fa-solid fa-circle-info"></i>
+<div>
+A partir daqui <strong>o documento manda, não o formulário</strong>. Mudar um campo ao lado não altera mais a peça — quem edita é você, aqui dentro. Para jogar fora a edição manual e montar de novo com os campos atuais, use <strong>Regerar</strong>.
+<br>O editor reescreve o <code>.docx</code> ao salvar; confira a formatação antes de protocolar.
+</div>
+</div>
+</aside>
+{% endif %}
 
 </div>
 </div>
@@ -270,12 +307,103 @@ document.addEventListener('DOMContentLoaded', verificarDependencias);
     btnAbrir.innerHTML = aberto
       ? '<i class="fa-solid fa-eye-slash"></i> Ocultar prévia'
       : '<i class="fa-solid fa-eye"></i> Pré-visualizar';
-    if (aberto) atualizarPreview();
+    if (aberto) {
+      if (window.__fecharEditor) window.__fecharEditor();  // dividem a coluna
+      atualizarPreview();
+    }
   });
 
   btnFechar.addEventListener('click', () => btnAbrir.click());
   btnAtualizar.addEventListener('click', atualizarPreview);
   form.addEventListener('change', agendarAtualizacao);
+
+  // Exposto para o editor poder fechar a prévia ao abrir (dividem a coluna).
+  window.__fecharPreview = () => { if (aberto) btnAbrir.click(); };
+})();
+
+// ---------- Editar peça (Collabora) ----------
+// Diferença essencial para a prévia: a prévia é descartável e se refaz a cada
+// mudança de campo; o editor tem estado. Depois que a pessoa edita à mão, o
+// documento passa a ser o dono da verdade — por isso NÃO refazemos a peça no
+// change do formulário. Só no botão Regerar, que avisa que vai descartar.
+(function () {
+  const btnEditar  = document.getElementById('btn-editar');
+  if (!btnEditar) return;   // Collabora desligado neste ambiente
+
+  const btnRegerar = document.getElementById('btn-regerar');
+  const btnFechar  = document.getElementById('btn-fechar-editor');
+  const painel     = document.getElementById('painel-editor');
+  const layout     = document.getElementById('layout-preencher');
+  const frame      = document.getElementById('editor-frame');
+  const vazio      = document.getElementById('editor-vazio');
+  const status     = document.getElementById('editor-status');
+  const form       = document.getElementById('form-peca');
+
+  let aberto = false;
+  let documentoId = null;
+
+  function mostrarEstado(texto, html) {
+    status.textContent = texto;
+    if (html !== undefined) {
+      vazio.innerHTML = html;
+      vazio.hidden = false;
+      frame.hidden = true;
+    }
+  }
+
+  async function abrirEditor(regerar) {
+    mostrarEstado('Preparando…', '<div><i class="fa-solid fa-spinner fa-spin fa-2x mb-3 opacity-50"></i><p class="mb-1" style="font-size:.95rem;">Montando a peça…</p><p class="mb-0 text-soft-apex" style="font-size:.8rem;">Peças maiores podem levar alguns segundos.</p></div>');
+
+    const dados = new FormData(form);
+    if (documentoId) dados.append('documento_id', documentoId);
+    if (regerar) dados.append('regerar', '1');
+
+    try {
+      const resposta = await fetch(`/gerar/{{ template.id }}/editar/`, {
+        method: 'POST', body: dados,
+      });
+      const corpo = await resposta.json().catch(() => ({}));
+
+      if (!resposta.ok) {
+        mostrarEstado('Falhou', `<div><i class="fa-solid fa-triangle-exclamation fa-2x mb-3" style="color: hsl(var(--apex-error));"></i><p class="mb-0" style="font-size:.86rem;">${corpo.mensagem || 'Não foi possível abrir o editor.'}</p></div>`);
+        return;
+      }
+
+      documentoId = corpo.documento_id;
+      // cache-buster: sem isso o iframe reaproveita a sessão anterior do
+      // editor e o "Regerar" pareceria não ter feito nada.
+      frame.src = corpo.url_editor + '&_r=' + Date.now();
+      frame.hidden = false;
+      vazio.hidden = true;
+      status.textContent = regerar ? 'Regerada a partir do formulário' : 'Alterações salvas no documento';
+    } catch (erro) {
+      mostrarEstado('Falhou', '<div><i class="fa-solid fa-triangle-exclamation fa-2x mb-3" style="color: hsl(var(--apex-error));"></i><p class="mb-0" style="font-size:.86rem;">Erro de rede ao abrir o editor.</p></div>');
+    }
+  }
+
+  function alternar() {
+    aberto = !aberto;
+    painel.hidden = !aberto;
+    layout.classList.toggle('sem-preview', !aberto);
+    btnEditar.innerHTML = aberto
+      ? '<i class="fa-solid fa-xmark"></i> Fechar editor'
+      : '<i class="fa-solid fa-pen-to-square"></i> Editar peça';
+    if (aberto) {
+      if (window.__fecharPreview) window.__fecharPreview();  // dividem a coluna
+      abrirEditor(false);
+    }
+  }
+
+  btnEditar.addEventListener('click', alternar);
+  btnFechar.addEventListener('click', alternar);
+  window.__fecharEditor = () => { if (aberto) alternar(); };
+  btnRegerar.addEventListener('click', () => {
+    const ok = confirm(
+      'Regerar a peça a partir dos campos do formulário?\n\n' +
+      'Tudo que você editou à mão no editor será DESCARTADO.'
+    );
+    if (ok) abrirEditor(true);
+  });
 })();
 </script>
 {% endblock %}

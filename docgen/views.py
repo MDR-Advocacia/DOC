@@ -735,7 +735,11 @@ def gerar_documento(request, template_id):
             messages.error(request, f"Erro ao gerar o documento: {exc}")
             return redirect('lista_templates')
 
-    return render(request, 'docgen/formulario.html', {'template': template, 'campos': campos})
+    return render(request, 'docgen/formulario.html', {
+        'template': template,
+        'campos': campos,
+        'collabora_ativo': settings.COLLABORA_ENABLED,
+    })
 
 
 @login_required

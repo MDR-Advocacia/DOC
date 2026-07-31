@@ -145,6 +145,82 @@ def _put_file(request, documento_id):
 
 
 @login_required
+@require_http_methods(['POST'])
+def iniciar_edicao(request, template_id):
+    """Cria (ou regenera) a peça a partir do formulário e devolve a URL do editor.
+
+    Por que precisa criar um documento: o Collabora edita um ARQUIVO, e o WOPI
+    identifica esse arquivo por um id. A prévia não precisa disso porque é
+    descartável — renderiza, mostra, joga fora. A edição precisa de algo que
+    persista, porque é nele que as alterações manuais passam a viver.
+
+    A partir daqui o dono da verdade inverte: era o formulário, passa a ser o
+    documento. Por isso regenerar é explícito (`regerar=1`) e destrutivo — se
+    fosse automático a cada mudança de campo, como na prévia, apagaria o que a
+    pessoa editou à mão.
+    """
+    from .models import Template
+    from .utils import renderizar_template_docx
+
+    _exige_flag()
+    template = get_object_or_404(Template, pk=template_id, ativo=True)
+
+    try:
+        conteudo, dados_log, _campos = renderizar_template_docx(
+            template, dados=request.POST, arquivos=request.FILES
+        )
+    except Exception as exc:
+        logger.exception("iniciar_edicao: falha ao renderizar template_id=%s", template_id)
+        return JsonResponse({
+            'erro': 'modelo',
+            'mensagem': f"Não foi possível montar a peça: {exc}",
+        }, status=422)
+
+    documento_id = request.POST.get('documento_id')
+    regerar = request.POST.get('regerar') == '1'
+    documento = None
+
+    if documento_id:
+        documento = DocumentoGerado.objects.filter(
+            pk=documento_id, usuario=request.user, template=template
+        ).first()
+
+    if documento is None:
+        documento = DocumentoGerado.objects.create(
+            usuario=request.user, template=template, dados_inputados=dados_log
+        )
+        criado = True
+    else:
+        criado = False
+        if regerar:
+            # Sobrescreve com o que está no formulário — descarta edição manual.
+            documento.dados_inputados = dados_log
+            documento.save(update_fields=['dados_inputados'])
+
+    if criado or regerar:
+        nome = _nome_arquivo(template.titulo)
+        documento.arquivo_final.save(nome, ContentFile(conteudo), save=True)
+
+    try:
+        url_editor = wopi.montar_url_editor(documento.id, request.user.id)
+    except wopi.CollaboraIndisponivel as exc:
+        return JsonResponse({'erro': 'collabora', 'mensagem': str(exc)}, status=503)
+
+    return JsonResponse({
+        'documento_id': documento.id,
+        'url_editor': url_editor,
+        'criado': criado,
+        'regerado': regerar,
+    })
+
+
+def _nome_arquivo(titulo: str) -> str:
+    import re
+    base = re.sub(r'[^\w\s-]', '', titulo).strip().replace(' ', '_')[:60] or 'peca'
+    return f"{base}.docx"
+
+
+@login_required
 def editar_documento(request, documento_id):
     """Tela que embute o editor do Collabora num iframe."""
     _exige_flag()

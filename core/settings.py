@@ -244,6 +244,12 @@ COLLABORA_ENABLED = _env_as_bool('COLLABORA_ENABLED', False)
 # URL que o NAVEGADOR usa para carregar o editor.
 COLLABORA_SERVER_URL = os.environ.get('COLLABORA_SERVER_URL', 'http://localhost:9980')
 
+# URL que o DJANGO usa para falar com o Collabora (ler /hosting/discovery).
+# Diferente da de cima: de dentro do container, "localhost" é o próprio web.
+# O discovery ainda devolve urlsrc apontando para este endereço interno, então
+# a origem é reescrita para COLLABORA_SERVER_URL antes de ir para o iframe.
+COLLABORA_INTERNAL_URL = os.environ.get('COLLABORA_INTERNAL_URL', 'http://collabora:9980')
+
 # URL pela qual o CONTAINER do Collabora enxerga este Django. Não é a mesma
 # de cima: o navegador fala com localhost, o Collabora fala com o nome do
 # serviço na rede do compose.

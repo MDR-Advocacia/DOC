@@ -55,6 +55,7 @@ urlpatterns = [
     path('definir-senha/', views.definir_senha_primeiro_acesso, name='definir_primeira_senha'),
     # Edição online (Collabora/WOPI). As rotas /wopi/ são chamadas pelo
     # servidor do Collabora, não pelo navegador — autenticam por token.
+    path('gerar/<int:template_id>/editar/', wopi_views.iniciar_edicao, name='iniciar_edicao'),
     path('documento/<int:documento_id>/editar/', wopi_views.editar_documento, name='editar_documento'),
     path('wopi/files/<int:documento_id>', wopi_views.check_file_info, name='wopi_check_file_info'),
     # GetFile (GET) e PutFile (POST) compartilham a MESMA URL no protocolo —
