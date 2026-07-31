@@ -1,0 +1,36 @@
+# Edição online do .docx — PROVA DE CONCEITO, ambiente LOCAL apenas.
+#
+# Este serviço fica FORA do docker-compose.yml de propósito: o Coolify faz o
+# deploy a partir daquele arquivo (confirmado nos labels do container de
+# produção: com.docker.compose.project.config_files aponta para o
+# docker-compose.yml do repositório). Deixar o Collabora lá dependeria de o
+# Coolify respeitar `profiles` para não subir uma imagem de ~2GB em produção —
+# e essa é uma aposta que não precisa ser feita.
+#
+# Para subir localmente:
+#   docker compose -f docker-compose.yml -f docker-compose.collabora.yml up -d
+#
+# O Django só expõe os endpoints WOPI com COLLABORA_ENABLED=True no .env.
+#
+# Fluxo dos endereços (são três, e diferentes de propósito):
+#   navegador  -> editor            http://localhost:9980   COLLABORA_SERVER_URL
+#   Django     -> Collabora         http://collabora:9980   COLLABORA_INTERNAL_URL
+#   Collabora  -> Django (WOPI)     http://web:8000         COLLABORA_WOPI_HOST
+
+services:
+  collabora:
+    image: collabora/code:latest
+    environment:
+      # Allowlist de hosts WOPI: sem isso o Collabora recusa as chamadas.
+      - aliasgroup1=http://web:8000
+      # PoC em HTTP puro na rede local — sem TLS e sem terminação de TLS.
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=false
+      - DONT_GEN_SSL_CERT=1
+      - username=admin
+      - password=admin
+      - dictionaries=pt_BR en_US
+    ports:
+      - "9980:9980"
+    cap_add:
+      - MKNOD
+    restart: unless-stopped

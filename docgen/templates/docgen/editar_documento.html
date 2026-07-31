@@ -28,7 +28,7 @@
 <p class="text-muted-apex mb-2" style="font-size:.88rem;">{{ erro }}</p>
 <p class="text-soft-apex mb-0" style="font-size:.8rem;">
 O serviço do Collabora precisa estar no ar. Localmente:
-<code>docker compose --profile collabora up -d collabora</code>
+<code>docker compose -f docker-compose.yml -f docker-compose.collabora.yml up -d</code>
 </p>
 </div>
 </div>
