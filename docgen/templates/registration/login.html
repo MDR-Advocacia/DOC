@@ -18,7 +18,12 @@
         {% if form.errors %}
             <div class="alert alert-danger" role="alert">
                 <i class="fa-solid fa-circle-exclamation"></i>
-                <div class="flex-grow-1">Usuário ou senha inválidos.</div>
+                {# Mostra a mensagem real do formulário — é ela que explica o caso
+                   da conta já migrada para o Entra ID. O texto genérico fica só
+                   como reserva para quando não houver mensagem específica. #}
+                <div class="flex-grow-1">
+                {% for erro in form.non_field_errors %}{{ erro }}{% empty %}Usuário ou senha inválidos.{% endfor %}
+                </div>
             </div>
         {% endif %}
 

@@ -22,6 +22,7 @@ from urllib.parse import quote
 
 from django.conf import settings
 from django.contrib.auth import get_backends, login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import Http404
 from django.shortcuts import redirect, render
@@ -85,6 +86,44 @@ def sso_login(request):
         rd = f"https://{request.get_host()}/accounts/sso/"
         return redirect(f"{base}/oauth2/start?rd={quote(rd, safe='')}")
 
+    # Fluxo de VÍNCULO: a pessoa já está logada (entrou com a senha antiga) e
+    # acabou de provar a identidade corporativa. Aqui as duas contas viram uma.
+    if request.session.pop('vinculo_pendente', False) and request.user.is_authenticated:
+        from django.contrib import messages
+
+        from .middleware import CHAVE_SESSAO
+        from .vinculo import vincular
+
+        try:
+            resultado = vincular(request.user, email)
+        except Exception as exc:
+            logger.exception("Falha ao vincular conta ao Entra ID")
+            messages.error(request, f"Não foi possível concluir o vínculo: {exc}")
+            return redirect('vincular_entra')
+
+        sobrevivente = resultado['sobrevivente']
+        # A senha foi inutilizada no vínculo; se a conta que ficou for outra,
+        # a sessão precisa passar a ser dela.
+        backend = get_backends()[0]
+        sobrevivente.backend = f"{backend.__module__}.{backend.__class__.__name__}"
+        login(request, sobrevivente)
+        request.session[CHAVE_SESSAO] = True
+
+        if resultado['fundiu']:
+            messages.success(
+                request,
+                f"Conta vinculada ao Entra ID ({email}). Juntamos com a conta "
+                f"\"{resultado['absorvida']}\": {resultado['migrados']} registro(s) "
+                "foram reunidos aqui. A partir de agora entre sempre pelo Entra ID.",
+            )
+        else:
+            messages.success(
+                request,
+                f"Conta vinculada ao Entra ID ({email}). "
+                "A partir de agora entre sempre pelo Entra ID.",
+            )
+        return redirect('/')
+
     user = User.objects.filter(email__iexact=email).first()
     if user is None:
         # Acha-ou-cria (JIT). Conta nova nasce PENDENTE (is_active=False): cai na
@@ -115,4 +154,31 @@ def sso_login(request):
     backend = get_backends()[0]
     user.backend = f"{backend.__module__}.{backend.__class__.__name__}"
     login(request, user)
+
+    # Entrou por SSO: a identidade corporativa está provada, então registra o
+    # vínculo sozinho. Sem isso, quem já usa Entra seria convidado a vincular
+    # uma conta que já é a certa.
+    from .middleware import CHAVE_SESSAO
+    from .models import VinculoEntraId
+
+    VinculoEntraId.objects.get_or_create(
+        usuario=user, defaults={'email_corporativo': email}
+    )
+    request.session[CHAVE_SESSAO] = True
     return redirect("/")
+
+
+@login_required
+def vincular_entra(request):
+    """Tela que explica e dispara o SSO em modo de vínculo."""
+    if hasattr(request.user, 'vinculo_entra'):
+        return redirect('/')
+
+    if request.method == 'POST':
+        request.session['vinculo_pendente'] = True
+        return redirect('sso_login')
+
+    return render(request, 'registration/vincular_entra.html', {
+        'usuario': request.user,
+        'email_atual': request.user.email,
+    })

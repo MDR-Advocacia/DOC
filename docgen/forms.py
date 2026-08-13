@@ -5,6 +5,8 @@ import unicodedata
 from pathlib import Path
 
 from django import forms
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from openpyxl import load_workbook
@@ -680,3 +682,27 @@ class DisparoObrigacaoFazerForm(forms.Form):
             self.add_error('anexos_pdf', exc)
 
         return cleaned_data
+
+
+class LoginComAvisoEntraId(AuthenticationForm):
+    """Login por senha que explica quando a conta já migrou para o Entra ID.
+
+    Ao vincular, a senha da conta é inutilizada. Sem este aviso, quem tentasse
+    a senha antiga veria apenas "credenciais inválidas" e não teria como
+    adivinhar que agora precisa entrar pela Microsoft.
+    """
+
+    def clean(self):
+        try:
+            return super().clean()
+        except ValidationError:
+            usuario = (self.cleaned_data.get('username') or self.data.get('username') or '').strip()
+            if usuario and User.objects.filter(
+                username__iexact=usuario, vinculo_entra__isnull=False
+            ).exists():
+                raise ValidationError(
+                    'Esta conta agora entra pelo Entra ID. Use o botão "Entrar com a conta '
+                    'Microsoft" — a senha antiga não vale mais.',
+                    code='conta_migrada',
+                )
+            raise

@@ -66,6 +66,35 @@ class Template(models.Model):
     def __str__(self):
         return self.titulo
 
+class VinculoEntraId(models.Model):
+    """Registra que a conta já provou sua identidade corporativa no Entra ID.
+
+    Existir uma linha aqui significa duas coisas: a pessoa não será mais
+    convidada a vincular, e a conta passa a entrar só por SSO (a senha é
+    inutilizada no momento do vínculo).
+
+    Resolve o caso que a conciliação do DP não cobre: quem usa e-mail pessoal
+    não está em planilha nenhuma, mas consegue provar sozinho quem é —
+    autentica com a senha antiga e, na sequência, com o Entra ID.
+    """
+
+    usuario = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='vinculo_entra'
+    )
+    email_corporativo = models.EmailField()
+    vinculado_em = models.DateTimeField(auto_now_add=True)
+    # Preenchido quando o vínculo fundiu duas contas da mesma pessoa.
+    conta_absorvida = models.CharField(max_length=150, blank=True)
+    itens_migrados = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Vínculo Entra ID"
+        verbose_name_plural = "Vínculos Entra ID"
+
+    def __str__(self):
+        return f"{self.usuario.get_username()} → {self.email_corporativo}"
+
+
 class AcessoArquivado(models.Model):
     """Marca um usuário como arquivado.
 

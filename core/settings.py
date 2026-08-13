@@ -141,7 +141,14 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Depois do Authentication (precisa de request.user) e do Messages (usa
+    # mensagens no retorno do vínculo).
+    'docgen.middleware.ExigirVinculoEntraIdMiddleware',
 ]
+
+# Cobrar de quem entra com senha o vínculo com o Entra ID, uma única vez.
+# Desligar aqui interrompe a cobrança sem desfazer nenhum vínculo já feito.
+ENTRA_VINCULO_OBRIGATORIO = _env_as_bool('ENTRA_VINCULO_OBRIGATORIO', True)
 
 ROOT_URLCONF = 'core.urls'
 

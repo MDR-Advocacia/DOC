@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<div style="max-width: 620px; margin: 3rem auto;">
+
+<div class="card">
+<div class="card-body" style="padding: 2.5rem;">
+
+<div class="text-center mb-4">
+<i class="fa-solid fa-shield-halved fa-3x mb-3" style="color: hsl(var(--duna-blue));"></i>
+<h1 style="font-size:1.5rem; margin-bottom:.5rem;">Confirme sua conta corporativa</h1>
+<p class="text-muted-apex mb-0" style="font-size:.95rem;">
+Só desta vez. Depois de confirmar, você entra sempre pelo Entra ID e não verá mais esta tela.
+</p>
+</div>
+
+<div class="alert alert-info">
+<i class="fa-solid fa-circle-info"></i>
+<div style="font-size:.88rem;">
+Você entrou como <strong>{{ usuario.get_username }}</strong>{% if email_atual %} ({{ email_atual }}){% endif %}.
+Ao confirmar com o Entra ID, ligamos esta conta à sua identidade da MDR — e, se você tiver
+uma segunda conta aqui dentro, <strong>juntamos as duas</strong>, reunindo todas as peças que
+você já gerou num lugar só.
+</div>
+</div>
+
+<form method="post" class="d-grid mt-4">
+{% csrf_token %}
+<button type="submit" class="btn btn-primary btn-lg">
+<i class="fa-solid fa-arrow-right-to-bracket"></i> Confirmar com o Entra ID
+</button>
+</form>
+
+<div class="mt-4 pt-3" style="border-top: 1px solid hsl(var(--apex-border));">
+<p class="text-soft-apex mb-2" style="font-size:.8rem;"><strong>Por que isso agora?</strong></p>
+<ul class="text-soft-apex" style="font-size:.8rem; padding-left:1.1rem; margin-bottom:0;">
+<li>O acesso ao DOC passa a ser o mesmo do e-mail e do Teams — uma senha a menos.</li>
+<li>Nenhum documento é perdido: se houver duas contas suas, o histórico é reunido.</li>
+<li>Se der algum problema ao confirmar, é só falar com o TI — nada é bloqueado enquanto isso.</li>
+</ul>
+</div>
+
+</div>
+</div>
+
+{# Logout exige POST no Django — um link GET devolve 405. #}
+<form action="{% url 'logout' %}" method="post" class="text-center mt-3">
+{% csrf_token %}
+<button type="submit" class="btn btn-link text-soft-apex" style="font-size:.8rem; text-decoration:none;">Sair</button>
+</form>
+
+</div>
+{% endblock %}

@@ -3,6 +3,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from . import api_views, arquivos_views, sso_views, views, wopi_views
+from .forms import LoginComAvisoEntraId
 
 
 urlpatterns = [
@@ -29,8 +30,12 @@ urlpatterns = [
     path('arquivos/<int:arquivo_id>/excluir/', arquivos_views.arquivo_excluir, name='arquivo_excluir'),
     path('favoritar/<int:template_id>/', views.toggle_favorito, name='toggle_favorito'),
     path('biblioteca/adicionar/<int:template_id>/', views.adicionar_favorito, name='adicionar_favorito'),
-    path('accounts/login/', auth_views.LoginView.as_view(extra_context={'sso_enabled': settings.SSO_ENABLED}), name='login'),
+    path('accounts/login/', auth_views.LoginView.as_view(
+        authentication_form=LoginComAvisoEntraId,
+        extra_context={'sso_enabled': settings.SSO_ENABLED},
+    ), name='login'),
     path('accounts/sso/', sso_views.sso_login, name='sso_login'),
+    path('vincular-entra-id/', sso_views.vincular_entra, name='vincular_entra'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),
     path('accounts/password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),
