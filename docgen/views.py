@@ -16,6 +16,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import (
     Case,
     Count,
@@ -49,6 +50,7 @@ from .folder_permissions import (
     require_folder_editor,
 )
 from .models import (
+    AcessoArquivado,
     Area,
     Categoria,
     DocumentoGerado,
@@ -1025,6 +1027,31 @@ def gerenciar_usuarios(request):
             usuarios = usuarios.exclude(id=request.user.id)
             usuarios.update(is_active=False)
             messages.success(request, f"Acesso revogado para {usuarios.count()} usuario(s).")
+        elif acao == 'arquivar':
+            # Arquivar = desativar E marcar como arquivado. Sem a marca, o
+            # usuário voltaria a aparecer como "cadastro pendente", que é o
+            # mesmo is_active=False.
+            usuarios = usuarios.exclude(id=request.user.id)
+            arquivados = 0
+            for usuario in usuarios:
+                usuario.is_active = False
+                usuario.save(update_fields=['is_active'])
+                AcessoArquivado.objects.get_or_create(
+                    usuario=usuario, defaults={'arquivado_por': request.user}
+                )
+                arquivados += 1
+            messages.success(
+                request,
+                f"{arquivados} acesso(s) arquivado(s). O histórico de documentos "
+                "foi preservado — para trazer de volta, use a aba Arquivados.",
+            )
+        elif acao == 'desarquivar':
+            AcessoArquivado.objects.filter(usuario__in=usuarios).delete()
+            messages.success(
+                request,
+                f"{usuarios.count()} acesso(s) devolvido(s) para a lista de cadastros. "
+                "Aprove para reativar.",
+            )
         elif acao == 'promover_admin':
             usuarios.update(is_staff=True)
             messages.success(request, f"{usuarios.count()} usuario(s) promovido(s) a administrador.")
@@ -1033,17 +1060,46 @@ def gerenciar_usuarios(request):
             usuarios.update(is_staff=False, is_superuser=False)
             messages.success(request, f"{usuarios.count()} usuario(s) rebaixado(s) para usuario comum.")
         elif acao == 'excluir':
+            # Um a um, cada qual na sua transação. O delete de queryset é
+            # tudo-ou-nada: bastava UM usuário com documento gerado
+            # (DocumentoGerado.usuario é PROTECT) para o ProtectedError
+            # derrubar o lote inteiro e não excluir ninguém — nem os que
+            # estavam livres. E a mensagem não dizia qual era o culpado.
             usuarios = usuarios.exclude(id=request.user.id)
-            count = usuarios.count()
-            if count > 0:
+            excluidos = []
+            bloqueados = []
+
+            for usuario in usuarios:
+                apelido = usuario.get_username()
                 try:
-                    usuarios.delete()
-                    messages.success(request, f"{count} usuario(s) excluido(s) definitivamente.")
-                except Exception:
-                    messages.error(
-                        request,
-                        "Um ou mais usuarios possuem historico protegido. Revogue o acesso em vez de excluir.",
-                    )
+                    with transaction.atomic():
+                        usuario.delete()
+                    excluidos.append(apelido)
+                except ProtectedError:
+                    qtd = DocumentoGerado.objects.filter(usuario=usuario).count()
+                    bloqueados.append((apelido, qtd))
+
+            if excluidos:
+                messages.success(
+                    request,
+                    f"{len(excluidos)} usuário(s) excluído(s) definitivamente: "
+                    + ", ".join(excluidos),
+                )
+
+            if bloqueados:
+                detalhe = ", ".join(
+                    f"{nome} ({qtd} documento(s))" for nome, qtd in bloqueados
+                )
+                messages.warning(
+                    request,
+                    f"{len(bloqueados)} usuário(s) não puderam ser excluídos porque têm "
+                    f"documentos gerados no histórico: {detalhe}. "
+                    "Apagá-los levaria o histórico junto — use \"Revogar acesso\" "
+                    "para tirar a pessoa do sistema preservando os documentos.",
+                )
+
+            if not excluidos and not bloqueados:
+                messages.warning(request, "Nenhum usuário foi excluído.")
 
         return redirect('gerenciar_usuarios')
 
@@ -1051,8 +1107,15 @@ def gerenciar_usuarios(request):
         request,
         'docgen/gerenciar_usuarios.html',
         {
-            'usuarios_pendentes': User.objects.filter(is_active=False).order_by('-date_joined'),
+            # Pendentes exclui os arquivados: quem teve o acesso arquivado não
+            # é cadastro novo esperando aprovação.
+            'usuarios_pendentes': User.objects.filter(
+                is_active=False, arquivamento__isnull=True
+            ).order_by('-date_joined'),
             'usuarios_ativos': User.objects.filter(is_active=True).order_by('-date_joined'),
+            'usuarios_arquivados': User.objects.filter(
+                arquivamento__isnull=False
+            ).select_related('arquivamento').order_by('-arquivamento__arquivado_em'),
         },
     )
 

@@ -66,6 +66,39 @@ class Template(models.Model):
     def __str__(self):
         return self.titulo
 
+class AcessoArquivado(models.Model):
+    """Marca um usuário como arquivado.
+
+    Existe porque `is_active=False` sozinho é ambíguo: é o mesmo estado de
+    "cadastro novo aguardando aprovação" e de "ex-usuário com acesso
+    revogado". Sem separar os dois, quem sai da empresa fica para sempre na
+    aba de novos cadastros, parecendo fantasma que não dá para eliminar.
+
+    Arquivar em vez de excluir preserva o histórico: DocumentoGerado.usuario
+    é PROTECT, então apagar a pessoa levaria junto as peças que ela gerou.
+    """
+
+    usuario = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='arquivamento'
+    )
+    arquivado_em = models.DateTimeField(auto_now_add=True)
+    arquivado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='arquivamentos_feitos',
+    )
+    motivo = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = "Acesso arquivado"
+        verbose_name_plural = "Acessos arquivados"
+
+    def __str__(self):
+        return f"{self.usuario.get_username()} (arquivado em {self.arquivado_em:%d/%m/%Y})"
+
+
 class DocumentoGerado(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.PROTECT)
     template = models.ForeignKey(Template, on_delete=models.PROTECT)
